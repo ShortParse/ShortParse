@@ -143,7 +143,7 @@ def print_benchmark_table(boss_name: str, comparisons: dict) -> None:
     table.add_column("% Top 1")
     table.add_column("% Top 5")
     table.add_column("% Top 10")
-    table.add_column("% Avg")
+    table.add_column("% Bench")
     table.add_column("Grade")
 
     for player_name, comparison in sorted(comparisons.items()):
