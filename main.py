@@ -8,6 +8,8 @@ from shortparse.selector import select_best_boss_encounters
 from shortparse.metrics.builder import build_player_metrics
 from shortparse.metrics.issues import build_raid_issues
 
+from shortparse.benchmarks.builder import build_placeholder_benchmark_comparisons
+
 console = Console()
 
 
@@ -130,6 +132,30 @@ def print_metrics_table(boss_name: str, player_metrics: dict) -> None:
     console.print(table)
     console.print()
 
+def print_benchmark_table(boss_name: str, comparisons: dict) -> None:
+    console.print(f"[bold blue]Benchmarks: {boss_name}[/bold blue]")
+
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Player")
+    table.add_column("Metric")
+    table.add_column("Value")
+    table.add_column("% Top 1")
+    table.add_column("% Top 5")
+    table.add_column("% Top 10")
+
+    for player_name, comparison in sorted(comparisons.items()):
+        table.add_row(
+            player_name,
+            comparison.metric.upper(),
+            format_number(int(comparison.player_value)),
+            "N/A" if comparison.percent_of_top_1 is None else f"{comparison.percent_of_top_1:.2f}%",
+            "N/A" if comparison.percent_of_top_5 is None else f"{comparison.percent_of_top_5:.2f}%",
+            "N/A" if comparison.percent_of_top_10 is None else f"{comparison.percent_of_top_10:.2f}%",
+        )
+
+    console.print(table)
+    console.print()
+
 def print_issues_table(boss_name: str, player_metrics: dict) -> None:
     issues = build_raid_issues(player_metrics)
 
@@ -199,6 +225,16 @@ def main():
 
             print_roster_table(fight.get("name", "Unknown"), roster)
             print_metrics_table(fight.get("name", "Unknown"), player_metrics)
+            benchmark_comparisons = build_placeholder_benchmark_comparisons(
+                report_code,
+                fight,
+                player_metrics,
+            )
+
+            print_benchmark_table(
+                fight.get("name", "Unknown"),
+                benchmark_comparisons,
+            )
             print_issues_table(fight.get("name", "Unknown"), player_metrics)
 
 
