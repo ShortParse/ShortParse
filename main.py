@@ -5,6 +5,7 @@ from shortparse.client import WarcraftLogsClient
 from shortparse.players import build_roster_from_fight_data
 from shortparse.report_parser import extract_report_code
 from shortparse.selector import select_best_boss_encounters
+from shortparse.metrics.builder import build_player_metrics
 
 console = Console()
 
@@ -89,6 +90,35 @@ def print_roster_table(boss_name: str, roster: list[dict]) -> None:
     console.print()
 
 
+def print_metrics_table(boss_name: str, player_metrics: dict) -> None:
+    console.print(f"[bold magenta]Metrics: {boss_name}[/bold magenta]")
+
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Player")
+    table.add_column("Role")
+    table.add_column("Active %")
+    table.add_column("Inactive")
+    table.add_column("Pots")
+    table.add_column("HS")
+
+    for player_name, metric_data in sorted(player_metrics.items()):
+        identity = metric_data["identity"]
+        activity = metric_data["activity"]
+        consumables = metric_data["consumables"]
+
+        table.add_row(
+            player_name,
+            identity["role"],
+            f'{activity["active_time_pct"]:.2f}%',
+            f'{activity["inactive_seconds"]:.2f}s',
+            str(consumables.get("combat_potions", 0)),
+            str(consumables.get("healthstone_count", 0)),
+        )
+
+    console.print(table)
+    console.print()
+
+
 def main():
     url = input("Paste Warcraft Logs report URL: ").strip()
     report_code = extract_report_code(url)
@@ -106,7 +136,25 @@ def main():
         for fight in fights:
             fight_data = client.get_fight_player_data(report_code, fight["id"])
             roster = build_roster_from_fight_data(fight_data)
+
+            fight_duration_seconds = (
+                fight["endTime"] - fight["startTime"]
+            ) / 1000
+
+            events = client.get_fight_events(
+                report_code,
+                fight["startTime"],
+                fight["endTime"],
+            )
+
+            player_metrics = build_player_metrics(
+                roster,
+                events,
+                fight_duration_seconds,
+            )
+
             print_roster_table(fight.get("name", "Unknown"), roster)
+            print_metrics_table(fight.get("name", "Unknown"), player_metrics)
 
 
 if __name__ == "__main__":

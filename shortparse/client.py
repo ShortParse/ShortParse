@@ -70,11 +70,31 @@ class WarcraftLogsClient:
         query($code: String!, $fightIDs: [Int]) {
           reportData {
             report(code: $code) {
-              playerDetails(fightIDs: $fightIDs, includeCombatantInfo: true)
-              damageDone: table(dataType: DamageDone, fightIDs: $fightIDs)
-              healing: table(dataType: Healing, fightIDs: $fightIDs)
-              damageTaken: table(dataType: DamageTaken, fightIDs: $fightIDs)
-              deaths: table(dataType: Deaths, fightIDs: $fightIDs)
+
+              playerDetails(
+                fightIDs: $fightIDs,
+                includeCombatantInfo: true
+              )
+
+              damageDone: table(
+                dataType: DamageDone,
+                fightIDs: $fightIDs
+              )
+
+              healing: table(
+                dataType: Healing,
+                fightIDs: $fightIDs
+              )
+
+              damageTaken: table(
+                dataType: DamageTaken,
+                fightIDs: $fightIDs
+              )
+
+              deaths: table(
+                dataType: Deaths,
+                fightIDs: $fightIDs
+              )
             }
           }
         }
@@ -82,3 +102,57 @@ class WarcraftLogsClient:
 
         data = self.graphql(query, {"code": report_code, "fightIDs": [fight_id]})
         return data["reportData"]["report"]
+
+    def get_fight_events(
+            self,
+            report_code: str,
+            start_time: int,
+            end_time: int,
+    ) -> list[dict]:
+
+        query = """
+        query(
+          $code: String!,
+          $startTime: Float!,
+          $endTime: Float!
+        ) {
+          reportData {
+            report(code: $code) {
+              events(
+                startTime: $startTime,
+                endTime: $endTime
+              ) {
+                data
+                nextPageTimestamp
+              }
+            }
+          }
+        }
+        """
+
+        all_events = []
+
+        next_timestamp = start_time
+
+        while True:
+            data = self.graphql(
+                query,
+                {
+                    "code": report_code,
+                    "startTime": next_timestamp,
+                    "endTime": end_time,
+                },
+            )
+
+            payload = data["reportData"]["report"]["events"]
+
+            all_events.extend(payload.get("data", []))
+
+            next_page = payload.get("nextPageTimestamp")
+
+            if not next_page:
+                break
+
+            next_timestamp = next_page
+
+        return all_events
