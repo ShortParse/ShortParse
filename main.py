@@ -98,6 +98,8 @@ def print_metrics_table(boss_name: str, player_metrics: dict) -> None:
     table.add_column("Active %")
     table.add_column("Inactive")
     table.add_column("Deaths")
+    table.add_column("Avoid Hits")
+    table.add_column("Avoid Dmg")
     table.add_column("Pots")
     table.add_column("HS")
 
@@ -113,6 +115,10 @@ def print_metrics_table(boss_name: str, player_metrics: dict) -> None:
             f'{activity["active_time_pct"]:.2f}%',
             f'{activity["inactive_seconds"]:.2f}s',
             str(performance.get("deaths", 0)),
+            str(performance.get("avoidable_hit_count", 0)),
+            format_number(
+                performance.get("avoidable_damage_taken", 0)
+            ),
             str(consumables.get("combat_potions", 0)),
             str(consumables.get("healthstone_count", 0)),
         )

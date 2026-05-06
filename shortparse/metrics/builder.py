@@ -2,6 +2,7 @@ from shortparse.metrics.activity import calculate_active_time
 from shortparse.metrics.consumables import calculate_consumables
 from shortparse.metrics.deaths import calculate_deaths
 from shortparse.metrics.avoidable_deaths import calculate_avoidable_deaths
+from shortparse.metrics.avoidable_damage import calculate_avoidable_damage
 
 
 def build_player_metrics(
@@ -43,6 +44,12 @@ def build_player_metrics(
             encounter_id,
         )
 
+        avoidable_damage = calculate_avoidable_damage(
+            player["actor_id"],
+            events,
+            encounter_id,
+        )
+
         potion_count = consumables["combat_potions"]
         healthstone_count = consumables["healthstone_count"]
 
@@ -67,6 +74,10 @@ def build_player_metrics(
                     for death in avoidable_deaths["avoidable_deaths"]
                     for mechanic in death.get("matched_mechanics", [])
                 ],
+                "avoidable_hit_count": avoidable_damage["avoidable_hit_count"],
+                "avoidable_damage_taken": avoidable_damage["avoidable_damage_taken"],
+                "avoidable_mechanics": avoidable_damage["avoidable_mechanics"],
+                "avoidable_damage_events": avoidable_damage["avoidable_damage_events"],
             },
 
             "activity": activity,
