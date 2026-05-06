@@ -11,6 +11,8 @@ from shortparse.metrics.issues import build_raid_issues
 from shortparse.benchmarks.builder import build_benchmark_comparisons
 from shortparse.benchmarks.grading import calculate_grade
 
+from shortparse.reports.scorecard import build_scorecard
+
 console = Console()
 
 
@@ -167,10 +169,8 @@ def print_benchmark_table(boss_name: str, comparisons: dict) -> None:
 
 def print_issues_table(
     boss_name: str,
-    player_metrics: dict,
-    benchmark_comparisons: dict,
+    issues: list[dict],
 ) -> None:
-    issues = build_raid_issues(player_metrics, benchmark_comparisons)
 
     if not issues:
         console.print(f"[bold green]Issues: {boss_name}[/bold green]")
@@ -193,6 +193,45 @@ def print_issues_table(
             issue["player"],
             issue["category"],
             issue["message"],
+        )
+
+    console.print(table)
+    console.print()
+
+def print_scorecard_table(
+    boss_name: str,
+    player_metrics: dict,
+    issues: list[dict],
+    benchmark_comparisons: dict,
+) -> None:
+
+    scorecard = build_scorecard(
+        player_metrics,
+        issues,
+        benchmark_comparisons,
+    )
+
+    console.print(f"[bold green]Scorecard: {boss_name}[/bold green]")
+
+    table = Table(show_header=True, header_style="bold")
+
+    table.add_column("Player")
+    table.add_column("Grade")
+    table.add_column("Issue Score")
+    table.add_column("Critical")
+    table.add_column("Major")
+    table.add_column("Warning")
+    table.add_column("Top Issue")
+
+    for row in scorecard:
+        table.add_row(
+            row["player"],
+            row["grade"],
+            str(row["issue_score"]),
+            str(row["critical_count"]),
+            str(row["major_count"]),
+            str(row["warning_count"]),
+            row["top_issue"],
         )
 
     console.print(table)
@@ -248,12 +287,23 @@ def main():
                 fight.get("name", "Unknown"),
                 benchmark_comparisons,
             )
-            print_issues_table(
-                fight.get("name", "Unknown"),
+
+            issues = build_raid_issues(
                 player_metrics,
                 benchmark_comparisons,
             )
 
+            print_issues_table(
+                fight.get("name", "Unknown"),
+                issues,
+            )
+
+            print_scorecard_table(
+                fight.get("name", "Unknown"),
+                player_metrics,
+                issues,
+                benchmark_comparisons,
+            )
 
 if __name__ == "__main__":
     main()
