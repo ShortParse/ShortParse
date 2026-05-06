@@ -1,52 +1,63 @@
 from collections import defaultdict
 
 
-RAID_NAMES = {
-    "the voidspire": "The Voidspire",
-    "the dreamrift": "The Dreamrift",
-    "march on quel'danas": "March on Quel'Danas",
-    "march on queldanas": "March on Quel'Danas",
+RAID_BOSSES = {
+    "The Voidspire": {
+        "Imperator Averzian",
+        "Vorasius",
+        "Fallen-King Salhadaar",
+        "Vaelgor & Ezzorak",
+        "Lightblinded Vanguard",
+        "Crown of the Cosmos",
+    },
+    "The Dreamrift": {
+        "Chimaerus",
+    },
+    "March on Quel'Danas": {
+        "Belo'ren, Child of Al'ar",
+        "Midnight Falls",
+    },
 }
 
 
-def guess_raid_name(fight: dict) -> str:
-    """
-    Temporary POC logic.
-
-    Warcraft Logs fight objects reliably give us boss names and encounter IDs.
-    Raid/zone grouping may need a second gameData/zones lookup later.
-
-    For now, we group known Midnight raid fights by name matching.
-    Unknown boss fights go into 'Unknown Raid'.
-    """
-
-    name = (fight.get("name") or "").lower()
-
-    # POC placeholder:
-    # We will replace this with encounterID -> raid mapping once we pull zones.
-    for raid_key, raid_name in RAID_NAMES.items():
-        if raid_key in name:
-            return raid_name
-
-    return "Unknown Raid"
+BOSS_TO_RAID = {
+    boss_name.lower(): raid_name
+    for raid_name, boss_names in RAID_BOSSES.items()
+    for boss_name in boss_names
+}
 
 
-def is_boss_fight(fight: dict) -> bool:
-    return bool(fight.get("encounterID")) and fight.get("bossPercentage") is not None
+def normalize_name(name: str) -> str:
+    return " ".join((name or "").lower().split())
+
+
+def get_raid_name_for_fight(fight: dict) -> str | None:
+    boss_name = normalize_name(fight.get("name", ""))
+    return BOSS_TO_RAID.get(boss_name)
+
+
+def is_supported_raid_boss(fight: dict) -> bool:
+    if fight.get("inProgress"):
+        return False
+
+    if not fight.get("encounterID"):
+        return False
+
+    if fight.get("bossPercentage") is None:
+        return False
+
+    return get_raid_name_for_fight(fight) is not None
 
 
 def select_best_boss_encounters(fights: list[dict]) -> dict[str, list[dict]]:
     grouped_by_raid_and_boss = defaultdict(lambda: defaultdict(list))
 
     for fight in fights:
-        if fight.get("inProgress"):
+        if not is_supported_raid_boss(fight):
             continue
 
-        if not is_boss_fight(fight):
-            continue
-
-        raid_name = guess_raid_name(fight)
-        boss_key = fight.get("encounterID") or fight.get("name")
+        raid_name = get_raid_name_for_fight(fight)
+        boss_key = fight.get("encounterID") or normalize_name(fight.get("name", ""))
 
         grouped_by_raid_and_boss[raid_name][boss_key].append(fight)
 
