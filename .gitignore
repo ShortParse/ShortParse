@@ -1,7 +1,10 @@
 # Don't upload our API creds.
 .env
 
-
+# Don't upload any caches
+cache/
+cache/reports
+cache/reports/*
 
 
 ################  stock  ########################

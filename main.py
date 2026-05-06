@@ -71,7 +71,6 @@ def print_roster_table(boss_name: str, roster: list[dict]) -> None:
     table.add_column("Damage")
     table.add_column("Healing")
     table.add_column("Dmg Taken")
-    table.add_column("Deaths")
 
     for player in roster:
         table.add_row(
@@ -145,6 +144,7 @@ def main():
 
             events = client.get_fight_events(
                 report_code,
+                fight["id"],
                 fight["startTime"],
                 fight["endTime"],
             )
