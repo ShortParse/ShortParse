@@ -1,24 +1,4 @@
-AVOIDABLE_DAMAGE_BY_ENCOUNTER_ID = {
-    ## THE VOIDSPIRE
-
-    ## THE DREAMRIFT
-
-    ## MARCH ON QUEL'DANAS
-    3183: {  # Midnight Falls
-        1254076: {
-            "name": "Heaven's Glaives",
-            "severity": "Critical",
-        },
-    },
-}
-
-
-def get_avoidable_mechanics(encounter_id: int) -> dict:
-    return AVOIDABLE_DAMAGE_BY_ENCOUNTER_ID.get(encounter_id, {})
-
-
-def get_avoidable_mechanic(encounter_id: int, spell_id: int) -> dict | None:
-    return get_avoidable_mechanics(encounter_id).get(spell_id)
+from shortparse.data.encounters.registry import get_avoidable_damage
 
 
 DEATH_LOOKBACK_SECONDS = 8
@@ -30,7 +10,14 @@ def calculate_avoidable_deaths(
     death_events: list[dict],
     encounter_id: int,
 ) -> dict:
+    avoidable_mechanics = get_avoidable_damage(encounter_id)
     avoidable_deaths = []
+
+    if not avoidable_mechanics:
+        return {
+            "avoidable_death_count": 0,
+            "avoidable_deaths": [],
+        }
 
     for death in death_events:
         death_timestamp = death.get("timestamp")
@@ -52,18 +39,20 @@ def calculate_avoidable_deaths(
 
         for event in recent_damage_events:
             spell_id = event.get("abilityGameID")
-            mechanic = get_avoidable_mechanic(encounter_id, spell_id)
+            mechanic = avoidable_mechanics.get(spell_id)
 
-            if mechanic:
-                matched_mechanics.append(
-                    {
-                        "spell_id": spell_id,
-                        "name": mechanic["name"],
-                        "severity": mechanic.get("severity", "Critical"),
-                        "timestamp": event.get("timestamp"),
-                        "amount": event.get("amount", 0),
-                    }
-                )
+            if not mechanic:
+                continue
+
+            matched_mechanics.append(
+                {
+                    "spell_id": spell_id,
+                    "name": mechanic["name"],
+                    "severity": mechanic.get("severity", "Critical"),
+                    "timestamp": event.get("timestamp"),
+                    "amount": event.get("amount", 0),
+                }
+            )
 
         if matched_mechanics:
             avoidable_deaths.append(
