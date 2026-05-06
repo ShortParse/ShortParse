@@ -65,6 +65,9 @@ def build_player_metrics(
             "performance": {
                 "damage_done": player["damage_done"],
                 "healing_done": player["healing_done"],
+                "dps": round(player["damage_done"] / fight_duration_seconds, 1),
+                "hps": round(player["healing_done"] / fight_duration_seconds, 1),
+                "dtps": round(player["damage_taken"] / fight_duration_seconds, 1),
                 "damage_taken": player["damage_taken"],
                 "deaths": deaths["death_count"],
                 "death_events": deaths["death_events"],

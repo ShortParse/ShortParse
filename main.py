@@ -100,6 +100,8 @@ def print_metrics_table(boss_name: str, player_metrics: dict) -> None:
     table.add_column("Deaths")
     table.add_column("Avoid Hits")
     table.add_column("Avoid Dmg")
+    table.add_column("DPS")
+    table.add_column("HPS")
     table.add_column("Pots")
     table.add_column("HS")
 
@@ -119,6 +121,8 @@ def print_metrics_table(boss_name: str, player_metrics: dict) -> None:
             format_number(
                 performance.get("avoidable_damage_taken", 0)
             ),
+            format_number(int(performance.get("dps", 0))),
+            format_number(int(performance.get("hps", 0))),
             str(consumables.get("combat_potions", 0)),
             str(consumables.get("healthstone_count", 0)),
         )
