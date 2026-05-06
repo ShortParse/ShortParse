@@ -6,6 +6,7 @@ from shortparse.players import build_roster_from_fight_data
 from shortparse.report_parser import extract_report_code
 from shortparse.selector import select_best_boss_encounters
 from shortparse.metrics.builder import build_player_metrics
+from shortparse.metrics.issues import build_raid_issues
 
 console = Console()
 
@@ -119,6 +120,32 @@ def print_metrics_table(boss_name: str, player_metrics: dict) -> None:
     console.print(table)
     console.print()
 
+def print_issues_table(boss_name: str, player_metrics: dict) -> None:
+    issues = build_raid_issues(player_metrics)
+
+    if not issues:
+        console.print(f"[bold green]Issues: {boss_name}[/bold green]")
+        console.print("No issues found.\n")
+        return
+
+    console.print(f"[bold red]Issues: {boss_name}[/bold red]")
+
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Severity")
+    table.add_column("Player")
+    table.add_column("Category")
+    table.add_column("Issue")
+
+    for issue in issues:
+        table.add_row(
+            issue["severity"],
+            issue["player"],
+            issue["category"],
+            issue["message"],
+        )
+
+    console.print(table)
+    console.print()
 
 def main():
     url = input("Paste Warcraft Logs report URL: ").strip()
@@ -153,10 +180,13 @@ def main():
                 roster,
                 events,
                 fight_duration_seconds,
+                fight["startTime"],
+                fight["endTime"],
             )
 
             print_roster_table(fight.get("name", "Unknown"), roster)
             print_metrics_table(fight.get("name", "Unknown"), player_metrics)
+            print_issues_table(fight.get("name", "Unknown"), player_metrics)
 
 
 if __name__ == "__main__":

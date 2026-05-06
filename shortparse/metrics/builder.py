@@ -7,6 +7,8 @@ def build_player_metrics(
     roster: list[dict],
     events: list[dict],
     fight_duration_seconds: float,
+    fight_start_time: int,
+    fight_end_time: int,
 ) -> dict:
 
     metrics = {}
@@ -28,6 +30,8 @@ def build_player_metrics(
         deaths = calculate_deaths(
             player["actor_id"],
             events,
+            fight_start_time,
+            fight_end_time,
         )
 
         potion_count = consumables["combat_potions"]
