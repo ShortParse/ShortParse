@@ -53,13 +53,24 @@ def build_player_issues(player_name: str, metric_data: dict) -> list[dict]:
     role = identity.get("role", "Unknown")
 
     if performance.get("avoidable_deaths", 0) > 0:
+        mechanics = performance.get("avoidable_death_mechanics", [])
+
+        mechanic_names = sorted(
+            {
+                mechanic.get("name", "Unknown Mechanic")
+                for mechanic in mechanics
+            }
+        )
+
+        mechanic_text = ", ".join(mechanic_names) or "avoidable mechanic"
+
         issues.append(
             make_issue(
                 "avoidable_death",
                 player_name,
                 "Avoidable Deaths",
                 (
-                    f"Died to avoidable mechanic "
+                    f"Died to {mechanic_text} "
                     f"{performance['avoidable_deaths']} time(s)."
                 ),
             )

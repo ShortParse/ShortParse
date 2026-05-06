@@ -62,6 +62,11 @@ def build_player_metrics(
                 "deaths": deaths["death_count"],
                 "death_events": deaths["death_events"],
                 "avoidable_deaths": avoidable_deaths["avoidable_death_count"],
+                "avoidable_death_mechanics": [
+                    mechanic
+                    for death in avoidable_deaths["avoidable_deaths"]
+                    for mechanic in death.get("matched_mechanics", [])
+                ],
             },
 
             "activity": activity,
