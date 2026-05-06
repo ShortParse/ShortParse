@@ -50,3 +50,4 @@ class PlayerBenchmarkComparison:
     percent_of_top_5: float | None
     percent_of_top_10: float | None
     percent_of_average: float | None
+    grade: str

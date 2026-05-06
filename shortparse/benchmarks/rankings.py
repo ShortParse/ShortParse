@@ -1,3 +1,5 @@
+from shortparse.benchmarks.grading import calculate_grade
+
 from shortparse.benchmarks.models import (
     BenchmarkRequest,
     BenchmarkResult,
@@ -53,25 +55,38 @@ def compare_player_to_benchmark(
 
     average_baseline = calculate_average_baseline(benchmark)
 
+    percent_of_top_1 = calculate_percent(
+        player_value,
+        top_1_value,
+    )
+
+    percent_of_top_5 = calculate_percent(
+        player_value,
+        top_5_value,
+    )
+
+    percent_of_top_10 = calculate_percent(
+        player_value,
+        top_10_value,
+    )
+
+    percent_of_average = calculate_percent(
+        player_value,
+        average_baseline,
+    )
+
+    grade = calculate_grade(
+        percent_of_average,
+    )
+
     return PlayerBenchmarkComparison(
         player_name=request.player_name,
         metric=request.metric,
         player_value=player_value,
         benchmark=benchmark,
-        percent_of_top_1=calculate_percent(
-            player_value,
-            top_1_value,
-        ),
-        percent_of_top_5=calculate_percent(
-            player_value,
-            top_5_value,
-        ),
-        percent_of_top_10=calculate_percent(
-            player_value,
-            top_10_value,
-        ),
-        percent_of_average=calculate_percent(
-            player_value,
-            average_baseline,
-        ),
+        percent_of_top_1=percent_of_top_1,
+        percent_of_top_5=percent_of_top_5,
+        percent_of_top_10=percent_of_top_10,
+        percent_of_average=percent_of_average,
+        grade=grade,
     )

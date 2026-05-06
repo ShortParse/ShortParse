@@ -159,14 +159,18 @@ def print_benchmark_table(boss_name: str, comparisons: dict) -> None:
             "N/A" if comparison.percent_of_top_5 is None else f"{comparison.percent_of_top_5:.2f}%",
             "N/A" if comparison.percent_of_top_10 is None else f"{comparison.percent_of_top_10:.2f}%",
             "N/A" if comparison.percent_of_average is None else f"{comparison.percent_of_average:.2f}%",
-            grade,
+            comparison.grade,
         )
 
     console.print(table)
     console.print()
 
-def print_issues_table(boss_name: str, player_metrics: dict) -> None:
-    issues = build_raid_issues(player_metrics)
+def print_issues_table(
+    boss_name: str,
+    player_metrics: dict,
+    benchmark_comparisons: dict,
+) -> None:
+    issues = build_raid_issues(player_metrics, benchmark_comparisons)
 
     if not issues:
         console.print(f"[bold green]Issues: {boss_name}[/bold green]")
@@ -244,7 +248,11 @@ def main():
                 fight.get("name", "Unknown"),
                 benchmark_comparisons,
             )
-            print_issues_table(fight.get("name", "Unknown"), player_metrics)
+            print_issues_table(
+                fight.get("name", "Unknown"),
+                player_metrics,
+                benchmark_comparisons,
+            )
 
 
 if __name__ == "__main__":

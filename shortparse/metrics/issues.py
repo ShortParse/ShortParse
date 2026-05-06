@@ -22,6 +22,16 @@ ISSUE_RULES = {
         "severity": "Warning",
         "score": 15,
     },
+
+    "benchmark_grade_f": {
+        "severity": "Major",
+        "score": 75,
+    },
+
+    "benchmark_grade_d": {
+        "severity": "Warning",
+        "score": 35,
+    },
 }
 
 
@@ -42,7 +52,11 @@ def make_issue(
     }
 
 
-def build_player_issues(player_name: str, metric_data: dict) -> list[dict]:
+def build_player_issues(
+    player_name: str,
+    metric_data: dict,
+    benchmark_comparison=None,
+) -> list[dict]:
     issues = []
 
     identity = metric_data["identity"]
@@ -119,17 +133,52 @@ def build_player_issues(player_name: str, metric_data: dict) -> list[dict]:
             )
         )
 
+    if benchmark_comparison:
+        grade = benchmark_comparison.grade
+
+        if grade == "F":
+            issues.append(
+                make_issue(
+                    "benchmark_grade_f",
+                    player_name,
+                    "Benchmark",
+                    (
+                        "Performance grade F "
+                        "vs benchmark average."
+                    ),
+                )
+            )
+
+        elif grade == "D":
+            issues.append(
+                make_issue(
+                    "benchmark_grade_d",
+                    player_name,
+                    "Benchmark",
+                    (
+                        "Performance grade D "
+                        "vs benchmark average."
+                    ),
+                )
+            )
+
     return issues
 
 
-def build_raid_issues(player_metrics: dict) -> list[dict]:
+def build_raid_issues(
+    player_metrics: dict,
+    benchmark_comparisons: dict | None = None,
+) -> list[dict]:
     issues = []
+
+    benchmark_comparisons = benchmark_comparisons or {}
 
     for player_name, metric_data in sorted(player_metrics.items()):
         issues.extend(
             build_player_issues(
                 player_name,
                 metric_data,
+                benchmark_comparisons.get(player_name),
             )
         )
 
