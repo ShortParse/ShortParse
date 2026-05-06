@@ -184,6 +184,7 @@ def main():
                 fight_duration_seconds,
                 fight["startTime"],
                 fight["endTime"],
+                fight["encounterID"],
             )
 
             print_roster_table(fight.get("name", "Unknown"), roster)

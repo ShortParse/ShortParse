@@ -2,6 +2,10 @@ ACTIVE_TIME_WARNING_THRESHOLD = 95.0
 
 
 ISSUE_RULES = {
+    "avoidable_death": {
+        "severity": "Critical",
+        "score": 150,
+    },
     "death": {
         "severity": "Critical",
         "score": 100,
@@ -48,7 +52,20 @@ def build_player_issues(player_name: str, metric_data: dict) -> list[dict]:
 
     role = identity.get("role", "Unknown")
 
-    if performance.get("deaths", 0) > 0:
+    if performance.get("avoidable_deaths", 0) > 0:
+        issues.append(
+            make_issue(
+                "avoidable_death",
+                player_name,
+                "Avoidable Deaths",
+                (
+                    f"Died to avoidable mechanic "
+                    f"{performance['avoidable_deaths']} time(s)."
+                ),
+            )
+        )
+
+    elif performance.get("deaths", 0) > 0:
         issues.append(
             make_issue(
                 "death",
