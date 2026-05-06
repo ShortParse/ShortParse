@@ -1,6 +1,43 @@
 ACTIVE_TIME_WARNING_THRESHOLD = 95.0
 
 
+ISSUE_RULES = {
+    "death": {
+        "severity": "Critical",
+        "score": 100,
+    },
+    "no_combat_potion": {
+        "severity": "Major",
+        "score": 40,
+    },
+    "no_healthstone": {
+        "severity": "Warning",
+        "score": 20,
+    },
+    "low_active_time": {
+        "severity": "Warning",
+        "score": 15,
+    },
+}
+
+
+def make_issue(
+    rule_key: str,
+    player: str,
+    category: str,
+    message: str,
+) -> dict:
+    rule = ISSUE_RULES[rule_key]
+
+    return {
+        "severity": rule["severity"],
+        "score": rule["score"],
+        "player": player,
+        "category": category,
+        "message": message,
+    }
+
+
 def build_player_issues(player_name: str, metric_data: dict) -> list[dict]:
     issues = []
 
@@ -13,45 +50,45 @@ def build_player_issues(player_name: str, metric_data: dict) -> list[dict]:
 
     if performance.get("deaths", 0) > 0:
         issues.append(
-            {
-                "severity": "Info",
-                "player": player_name,
-                "category": "Deaths",
-                "message": f"Died {performance['deaths']} time(s).",
-            }
+            make_issue(
+                "death",
+                player_name,
+                "Deaths",
+                f"Died {performance['deaths']} time(s) before wipe window.",
+            )
         )
 
     if consumables.get("combat_potions", 0) == 0:
         issues.append(
-            {
-                "severity": "Warning",
-                "player": player_name,
-                "category": "Consumables",
-                "message": "Used 0 combat potions.",
-            }
+            make_issue(
+                "no_combat_potion",
+                player_name,
+                "Consumables",
+                "Used 0 combat potions.",
+            )
         )
 
     if consumables.get("healthstone_count", 0) == 0:
         issues.append(
-            {
-                "severity": "Warning",
-                "player": player_name,
-                "category": "Consumables",
-                "message": "Used 0 healthstones.",
-            }
+            make_issue(
+                "no_healthstone",
+                player_name,
+                "Consumables",
+                "Used 0 healthstones.",
+            )
         )
 
     if activity.get("active_time_pct", 0) < ACTIVE_TIME_WARNING_THRESHOLD:
         issues.append(
-            {
-                "severity": "Warning",
-                "player": player_name,
-                "category": "Activity",
-                "message": (
+            make_issue(
+                "low_active_time",
+                player_name,
+                "Activity",
+                (
                     f"{role} active time below {ACTIVE_TIME_WARNING_THRESHOLD:.0f}% "
                     f"({activity['active_time_pct']:.2f}%)."
                 ),
-            }
+            )
         )
 
     return issues
@@ -70,16 +107,32 @@ def build_raid_issues(player_metrics: dict) -> list[dict]:
 
     severity_order = {
         "Critical": 0,
-        "Warning": 1,
-        "Info": 2,
+        "Major": 1,
+        "Warning": 2,
+        "Info": 3,
     }
 
     issues.sort(
         key=lambda issue: (
             severity_order.get(issue["severity"], 99),
+            -issue["score"],
             issue["category"],
             issue["player"],
         )
     )
 
     return issues
+
+
+def build_player_issue_scores(player_metrics: dict) -> dict[str, int]:
+    scores = {}
+
+    for player_name, metric_data in player_metrics.items():
+        player_issues = build_player_issues(player_name, metric_data)
+
+        scores[player_name] = sum(
+            issue["score"]
+            for issue in player_issues
+        )
+
+    return scores

@@ -132,6 +132,7 @@ def print_issues_table(boss_name: str, player_metrics: dict) -> None:
 
     table = Table(show_header=True, header_style="bold")
     table.add_column("Severity")
+    table.add_column("Score")
     table.add_column("Player")
     table.add_column("Category")
     table.add_column("Issue")
@@ -139,6 +140,7 @@ def print_issues_table(boss_name: str, player_metrics: dict) -> None:
     for issue in issues:
         table.add_row(
             issue["severity"],
+            str(issue["score"]),
             issue["player"],
             issue["category"],
             issue["message"],
