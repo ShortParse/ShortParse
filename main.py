@@ -9,6 +9,7 @@ from shortparse.metrics.builder import build_player_metrics
 from shortparse.metrics.issues import build_raid_issues
 
 from shortparse.benchmarks.builder import build_benchmark_comparisons
+from shortparse.benchmarks.grading import calculate_grade
 
 console = Console()
 
@@ -142,8 +143,14 @@ def print_benchmark_table(boss_name: str, comparisons: dict) -> None:
     table.add_column("% Top 1")
     table.add_column("% Top 5")
     table.add_column("% Top 10")
+    table.add_column("% Avg")
+    table.add_column("Grade")
 
     for player_name, comparison in sorted(comparisons.items()):
+        grade = calculate_grade(
+            comparison.percent_of_average
+        )
+
         table.add_row(
             player_name,
             comparison.metric.upper(),
@@ -151,6 +158,8 @@ def print_benchmark_table(boss_name: str, comparisons: dict) -> None:
             "N/A" if comparison.percent_of_top_1 is None else f"{comparison.percent_of_top_1:.2f}%",
             "N/A" if comparison.percent_of_top_5 is None else f"{comparison.percent_of_top_5:.2f}%",
             "N/A" if comparison.percent_of_top_10 is None else f"{comparison.percent_of_top_10:.2f}%",
+            "N/A" if comparison.percent_of_average is None else f"{comparison.percent_of_average:.2f}%",
+            grade,
         )
 
     console.print(table)

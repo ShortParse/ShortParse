@@ -113,9 +113,22 @@ class BenchmarkService:
         top_5 = self.build_entry(5, rankings[4]) if len(rankings) >= 5 else None
         top_10 = self.build_entry(10, rankings[9]) if len(rankings) >= 10 else None
 
+        average_values = [
+            entry.value
+            for entry in [top_1, top_5, top_10]
+            if entry is not None
+        ]
+
+        average_baseline = (
+            sum(average_values) / len(average_values)
+            if average_values
+            else None
+        )
+
         return BenchmarkResult(
             request=request,
             top_1=top_1,
             top_5=top_5,
             top_10=top_10,
+            average_baseline=average_baseline,
         )

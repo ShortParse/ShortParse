@@ -34,6 +34,7 @@ class BenchmarkResult:
     top_1: BenchmarkEntry | None
     top_5: BenchmarkEntry | None
     top_10: BenchmarkEntry | None
+    average_baseline: float | None
 
     def best_available_baseline(self) -> BenchmarkEntry | None:
         return self.top_10 or self.top_5 or self.top_1
@@ -48,3 +49,4 @@ class PlayerBenchmarkComparison:
     percent_of_top_1: float | None
     percent_of_top_5: float | None
     percent_of_top_10: float | None
+    percent_of_average: float | None

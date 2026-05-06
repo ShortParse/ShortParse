@@ -1,5 +1,4 @@
 from shortparse.benchmarks.models import (
-    BenchmarkEntry,
     BenchmarkRequest,
     BenchmarkResult,
     PlayerBenchmarkComparison,
@@ -22,22 +21,24 @@ def calculate_percent(
     )
 
 
-def build_placeholder_benchmark_result(
-    request: BenchmarkRequest,
-) -> BenchmarkResult:
-    """
-    Temporary local placeholder.
+def calculate_average_baseline(
+    benchmark: BenchmarkResult,
+) -> float | None:
+    values = []
 
-    This lets us wire the benchmark system into ShortParse before
-    we finalize the Warcraft Logs rankings API query.
-    """
+    if benchmark.top_1:
+        values.append(benchmark.top_1.value)
 
-    return BenchmarkResult(
-        request=request,
-        top_1=None,
-        top_5=None,
-        top_10=None,
-    )
+    if benchmark.top_5:
+        values.append(benchmark.top_5.value)
+
+    if benchmark.top_10:
+        values.append(benchmark.top_10.value)
+
+    if not values:
+        return None
+
+    return sum(values) / len(values)
 
 
 def compare_player_to_benchmark(
@@ -49,6 +50,8 @@ def compare_player_to_benchmark(
     top_1_value = benchmark.top_1.value if benchmark.top_1 else None
     top_5_value = benchmark.top_5.value if benchmark.top_5 else None
     top_10_value = benchmark.top_10.value if benchmark.top_10 else None
+
+    average_baseline = calculate_average_baseline(benchmark)
 
     return PlayerBenchmarkComparison(
         player_name=request.player_name,
@@ -67,17 +70,8 @@ def compare_player_to_benchmark(
             player_value,
             top_10_value,
         ),
-    )
-
-
-def build_placeholder_comparison(
-    request: BenchmarkRequest,
-    player_value: float,
-) -> PlayerBenchmarkComparison:
-    benchmark = build_placeholder_benchmark_result(request)
-
-    return compare_player_to_benchmark(
-        request,
-        player_value,
-        benchmark,
+        percent_of_average=calculate_percent(
+            player_value,
+            average_baseline,
+        ),
     )
