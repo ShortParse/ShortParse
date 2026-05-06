@@ -1,4 +1,5 @@
 from shortparse.metrics.activity import calculate_active_time
+from shortparse.metrics.consumables import calculate_consumables
 
 
 def build_player_metrics(
@@ -18,8 +19,13 @@ def build_player_metrics(
             fight_duration_seconds,
         )
 
-        potion_count = int(player.get("potion_use") or 0)
-        healthstone_count = int(player.get("healthstone_use") or 0)
+        consumables = calculate_consumables(
+            player["actor_id"],
+            events,
+        )
+
+        potion_count = consumables["combat_potions"]
+        healthstone_count = consumables["healthstone_count"]
 
         metrics[name] = {
             "identity": {

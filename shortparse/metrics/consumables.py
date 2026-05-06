@@ -1,18 +1,10 @@
-CONSUMABLE_KEYWORDS = {
-    "healthstone": [
-        "healthstone",
-    ],
-
-    "combat_potion": [
-        "potion",
-    ],
+HEALTHSTONE_SPELL_IDS = {
+    6262,
 }
 
-
-def contains_any(text: str, keywords: list[str]) -> bool:
-    text = (text or "").lower()
-
-    return any(keyword in text for keyword in keywords)
+COMBAT_POTION_SPELL_IDS = {
+    1236616,  # Light's Potential
+}
 
 
 def calculate_consumables(
@@ -20,45 +12,29 @@ def calculate_consumables(
     events: list[dict],
 ) -> dict:
 
-    healthstone_used = False
+    healthstone_count = 0
     combat_potions = 0
 
     for event in events:
         if event.get("sourceID") != actor_id:
             continue
 
-        event_type = event.get("type", "")
-
-        if event_type not in {
-            "cast",
-            "applybuff",
-        }:
+        if event.get("type") != "cast":
             continue
 
-        ability_name = (
-            event.get("ability")
-            or event.get("abilityName")
-            or ""
-        )
+        if event.get("fake"):
+            continue
 
-        if isinstance(ability_name, dict):
-            ability_name = ability_name.get("name", "")
+        spell_id = event.get("abilityGameID")
 
-        ability_name = str(ability_name).lower()
+        if spell_id in HEALTHSTONE_SPELL_IDS:
+            healthstone_count += 1
 
-        if contains_any(
-            ability_name,
-            CONSUMABLE_KEYWORDS["healthstone"],
-        ):
-            healthstone_used = True
-
-        if contains_any(
-            ability_name,
-            CONSUMABLE_KEYWORDS["combat_potion"],
-        ):
+        if spell_id in COMBAT_POTION_SPELL_IDS:
             combat_potions += 1
 
     return {
-        "healthstone_used": healthstone_used,
+        "healthstone_used": healthstone_count > 0,
+        "healthstone_count": healthstone_count,
         "combat_potions": combat_potions,
     }
