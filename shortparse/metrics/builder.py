@@ -1,5 +1,6 @@
 from shortparse.metrics.activity import calculate_active_time
 from shortparse.metrics.consumables import calculate_consumables
+from shortparse.metrics.deaths import calculate_deaths
 
 
 def build_player_metrics(
@@ -24,6 +25,11 @@ def build_player_metrics(
             events,
         )
 
+        deaths = calculate_deaths(
+            player["actor_id"],
+            events,
+        )
+
         potion_count = consumables["combat_potions"]
         healthstone_count = consumables["healthstone_count"]
 
@@ -40,7 +46,8 @@ def build_player_metrics(
                 "damage_done": player["damage_done"],
                 "healing_done": player["healing_done"],
                 "damage_taken": player["damage_taken"],
-                "deaths": player["deaths"],
+                "deaths": deaths["death_count"],
+                "death_events": deaths["death_events"],
             },
 
             "activity": activity,

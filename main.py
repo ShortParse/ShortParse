@@ -83,7 +83,6 @@ def print_roster_table(boss_name: str, roster: list[dict]) -> None:
             format_number(player["damage_done"]),
             format_number(player["healing_done"]),
             format_number(player["damage_taken"]),
-            str(player["deaths"]),
         )
 
     console.print(table)
@@ -98,12 +97,14 @@ def print_metrics_table(boss_name: str, player_metrics: dict) -> None:
     table.add_column("Role")
     table.add_column("Active %")
     table.add_column("Inactive")
+    table.add_column("Deaths")
     table.add_column("Pots")
     table.add_column("HS")
 
     for player_name, metric_data in sorted(player_metrics.items()):
         identity = metric_data["identity"]
         activity = metric_data["activity"]
+        performance = metric_data["performance"]
         consumables = metric_data["consumables"]
 
         table.add_row(
@@ -111,6 +112,7 @@ def print_metrics_table(boss_name: str, player_metrics: dict) -> None:
             identity["role"],
             f'{activity["active_time_pct"]:.2f}%',
             f'{activity["inactive_seconds"]:.2f}s',
+            str(performance.get("deaths", 0)),
             str(consumables.get("combat_potions", 0)),
             str(consumables.get("healthstone_count", 0)),
         )
