@@ -8,7 +8,7 @@ from shortparse.selector import select_best_boss_encounters
 from shortparse.metrics.builder import build_player_metrics
 from shortparse.metrics.issues import build_raid_issues
 
-from shortparse.benchmarks.builder import build_placeholder_benchmark_comparisons
+from shortparse.benchmarks.builder import build_benchmark_comparisons
 
 console = Console()
 
@@ -225,7 +225,7 @@ def main():
 
             print_roster_table(fight.get("name", "Unknown"), roster)
             print_metrics_table(fight.get("name", "Unknown"), player_metrics)
-            benchmark_comparisons = build_placeholder_benchmark_comparisons(
+            benchmark_comparisons = build_benchmark_comparisons(
                 report_code,
                 fight,
                 player_metrics,

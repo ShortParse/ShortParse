@@ -1,5 +1,6 @@
 from shortparse.benchmarks.models import BenchmarkRequest
-from shortparse.benchmarks.rankings import build_placeholder_comparison
+from shortparse.benchmarks.rankings import compare_player_to_benchmark
+from shortparse.benchmarks.service import BenchmarkService
 
 
 def get_metric_for_role(role: str) -> str:
@@ -46,13 +47,14 @@ def build_benchmark_requests(
     return requests
 
 
-def build_placeholder_benchmark_comparisons(
+def build_benchmark_comparisons(
     report_code: str,
     fight: dict,
     player_metrics: dict,
 ) -> dict:
 
     comparisons = {}
+    service = BenchmarkService()
 
     requests = build_benchmark_requests(
         report_code,
@@ -65,10 +67,12 @@ def build_placeholder_benchmark_comparisons(
         performance = metric_data["performance"]
 
         player_value = performance.get(request.metric, 0)
+        benchmark = service.get_benchmark_result(request)
 
-        comparisons[request.player_name] = build_placeholder_comparison(
+        comparisons[request.player_name] = compare_player_to_benchmark(
             request,
             player_value,
+            benchmark,
         )
 
     return comparisons
