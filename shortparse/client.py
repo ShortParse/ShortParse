@@ -43,6 +43,10 @@ class WarcraftLogsClient:
                 encounterID
                 kill
                 bossPercentage
+                fightPercentage
+                lastPhase
+                lastPhaseAsAbsoluteIndex
+                lastPhaseIsIntermission
                 difficulty
                 startTime
                 endTime
@@ -59,4 +63,22 @@ class WarcraftLogsClient:
         """
 
         data = self.graphql(query, {"code": report_code})
+        return data["reportData"]["report"]
+
+    def get_fight_player_data(self, report_code: str, fight_id: int) -> dict:
+        query = """
+        query($code: String!, $fightIDs: [Int]) {
+          reportData {
+            report(code: $code) {
+              playerDetails(fightIDs: $fightIDs, includeCombatantInfo: true)
+              damageDone: table(dataType: DamageDone, fightIDs: $fightIDs)
+              healing: table(dataType: Healing, fightIDs: $fightIDs)
+              damageTaken: table(dataType: DamageTaken, fightIDs: $fightIDs)
+              deaths: table(dataType: Deaths, fightIDs: $fightIDs)
+            }
+          }
+        }
+        """
+
+        data = self.graphql(query, {"code": report_code, "fightIDs": [fight_id]})
         return data["reportData"]["report"]

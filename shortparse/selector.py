@@ -20,15 +20,15 @@ RAID_BOSSES = {
 }
 
 
+def normalize_name(name: str) -> str:
+    return " ".join((name or "").lower().split())
+
+
 BOSS_TO_RAID = {
-    boss_name.lower(): raid_name
+    normalize_name(boss_name): raid_name
     for raid_name, boss_names in RAID_BOSSES.items()
     for boss_name in boss_names
 }
-
-
-def normalize_name(name: str) -> str:
-    return " ".join((name or "").lower().split())
 
 
 def get_raid_name_for_fight(fight: dict) -> str | None:
@@ -46,7 +46,49 @@ def is_supported_raid_boss(fight: dict) -> bool:
     if fight.get("bossPercentage") is None:
         return False
 
+    if fight.get("fightPercentage") is None:
+        return False
+
     return get_raid_name_for_fight(fight) is not None
+
+
+def get_duration_seconds(fight: dict) -> int:
+    return int((fight.get("endTime", 0) - fight.get("startTime", 0)) / 1000)
+
+
+def get_progress_score(fight: dict) -> tuple:
+    """
+    Higher score wins.
+
+    Uses Warcraft Logs' own fightPercentage and phase fields instead of
+    guessing from boss HP or duration.
+
+    lastPhaseAsAbsoluteIndex:
+      Higher = later encounter phase.
+
+    fightPercentage:
+      Lower = deeper actual fight progression.
+    """
+
+    absolute_phase = fight.get("lastPhaseAsAbsoluteIndex")
+
+    if absolute_phase is None:
+        absolute_phase = 0
+
+    fight_percentage = fight.get("fightPercentage")
+
+    if fight_percentage is None:
+        progress = 0.0
+    else:
+        progress = 100.0 - fight_percentage
+
+    duration = get_duration_seconds(fight)
+
+    return (
+        absolute_phase,
+        progress,
+        duration,
+    )
 
 
 def select_best_boss_encounters(fights: list[dict]) -> dict[str, list[dict]]:
@@ -57,7 +99,10 @@ def select_best_boss_encounters(fights: list[dict]) -> dict[str, list[dict]]:
             continue
 
         raid_name = get_raid_name_for_fight(fight)
-        boss_key = fight.get("encounterID") or normalize_name(fight.get("name", ""))
+        boss_key = (
+            fight.get("encounterID") or normalize_name(fight.get("name", "")),
+            fight.get("difficulty") or 0,
+        )
 
         grouped_by_raid_and_boss[raid_name][boss_key].append(fight)
 
@@ -73,9 +118,9 @@ def select_best_boss_encounters(fights: list[dict]) -> dict[str, list[dict]]:
                     key=lambda fight: fight.get("endTime", 0),
                 )[-1]
             else:
-                selected = min(
+                selected = max(
                     boss_fights,
-                    key=lambda fight: fight.get("bossPercentage", 100.0),
+                    key=get_progress_score,
                 )
 
             selected_by_raid[raid_name].append(selected)
