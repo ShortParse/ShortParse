@@ -103,23 +103,8 @@ def main():
     for raid_name, fights in selected.items():
         print_encounter_summary(raid_name, fights)
 
-        from pprint import pprint
-
         for fight in fights:
             fight_data = client.get_fight_player_data(report_code, fight["id"])
-
-            print("\nPLAYER DATA DEBUG")
-            print("Fight:", fight.get("name"), fight.get("id"))
-            print("Top-level keys:", fight_data.keys())
-
-            print("\nplayerDetails:")
-            pprint(fight_data.get("playerDetails"))
-
-            print("\ndamageDone:")
-            pprint(fight_data.get("damageDone"))
-
-            input("Press Enter to continue...")
-
             roster = build_roster_from_fight_data(fight_data)
             print_roster_table(fight.get("name", "Unknown"), roster)
 
