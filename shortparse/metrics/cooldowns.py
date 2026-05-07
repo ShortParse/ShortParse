@@ -5,6 +5,7 @@ from shortparse.data.cooldowns import (
     get_cooldowns_for_class,
     is_raid_cooldown,
 )
+from shortparse.data.talents import player_can_access_spell
 
 
 def calculate_possible_casts(
@@ -20,11 +21,33 @@ def calculate_possible_casts(
     )
 
 
-def calculate_cooldowns(
-    actor_id: int,
+def build_empty_cooldown_entry(
+    spell_id: int,
+    cooldown: dict,
+    fight_duration_seconds: float,
+) -> dict:
+    cooldown_seconds = int(
+        cooldown.get("cooldown_seconds") or 0
+    )
+
+    return {
+        "spell_id": spell_id,
+        "name": cooldown["name"],
+        "category": cooldown["category"],
+        "cooldown_seconds": cooldown_seconds,
+        "casts": 0,
+        "possible_casts": calculate_possible_casts(
+            fight_duration_seconds,
+            cooldown_seconds,
+        ),
+        "efficiency_pct": 0.0,
+        "timestamps": [],
+    }
+
+
+def preload_expected_cooldowns(
     class_name: str,
     spec_name: str,
-    events: list[dict],
     fight_duration_seconds: float,
 ) -> dict:
     cooldowns_used = {}
@@ -35,21 +58,48 @@ def calculate_cooldowns(
     )
 
     for spell_id, cooldown in expected_cooldowns.items():
-        cooldown_seconds = int(cooldown.get("cooldown_seconds") or 0)
+        if not player_can_access_spell(
+            spell_id,
+            class_name,
+            spec_name,
+        ):
+            continue
 
-        cooldowns_used[cooldown["name"]] = {
-            "spell_id": spell_id,
-            "name": cooldown["name"],
-            "category": cooldown["category"],
-            "cooldown_seconds": cooldown_seconds,
-            "casts": 0,
-            "possible_casts": calculate_possible_casts(
-                fight_duration_seconds,
-                cooldown_seconds,
-            ),
-            "efficiency_pct": 0.0,
-            "timestamps": [],
-        }
+        cooldowns_used[cooldown["name"]] = build_empty_cooldown_entry(
+            spell_id,
+            cooldown,
+            fight_duration_seconds,
+        )
+
+    return cooldowns_used
+
+
+def calculate_efficiency(
+    cooldowns_used: dict,
+) -> None:
+    for cooldown_data in cooldowns_used.values():
+        casts = cooldown_data["casts"]
+        possible_casts = cooldown_data["possible_casts"]
+
+        if possible_casts > 0:
+            cooldown_data["efficiency_pct"] = round(
+                min(casts / possible_casts, 1.0) * 100,
+                2,
+            )
+
+
+def calculate_cooldowns(
+    actor_id: int,
+    class_name: str,
+    spec_name: str,
+    events: list[dict],
+    fight_duration_seconds: float,
+) -> dict:
+    cooldowns_used = preload_expected_cooldowns(
+        class_name,
+        spec_name,
+        fight_duration_seconds,
+    )
 
     for event in events:
         if event.get("sourceID") != actor_id:
@@ -71,37 +121,27 @@ def calculate_cooldowns(
         if not cooldown:
             continue
 
+        if not player_can_access_spell(
+            spell_id,
+            class_name,
+            spec_name,
+        ):
+            continue
+
         cooldown_name = cooldown["name"]
-        cooldown_seconds = int(cooldown.get("cooldown_seconds") or 0)
 
         if cooldown_name not in cooldowns_used:
-            cooldowns_used[cooldown_name] = {
-                "spell_id": spell_id,
-                "name": cooldown_name,
-                "category": cooldown["category"],
-                "cooldown_seconds": cooldown_seconds,
-                "casts": 0,
-                "possible_casts": calculate_possible_casts(
-                    fight_duration_seconds,
-                    cooldown_seconds,
-                ),
-                "efficiency_pct": 0.0,
-                "timestamps": [],
-            }
+            cooldowns_used[cooldown_name] = build_empty_cooldown_entry(
+                spell_id,
+                cooldown,
+                fight_duration_seconds,
+            )
 
         cooldowns_used[cooldown_name]["casts"] += 1
         cooldowns_used[cooldown_name]["timestamps"].append(
             event.get("timestamp")
         )
 
-    for cooldown_data in cooldowns_used.values():
-        casts = cooldown_data["casts"]
-        possible_casts = cooldown_data["possible_casts"]
-
-        if possible_casts > 0:
-            cooldown_data["efficiency_pct"] = round(
-                min(casts / possible_casts, 1.0) * 100,
-                2,
-            )
+    calculate_efficiency(cooldowns_used)
 
     return cooldowns_used

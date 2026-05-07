@@ -5,6 +5,7 @@ from shortparse.client import WarcraftLogsClient
 from shortparse.report_parser import extract_report_code
 from shortparse.selector import select_best_boss_encounters
 from shortparse.reports.analysis import build_fight_analysis
+from shortparse.reports.serializers import serialize_analysis
 from shortparse.logging import get_logger
 
 
@@ -78,7 +79,9 @@ def analyze_report(request: AnalyzeRequest) -> dict:
                 "name": raid_name,
             }
 
-            analyses.append(analysis)
+            analyses.append(
+                serialize_analysis(analysis)
+            )
 
     logger.info(
         "Completed report analysis: report=%s fights=%s",

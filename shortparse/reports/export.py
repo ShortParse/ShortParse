@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+from shortparse.reports.serializers import serialize_analysis
+
 
 def ensure_parent_directory(path: Path) -> None:
     path.parent.mkdir(
@@ -18,13 +20,14 @@ def save_analysis_json(
 
     ensure_parent_directory(path)
 
+    serialized = serialize_analysis(analysis)
+
     with open(path, "w", encoding="utf-8") as file:
         json.dump(
-            analysis,
+            serialized,
             file,
             indent=2,
             ensure_ascii=False,
-            default=str,
         )
 
     return path
