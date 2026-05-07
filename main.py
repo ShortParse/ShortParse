@@ -8,7 +8,7 @@ from shortparse.selector import select_best_boss_encounters
 from shortparse.benchmarks.grading import calculate_grade
 
 from shortparse.reports.analysis import build_fight_analysis
-
+from shortparse.reports.export import save_analysis_json
 
 console = Console(width=180)
 
@@ -485,6 +485,18 @@ def main():
                 fight_data,
                 events,
             )
+
+            # TEMP DISABLE
+            # output_path = (
+            #     f"storage/reports/"
+            #     f"{report_code}/"
+            #     f"{fight['id']}.json"
+            # )
+            #
+            # save_analysis_json(
+            #     analysis,
+            #     output_path,
+            # )
 
             print_fight_analysis(analysis)
 
