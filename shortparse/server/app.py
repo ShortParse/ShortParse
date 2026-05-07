@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi import HTTPException
 from pydantic import BaseModel
 
 from shortparse.client import WarcraftLogsClient
@@ -8,6 +9,12 @@ from shortparse.reports.analysis import build_fight_analysis
 from shortparse.reports.serializers import serialize_analysis
 from shortparse.logging import get_logger
 
+from shortparse.jobs.models import create_job
+from shortparse.jobs.store import (
+    get_job,
+    list_jobs,
+    save_job,
+)
 
 logger = get_logger(__name__)
 
@@ -20,6 +27,8 @@ app = FastAPI(
 class AnalyzeRequest(BaseModel):
     report_url: str
 
+class JobRequest(BaseModel):
+    report_url: str
 
 @app.get("/health")
 def health_check() -> dict:
@@ -29,6 +38,44 @@ def health_check() -> dict:
         "status": "ok",
     }
 
+@app.post("/jobs")
+def create_analysis_job(request: JobRequest) -> dict:
+    report_code = extract_report_code(request.report_url)
+
+    job = create_job(
+        request.report_url,
+        report_code,
+    )
+
+    save_job(job)
+
+    logger.info(
+        "Created analysis job: job_id=%s report=%s",
+        job["job_id"],
+        report_code,
+    )
+
+    return job
+
+
+@app.get("/jobs")
+def get_jobs() -> dict:
+    return {
+        "jobs": list_jobs(),
+    }
+
+
+@app.get("/jobs/{job_id}")
+def get_analysis_job(job_id: str) -> dict:
+    job = get_job(job_id)
+
+    if not job:
+        raise HTTPException(
+            status_code=404,
+            detail="Job not found",
+        )
+
+    return job
 
 @app.post("/analyze")
 def analyze_report(request: AnalyzeRequest) -> dict:
