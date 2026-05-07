@@ -1,10 +1,11 @@
+from shortparse.settings import LOGS_DIR
 import logging
 
 from pathlib import Path
 from logging.handlers import TimedRotatingFileHandler
 
 
-LOG_DIRECTORY = Path("storage/logs")
+LOG_DIRECTORY = LOGS_DIR
 
 LOG_DIRECTORY.mkdir(
     parents=True,

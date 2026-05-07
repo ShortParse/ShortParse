@@ -1,5 +1,10 @@
+from shortparse.settings import APP_NAME, APP_VERSION, ENVIRONMENT
+
 import json
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from fastapi import BackgroundTasks
 from fastapi import FastAPI
@@ -224,4 +229,12 @@ def analyze_report(request: AnalyzeRequest) -> dict:
             "title": report["title"],
         },
         "analyses": analyses,
+    }
+
+@app.get("/version")
+def version() -> dict:
+    return {
+        "app": APP_NAME,
+        "version": APP_VERSION,
+        "environment": ENVIRONMENT,
     }

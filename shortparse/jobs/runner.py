@@ -1,3 +1,5 @@
+from shortparse.settings import REPORTS_DIR
+
 from shortparse.client import WarcraftLogsClient
 from shortparse.report_parser import extract_report_code
 from shortparse.selector import select_best_boss_encounters
@@ -86,10 +88,10 @@ def run_analysis_job(
             "analyses": analyses,
         }
 
-        output_path = (
-            f"storage/reports/"
-            f"{report_code}/"
-            f"{job_id}.json"
+        output_path = str(
+            REPORTS_DIR
+            / report_code
+            / f"{job_id}.json"
         )
 
         save_analysis_json(

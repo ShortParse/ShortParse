@@ -1,6 +1,10 @@
 from rich.console import Console
 from rich.table import Table
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from shortparse.client import WarcraftLogsClient
 from shortparse.report_parser import extract_report_code
 from shortparse.selector import select_best_boss_encounters
