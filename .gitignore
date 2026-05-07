@@ -11,6 +11,10 @@ storage/
 storage/logs
 storage/logs/*
 
+#
+.idea
+.idea/
+.idea/*
 
 ################  stock  ########################
 # Byte-compiled / optimized / DLL files
