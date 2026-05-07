@@ -3,6 +3,7 @@ from shortparse.metrics.consumables import calculate_consumables
 from shortparse.metrics.deaths import calculate_deaths
 from shortparse.metrics.avoidable_deaths import calculate_avoidable_deaths
 from shortparse.metrics.avoidable_damage import calculate_avoidable_damage
+from shortparse.metrics.mechanics import calculate_mechanics
 
 
 def build_player_metrics(
@@ -15,6 +16,14 @@ def build_player_metrics(
 ) -> dict:
 
     metrics = {}
+
+    mechanics_data = calculate_mechanics(
+        roster,
+        events,
+        encounter_id,
+    )
+
+    player_mechanics = mechanics_data["player_mechanics"]
 
     for player in roster:
         name = player["name"]
@@ -81,6 +90,7 @@ def build_player_metrics(
                 "avoidable_damage_taken": avoidable_damage["avoidable_damage_taken"],
                 "avoidable_mechanics": avoidable_damage["avoidable_mechanics"],
                 "avoidable_damage_events": avoidable_damage["avoidable_damage_events"],
+                "mechanics": player_mechanics.get(name, {}),
             },
 
             "activity": activity,

@@ -10,9 +10,17 @@ ISSUE_RULES = {
         "severity": "Critical",
         "score": 100,
     },
+    "repeated_mechanic_failure_major": {
+        "severity": "Major",
+        "score": 60,
+    },
     "no_combat_potion": {
         "severity": "Major",
         "score": 40,
+    },
+    "repeated_mechanic_failure_warning": {
+        "severity": "Warning",
+        "score": 25,
     },
     "no_healthstone": {
         "severity": "Warning",
@@ -99,6 +107,28 @@ def build_player_issues(
                 f"Died {performance['deaths']} time(s) before wipe window.",
             )
         )
+    mechanics = performance.get("mechanics", {})
+
+    for mechanic_name, mechanic_data in mechanics.items():
+        hits = mechanic_data.get("hits", 0)
+        if hits >= 5:
+            issues.append(
+                make_issue(
+                    "repeated_mechanic_failure_major",
+                    player_name,
+                    "Mechanics",
+                    f"Hit by {mechanic_name} {hits} time(s).",
+                )
+            )
+        elif hits >= 2:
+            issues.append(
+                make_issue(
+                    "repeated_mechanic_failure_warning",
+                    player_name,
+                    "Mechanics",
+                    f"Hit by {mechanic_name} {hits} time(s).",
+                )
+            )
 
     if consumables.get("combat_potions", 0) == 0:
         issues.append(

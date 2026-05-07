@@ -5,8 +5,10 @@ from shortparse.client import WarcraftLogsClient
 from shortparse.players import build_roster_from_fight_data
 from shortparse.report_parser import extract_report_code
 from shortparse.selector import select_best_boss_encounters
+
 from shortparse.metrics.builder import build_player_metrics
 from shortparse.metrics.issues import build_raid_issues
+from shortparse.metrics.mechanics import calculate_mechanics
 
 from shortparse.benchmarks.builder import build_benchmark_comparisons
 from shortparse.benchmarks.grading import calculate_grade
@@ -130,6 +132,42 @@ def print_metrics_table(boss_name: str, player_metrics: dict) -> None:
             format_number(int(performance.get("hps", 0))),
             str(consumables.get("combat_potions", 0)),
             str(consumables.get("healthstone_count", 0)),
+        )
+
+    console.print(table)
+    console.print()
+
+def print_mechanics_table(
+    boss_name: str,
+    mechanics_data: dict,
+) -> None:
+    raid_mechanics = mechanics_data.get("raid_mechanics", {})
+
+    if not raid_mechanics:
+        console.print(f"[bold yellow]Mechanics: {boss_name}[/bold yellow]")
+        console.print("No tracked mechanics found.\n")
+        return
+
+    console.print(f"[bold yellow]Mechanics: {boss_name}[/bold yellow]")
+
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Mechanic")
+    table.add_column("Hits")
+    table.add_column("Damage")
+    table.add_column("Players Hit")
+    table.add_column("Worst Player")
+    table.add_column("Worst Hits")
+
+    for mechanic_name, mechanic_data in sorted(raid_mechanics.items()):
+        players_hit = mechanic_data.get("players_hit", [])
+
+        table.add_row(
+            mechanic_name,
+            str(mechanic_data.get("hits", 0)),
+            format_number(mechanic_data.get("damage", 0)),
+            str(len(players_hit)),
+            str(mechanic_data.get("worst_player") or ""),
+            str(mechanic_data.get("worst_hits", 0)),
         )
 
     console.print(table)
@@ -275,8 +313,21 @@ def main():
                 fight["encounterID"],
             )
 
+            mechanics_data = calculate_mechanics(
+                roster,
+                events,
+                fight["encounterID"],
+            )
+
             print_roster_table(fight.get("name", "Unknown"), roster)
+
             print_metrics_table(fight.get("name", "Unknown"), player_metrics)
+
+            print_mechanics_table(
+                fight.get("name", "Unknown"),
+                mechanics_data,
+            )
+
             benchmark_comparisons = build_benchmark_comparisons(
                 report_code,
                 fight,
