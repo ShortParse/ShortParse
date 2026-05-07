@@ -189,6 +189,8 @@ def print_cooldowns_table(
                     "cooldown": cooldown_name,
                     "category": cooldown_data.get("category", "Unknown"),
                     "casts": cooldown_data.get("casts", 0),
+                    "possible_casts": cooldown_data.get("possible_casts", 0),
+                    "efficiency_pct": cooldown_data.get("efficiency_pct", 0.0),
                 }
             )
 
@@ -204,6 +206,8 @@ def print_cooldowns_table(
     table.add_column("Cooldown")
     table.add_column("Category")
     table.add_column("Casts")
+    table.add_column("Possible")
+    table.add_column("Efficiency")
 
     for row in rows:
         table.add_row(
@@ -211,6 +215,8 @@ def print_cooldowns_table(
             row["cooldown"],
             row["category"],
             str(row["casts"]),
+            str(row["possible_casts"]),
+            f'{row["efficiency_pct"]:.0f}%',
         )
 
     console.print(table)

@@ -62,7 +62,10 @@ def build_player_metrics(
 
         cooldowns = calculate_cooldowns(
             player["actor_id"],
+            player["class"],
+            player["spec"],
             events,
+            fight_duration_seconds,
         )
 
         potion_count = consumables["combat_potions"]

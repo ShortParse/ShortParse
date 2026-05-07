@@ -1,5 +1,11 @@
 ACTIVE_TIME_WARNING_THRESHOLD = 95.0
 
+TRACKED_COOLDOWN_ISSUE_CATEGORIES = {
+    "raid_defensive",
+    "raid_healing",
+    "raid_movement",
+    "external_defensive",
+}
 
 ISSUE_RULES = {
     "avoidable_death": {
@@ -14,11 +20,19 @@ ISSUE_RULES = {
         "severity": "Major",
         "score": 60,
     },
+    "cooldown_never_used": {
+        "severity": "Major",
+        "score": 60,
+    },
     "no_combat_potion": {
         "severity": "Major",
         "score": 40,
     },
     "repeated_mechanic_failure_warning": {
+        "severity": "Warning",
+        "score": 25,
+    },
+    "cooldown_low_efficiency": {
         "severity": "Warning",
         "score": 25,
     },
@@ -107,6 +121,44 @@ def build_player_issues(
                 f"Died {performance['deaths']} time(s) before wipe window.",
             )
         )
+
+    cooldowns = metric_data.get("cooldowns", {})
+
+    for cooldown_name, cooldown_data in cooldowns.items():
+        category = cooldown_data.get("category")
+        casts = cooldown_data.get("casts", 0)
+        possible_casts = cooldown_data.get("possible_casts", 0)
+        efficiency_pct = cooldown_data.get("efficiency_pct", 0)
+
+        if category not in TRACKED_COOLDOWN_ISSUE_CATEGORIES:
+            continue
+
+        if possible_casts <= 1:
+            continue
+
+        if casts == 0:
+            issues.append(
+                make_issue(
+                    "cooldown_never_used",
+                    player_name,
+                    "Cooldowns",
+                    f"{cooldown_name} was not used.",
+                )
+            )
+
+        elif efficiency_pct < 50:
+            issues.append(
+                make_issue(
+                    "cooldown_low_efficiency",
+                    player_name,
+                    "Cooldowns",
+                    (
+                        f"{cooldown_name} used {casts}/{possible_casts} "
+                        f"possible time(s)."
+                    ),
+                )
+            )
+
     mechanics = performance.get("mechanics", {})
 
     for mechanic_name, mechanic_data in mechanics.items():
