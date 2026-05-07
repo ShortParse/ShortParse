@@ -2,19 +2,12 @@ from rich.console import Console
 from rich.table import Table
 
 from shortparse.client import WarcraftLogsClient
-from shortparse.players import build_roster_from_fight_data
 from shortparse.report_parser import extract_report_code
 from shortparse.selector import select_best_boss_encounters
 
-from shortparse.metrics.builder import build_player_metrics
-from shortparse.metrics.issues import build_raid_issues
-from shortparse.metrics.mechanics import calculate_mechanics
-from shortparse.metrics.timeline import build_timeline
-
-from shortparse.benchmarks.builder import build_benchmark_comparisons
 from shortparse.benchmarks.grading import calculate_grade
 
-from shortparse.reports.scorecard import build_scorecard
+from shortparse.reports.analysis import build_fight_analysis
 
 
 console = Console(width=180)
@@ -139,6 +132,7 @@ def print_metrics_table(boss_name: str, player_metrics: dict) -> None:
     console.print(table)
     console.print()
 
+
 def print_mechanics_table(
     boss_name: str,
     mechanics_data: dict,
@@ -174,6 +168,7 @@ def print_mechanics_table(
 
     console.print(table)
     console.print()
+
 
 def print_cooldowns_table(
     boss_name: str,
@@ -223,6 +218,7 @@ def print_cooldowns_table(
 
     console.print(table)
     console.print()
+
 
 def print_timeline_summary(
     boss_name: str,
@@ -306,6 +302,7 @@ def print_timeline_table(
     else:
         console.print()
 
+
 def print_benchmark_table(boss_name: str, comparisons: dict) -> None:
     console.print(f"[bold blue]Benchmarks: {boss_name}[/bold blue]")
 
@@ -338,6 +335,7 @@ def print_benchmark_table(boss_name: str, comparisons: dict) -> None:
     console.print(table)
     console.print()
 
+
 def print_issues_table(
     boss_name: str,
     issues: list[dict],
@@ -369,18 +367,11 @@ def print_issues_table(
     console.print(table)
     console.print()
 
+
 def print_scorecard_table(
     boss_name: str,
-    player_metrics: dict,
-    issues: list[dict],
-    benchmark_comparisons: dict,
+    scorecard: list[dict],
 ) -> None:
-
-    scorecard = build_scorecard(
-        player_metrics,
-        issues,
-        benchmark_comparisons,
-    )
 
     console.print(f"[bold green]Scorecard: {boss_name}[/bold green]")
 
@@ -408,6 +399,58 @@ def print_scorecard_table(
     console.print(table)
     console.print()
 
+
+def print_fight_analysis(
+    analysis: dict,
+) -> None:
+    fight_name = analysis["fight"]["name"]
+
+    print_roster_table(
+        fight_name,
+        analysis["roster"],
+    )
+
+    print_metrics_table(
+        fight_name,
+        analysis["player_metrics"],
+    )
+
+    print_mechanics_table(
+        fight_name,
+        analysis["mechanics"],
+    )
+
+    print_cooldowns_table(
+        fight_name,
+        analysis["player_metrics"],
+    )
+
+    print_timeline_summary(
+        fight_name,
+        analysis["timeline"],
+    )
+
+    print_timeline_table(
+        fight_name,
+        analysis["timeline"],
+    )
+
+    print_benchmark_table(
+        fight_name,
+        analysis["benchmarks"],
+    )
+
+    print_issues_table(
+        fight_name,
+        analysis["issues"],
+    )
+
+    print_scorecard_table(
+        fight_name,
+        analysis["scorecard"],
+    )
+
+
 def main():
     url = input("Paste Warcraft Logs report URL: ").strip()
     report_code = extract_report_code(url)
@@ -423,12 +466,10 @@ def main():
         print_encounter_summary(raid_name, fights)
 
         for fight in fights:
-            fight_data = client.get_fight_player_data(report_code, fight["id"])
-            roster = build_roster_from_fight_data(fight_data)
-
-            fight_duration_seconds = (
-                fight["endTime"] - fight["startTime"]
-            ) / 1000
+            fight_data = client.get_fight_player_data(
+                report_code,
+                fight["id"],
+            )
 
             events = client.get_fight_events(
                 report_code,
@@ -437,80 +478,16 @@ def main():
                 fight["endTime"],
             )
 
-            player_metrics = build_player_metrics(
-                roster,
-                events,
-                fight_duration_seconds,
-                fight["startTime"],
-                fight["endTime"],
-                fight["encounterID"],
-            )
-
-            mechanics_data = calculate_mechanics(
-                roster,
-                events,
-                fight["encounterID"],
-            )
-
-            timeline = build_timeline(
-                roster,
-                events,
-                fight["startTime"],
-                fight["endTime"],
-                fight["encounterID"],
-            )
-
-            print_roster_table(fight.get("name", "Unknown"), roster)
-
-            print_metrics_table(fight.get("name", "Unknown"), player_metrics)
-
-            print_mechanics_table(
-                fight.get("name", "Unknown"),
-                mechanics_data,
-            )
-
-            print_cooldowns_table(
-                fight.get("name", "Unknown"),
-                player_metrics,
-            )
-
-            print_timeline_summary(
-                fight.get("name", "Unknown"),
-                timeline,
-            )
-
-            print_timeline_table(
-                fight.get("name", "Unknown"),
-                timeline,
-            )
-
-            benchmark_comparisons = build_benchmark_comparisons(
+            analysis = build_fight_analysis(
                 report_code,
+                report["title"],
                 fight,
-                player_metrics,
+                fight_data,
+                events,
             )
 
-            print_benchmark_table(
-                fight.get("name", "Unknown"),
-                benchmark_comparisons,
-            )
+            print_fight_analysis(analysis)
 
-            issues = build_raid_issues(
-                player_metrics,
-                benchmark_comparisons,
-            )
-
-            print_issues_table(
-                fight.get("name", "Unknown"),
-                issues,
-            )
-
-            print_scorecard_table(
-                fight.get("name", "Unknown"),
-                player_metrics,
-                issues,
-                benchmark_comparisons,
-            )
 
 if __name__ == "__main__":
     main()

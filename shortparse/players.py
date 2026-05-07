@@ -1,3 +1,5 @@
+from shortparse.data.specs import get_spec_role
+
 ROLE_GROUPS = {
     "tanks": "Tank",
     "healers": "Healer",
@@ -90,11 +92,18 @@ def extract_player_details(player_details: dict) -> dict:
             if not name:
                 continue
 
+            class_name = player.get("type", "Unknown")
+            spec_name = extract_spec(player)
+            spec_role = get_spec_role(
+                class_name,
+                spec_name,
+            )
+
             players[name] = {
                 "name": name,
-                "class": player.get("type", "Unknown"),
-                "spec": extract_spec(player),
-                "role": role_name,
+                "class": class_name,
+                "spec": spec_name,
+                "role": spec_role if spec_role != "Unknown" else role_name,
                 "item_level": extract_item_level(player),
                 "actor_id": player.get("id"),
                 "potion_use": int(player.get("potionUse") or 0),
