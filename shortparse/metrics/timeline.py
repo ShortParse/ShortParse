@@ -125,6 +125,11 @@ def build_timeline(
         #
 
         if event_type == "death":
+            dead_player = target_name or source_name
+
+            if not dead_player:
+                continue
+
             timeline.append(
                 {
                     "timestamp": timestamp,
@@ -137,9 +142,7 @@ def build_timeline(
                     "target": target_name,
                     "spell_id": spell_id,
                     "spell_name": spell_name,
-                    "summary": (
-                        f"{target_name or source_name or 'Unknown'} died."
-                    ),
+                    "summary": f"{dead_player} died.",
                 }
             )
 

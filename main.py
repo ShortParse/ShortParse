@@ -9,11 +9,13 @@ from shortparse.selector import select_best_boss_encounters
 from shortparse.metrics.builder import build_player_metrics
 from shortparse.metrics.issues import build_raid_issues
 from shortparse.metrics.mechanics import calculate_mechanics
+from shortparse.metrics.timeline import build_timeline
 
 from shortparse.benchmarks.builder import build_benchmark_comparisons
 from shortparse.benchmarks.grading import calculate_grade
 
 from shortparse.reports.scorecard import build_scorecard
+
 
 console = Console(width=180)
 
@@ -222,6 +224,36 @@ def print_cooldowns_table(
     console.print(table)
     console.print()
 
+def print_timeline_table(
+    boss_name: str,
+    timeline: list[dict],
+    limit: int = 40,
+) -> None:
+    console.print(f"[bold white]Timeline: {boss_name}[/bold white]")
+
+    if not timeline:
+        console.print("No tracked timeline events found.\n")
+        return
+
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Time")
+    table.add_column("Type")
+    table.add_column("Summary")
+
+    for entry in timeline[:limit]:
+        table.add_row(
+            entry.get("time", ""),
+            entry.get("type", ""),
+            entry.get("summary", ""),
+        )
+
+    console.print(table)
+
+    if len(timeline) > limit:
+        console.print(f"...showing first {limit} of {len(timeline)} timeline events.\n")
+    else:
+        console.print()
+
 def print_benchmark_table(boss_name: str, comparisons: dict) -> None:
     console.print(f"[bold blue]Benchmarks: {boss_name}[/bold blue]")
 
@@ -368,6 +400,13 @@ def main():
                 fight["encounterID"],
             )
 
+            timeline = build_timeline(
+                roster,
+                events,
+                fight["startTime"],
+                fight["encounterID"],
+            )
+
             print_roster_table(fight.get("name", "Unknown"), roster)
 
             print_metrics_table(fight.get("name", "Unknown"), player_metrics)
@@ -380,6 +419,11 @@ def main():
             print_cooldowns_table(
                 fight.get("name", "Unknown"),
                 player_metrics,
+            )
+
+            print_timeline_table(
+                fight.get("name", "Unknown"),
+                timeline,
             )
 
             benchmark_comparisons = build_benchmark_comparisons(
