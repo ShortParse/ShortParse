@@ -13,7 +13,7 @@ from shortparse.benchmarks.grading import calculate_grade
 
 from shortparse.reports.scorecard import build_scorecard
 
-console = Console()
+console = Console(width=180)
 
 
 def format_number(value: int) -> str:

@@ -1,3 +1,6 @@
+ITEM_LEVEL_TOLERANCE = 3
+FIGHT_DURATION_TOLERANCE_SECONDS = 30
+
 from shortparse.benchmarks.models import (
     BenchmarkEntry,
     BenchmarkRequest,
@@ -15,6 +18,42 @@ from shortparse.client import WarcraftLogsClient
 class BenchmarkService:
     def __init__(self):
         self.client = WarcraftLogsClient()
+
+    def filter_rankings_for_request(
+        self,
+        request: BenchmarkRequest,
+        rankings: list[dict],
+    ) -> list[dict]:
+
+        filtered = []
+
+        min_item_level = request.item_level - ITEM_LEVEL_TOLERANCE
+        max_item_level = request.item_level + ITEM_LEVEL_TOLERANCE
+
+        min_duration_ms = (
+            request.fight_duration_seconds - FIGHT_DURATION_TOLERANCE_SECONDS
+        ) * 1000
+
+        max_duration_ms = (
+            request.fight_duration_seconds + FIGHT_DURATION_TOLERANCE_SECONDS
+        ) * 1000
+
+        for ranking in rankings:
+            item_level = ranking.get("bracketData")
+            duration = ranking.get("duration")
+
+            if item_level is None or duration is None:
+                continue
+
+            if not min_item_level <= item_level <= max_item_level:
+                continue
+
+            if not min_duration_ms <= duration <= max_duration_ms:
+                continue
+
+            filtered.append(ranking)
+
+        return filtered
 
     def fetch_character_rankings(
         self,
@@ -108,6 +147,7 @@ class BenchmarkService:
         request: BenchmarkRequest,
     ) -> BenchmarkResult:
         rankings = self.fetch_character_rankings(request)
+        rankings = self.filter_rankings_for_request(request, rankings)
 
         top_1 = self.build_entry(1, rankings[0]) if len(rankings) >= 1 else None
         top_5 = self.build_entry(5, rankings[4]) if len(rankings) >= 5 else None
