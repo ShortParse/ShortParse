@@ -49,6 +49,72 @@ def build_actor_lookup(roster: list[dict]) -> dict[int, str]:
     }
 
 
+def build_mechanic_summary(
+    target_name: str | None,
+    mechanic_name: str,
+    hits: int,
+    amount: int,
+) -> str:
+    player_name = target_name or "Unknown"
+
+    if hits == 1:
+        return (
+            f"{player_name} was hit by "
+            f"{mechanic_name} for {amount:,}."
+        )
+
+    return (
+        f"{player_name} was hit by {mechanic_name} "
+        f"{hits} time(s) for {amount:,} total."
+    )
+
+
+def aggregate_mechanic_events(
+    timeline: list[dict],
+) -> list[dict]:
+    aggregated = []
+    mechanic_groups = {}
+
+    for entry in timeline:
+        if entry.get("type") != "mechanic":
+            aggregated.append(entry)
+            continue
+
+        group_key = (
+            entry.get("time"),
+            entry.get("target"),
+            entry.get("spell_id"),
+        )
+
+        if group_key not in mechanic_groups:
+            mechanic_groups[group_key] = {
+                **entry,
+                "hits": 0,
+                "amount": 0,
+            }
+
+        mechanic_groups[group_key]["hits"] += 1
+        mechanic_groups[group_key]["amount"] += int(
+            entry.get("amount") or 0
+        )
+
+    for entry in mechanic_groups.values():
+        entry["summary"] = build_mechanic_summary(
+            entry.get("target"),
+            entry.get("spell_name", "Unknown"),
+            entry["hits"],
+            entry["amount"],
+        )
+
+        aggregated.append(entry)
+
+    aggregated.sort(
+        key=lambda entry: entry["timestamp"]
+    )
+
+    return aggregated
+
+
 def build_timeline(
     roster: list[dict],
     events: list[dict],
@@ -182,4 +248,4 @@ def build_timeline(
         key=lambda entry: entry["timestamp"]
     )
 
-    return timeline
+    return aggregate_mechanic_events(timeline)
