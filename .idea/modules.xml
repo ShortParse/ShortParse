@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="ProjectModuleManager">
-    <modules>
-      <module fileurl="file://$PROJECT_DIR$/../Sentinel-One-Removal-Tool/.idea/Sentinel-One-Removal-Tool.iml" filepath="$PROJECT_DIR$/../Sentinel-One-Removal-Tool/.idea/Sentinel-One-Removal-Tool.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/ShortParse.iml" filepath="$PROJECT_DIR$/.idea/ShortParse.iml" />
-    </modules>
-  </component>
-</project>
