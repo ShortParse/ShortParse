@@ -173,6 +173,49 @@ def print_mechanics_table(
     console.print(table)
     console.print()
 
+def print_cooldowns_table(
+    boss_name: str,
+    player_metrics: dict,
+) -> None:
+    rows = []
+
+    for player_name, metric_data in sorted(player_metrics.items()):
+        cooldowns = metric_data.get("cooldowns", {})
+
+        for cooldown_name, cooldown_data in sorted(cooldowns.items()):
+            rows.append(
+                {
+                    "player": player_name,
+                    "cooldown": cooldown_name,
+                    "category": cooldown_data.get("category", "Unknown"),
+                    "casts": cooldown_data.get("casts", 0),
+                }
+            )
+
+    if not rows:
+        console.print(f"[bold cyan]Cooldowns: {boss_name}[/bold cyan]")
+        console.print("No tracked cooldowns used.\n")
+        return
+
+    console.print(f"[bold cyan]Cooldowns: {boss_name}[/bold cyan]")
+
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Player")
+    table.add_column("Cooldown")
+    table.add_column("Category")
+    table.add_column("Casts")
+
+    for row in rows:
+        table.add_row(
+            row["player"],
+            row["cooldown"],
+            row["category"],
+            str(row["casts"]),
+        )
+
+    console.print(table)
+    console.print()
+
 def print_benchmark_table(boss_name: str, comparisons: dict) -> None:
     console.print(f"[bold blue]Benchmarks: {boss_name}[/bold blue]")
 
@@ -326,6 +369,11 @@ def main():
             print_mechanics_table(
                 fight.get("name", "Unknown"),
                 mechanics_data,
+            )
+
+            print_cooldowns_table(
+                fight.get("name", "Unknown"),
+                player_metrics,
             )
 
             benchmark_comparisons = build_benchmark_comparisons(

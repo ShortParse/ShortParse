@@ -4,6 +4,7 @@ from shortparse.metrics.deaths import calculate_deaths
 from shortparse.metrics.avoidable_deaths import calculate_avoidable_deaths
 from shortparse.metrics.avoidable_damage import calculate_avoidable_damage
 from shortparse.metrics.mechanics import calculate_mechanics
+from shortparse.metrics.cooldowns import calculate_cooldowns
 
 
 def build_player_metrics(
@@ -59,6 +60,11 @@ def build_player_metrics(
             encounter_id,
         )
 
+        cooldowns = calculate_cooldowns(
+            player["actor_id"],
+            events,
+        )
+
         potion_count = consumables["combat_potions"]
         healthstone_count = consumables["healthstone_count"]
 
@@ -101,7 +107,7 @@ def build_player_metrics(
                 "healthstone_count": healthstone_count,
             },
 
-            "cooldowns": {},
+            "cooldowns": cooldowns,
 
             "utility": {},
         }
