@@ -6,6 +6,11 @@ cache/
 cache/reports
 cache/reports/*
 
+# Don't upload any logs
+storage/
+storage/logs
+storage/logs/*
+
 
 ################  stock  ########################
 # Byte-compiled / optimized / DLL files
