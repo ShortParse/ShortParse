@@ -224,6 +224,58 @@ def print_cooldowns_table(
     console.print(table)
     console.print()
 
+def print_timeline_summary(
+    boss_name: str,
+    timeline: list[dict],
+) -> None:
+
+    cooldown_count = 0
+    mechanic_count = 0
+    death_count = 0
+
+    first_mechanic = None
+
+    for entry in timeline:
+        entry_type = entry.get("type")
+
+        if entry_type == "cooldown":
+            cooldown_count += 1
+
+        elif entry_type == "mechanic":
+            mechanic_count += 1
+
+            if first_mechanic is None:
+                first_mechanic = (
+                    f'{entry.get("time")} '
+                    f'{entry.get("spell_name")}'
+                )
+
+        elif entry_type == "death":
+            death_count += 1
+
+    console.print(
+        f"[bold bright_white]Timeline Summary: "
+        f"{boss_name}[/bold bright_white]"
+    )
+
+    table = Table(show_header=True, header_style="bold")
+
+    table.add_column("Cooldowns")
+    table.add_column("Mechanics")
+    table.add_column("Deaths")
+    table.add_column("First Major Mechanic")
+
+    table.add_row(
+        str(cooldown_count),
+        str(mechanic_count),
+        str(death_count),
+        first_mechanic or "N/A",
+    )
+
+    console.print(table)
+    console.print()
+
+
 def print_timeline_table(
     boss_name: str,
     timeline: list[dict],
@@ -404,6 +456,7 @@ def main():
                 roster,
                 events,
                 fight["startTime"],
+                fight["endTime"],
                 fight["encounterID"],
             )
 
@@ -419,6 +472,11 @@ def main():
             print_cooldowns_table(
                 fight.get("name", "Unknown"),
                 player_metrics,
+            )
+
+            print_timeline_summary(
+                fight.get("name", "Unknown"),
+                timeline,
             )
 
             print_timeline_table(

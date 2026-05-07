@@ -119,8 +119,10 @@ def build_timeline(
     roster: list[dict],
     events: list[dict],
     fight_start_time: int,
+    fight_end_time: int,
     encounter_id: int,
 ) -> list[dict]:
+    wipe_window_ms = 15 * 1000
 
     actor_lookup = build_actor_lookup(roster)
     avoidable_mechanics = get_avoidable_damage(encounter_id)
@@ -191,6 +193,16 @@ def build_timeline(
         #
 
         if event_type == "death":
+
+            #
+            # Ignore wipe/reset deaths near encounter end
+            #
+
+            if timestamp >= (
+                    fight_end_time - wipe_window_ms
+            ):
+                continue
+                
             dead_player = target_name or source_name
 
             if not dead_player:
