@@ -1,3 +1,11 @@
 requests
 python-dotenv
 rich
+fastapi
+uvicorn
+pydantic
+orjson
+python-dotenv
+redis
+sqlalchemy
+alembic
