@@ -1,4 +1,4 @@
-ITEM_LEVEL_TOLERANCE = 3
+ITEM_LEVEL_TOLERANCE = 5
 FIGHT_DURATION_TOLERANCE_SECONDS = 30
 
 from shortparse.benchmarks.models import (
