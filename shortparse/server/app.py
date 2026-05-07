@@ -1,10 +1,9 @@
-from shortparse.settings import APP_NAME, APP_VERSION, ENVIRONMENT
-
-import json
-from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
+
+import json
+from pathlib import Path
 
 from fastapi import BackgroundTasks
 from fastapi import FastAPI
@@ -12,33 +11,49 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 
 from shortparse.client import WarcraftLogsClient
-from shortparse.report_parser import extract_report_code
-from shortparse.selector import select_best_boss_encounters
-from shortparse.reports.analysis import build_fight_analysis
-from shortparse.reports.serializers import serialize_analysis
-from shortparse.logging import get_logger
-
-from shortparse.jobs.runner import run_analysis_job
 from shortparse.jobs.models import create_job
+from shortparse.jobs.runner import run_analysis_job
 from shortparse.jobs.store import (
     get_job,
     list_jobs,
     save_job,
 )
+from shortparse.logging import get_logger
+from shortparse.report_parser import extract_report_code
+from shortparse.reports.analysis import build_fight_analysis
+from shortparse.reports.serializers import serialize_analysis
+from shortparse.selector import select_best_boss_encounters
+from shortparse.settings import (
+    APP_NAME,
+    APP_VERSION,
+    ENVIRONMENT,
+    has_warcraftlogs_credentials,
+)
+
 
 logger = get_logger(__name__)
 
 app = FastAPI(
     title="ShortParse API",
-    version="0.1.0",
+    version=APP_VERSION,
 )
 
 
 class AnalyzeRequest(BaseModel):
     report_url: str
 
+
 class JobRequest(BaseModel):
     report_url: str
+
+
+@app.on_event("startup")
+def startup_check() -> None:
+    if has_warcraftlogs_credentials():
+        logger.info("Warcraft Logs credentials detected")
+    else:
+        logger.warning("Warcraft Logs credentials are missing")
+
 
 @app.get("/health")
 def health_check() -> dict:
@@ -47,6 +62,16 @@ def health_check() -> dict:
     return {
         "status": "ok",
     }
+
+
+@app.get("/version")
+def version() -> dict:
+    return {
+        "app": APP_NAME,
+        "version": APP_VERSION,
+        "environment": ENVIRONMENT,
+    }
+
 
 @app.post("/jobs")
 def create_analysis_job(
@@ -95,6 +120,28 @@ def get_analysis_job(job_id: str) -> dict:
 
     return job
 
+
+@app.get("/jobs/{job_id}/summary")
+def get_job_summary(job_id: str) -> dict:
+    job = get_job(job_id)
+
+    if not job:
+        raise HTTPException(
+            status_code=404,
+            detail="Job not found",
+        )
+
+    return {
+        "job_id": job["job_id"],
+        "status": job["status"],
+        "report_code": job["report_code"],
+        "created_at": job["created_at"],
+        "updated_at": job["updated_at"],
+        "has_result": bool(job.get("result_path")),
+        "error": job.get("error"),
+    }
+
+
 @app.post("/jobs/{job_id}/run")
 def run_job(job_id: str) -> dict:
     job = get_job(job_id)
@@ -114,6 +161,7 @@ def run_job(job_id: str) -> dict:
         )
 
     return updated_job
+
 
 @app.get("/jobs/{job_id}/result")
 def get_job_result(job_id: str) -> dict:
@@ -144,25 +192,6 @@ def get_job_result(job_id: str) -> dict:
     with open(path, "r", encoding="utf-8") as file:
         return json.load(file)
 
-@app.get("/jobs/{job_id}/summary")
-def get_job_summary(job_id: str) -> dict:
-    job = get_job(job_id)
-
-    if not job:
-        raise HTTPException(
-            status_code=404,
-            detail="Job not found",
-        )
-
-    return {
-        "job_id": job["job_id"],
-        "status": job["status"],
-        "report_code": job["report_code"],
-        "created_at": job["created_at"],
-        "updated_at": job["updated_at"],
-        "has_result": bool(job.get("result_path")),
-        "error": job.get("error"),
-    }
 
 @app.post("/analyze")
 def analyze_report(request: AnalyzeRequest) -> dict:
@@ -229,12 +258,4 @@ def analyze_report(request: AnalyzeRequest) -> dict:
             "title": report["title"],
         },
         "analyses": analyses,
-    }
-
-@app.get("/version")
-def version() -> dict:
-    return {
-        "app": APP_NAME,
-        "version": APP_VERSION,
-        "environment": ENVIRONMENT,
     }

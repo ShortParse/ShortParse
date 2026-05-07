@@ -1,10 +1,11 @@
-from rich.console import Console
-from rich.table import Table
-
 from dotenv import load_dotenv
 
 load_dotenv()
 
+from rich.console import Console
+from rich.table import Table
+
+from shortparse.settings import has_warcraftlogs_credentials
 from shortparse.client import WarcraftLogsClient
 from shortparse.report_parser import extract_report_code
 from shortparse.selector import select_best_boss_encounters
@@ -462,6 +463,12 @@ def main():
     report_code = extract_report_code(url)
 
     logger.info("Starting ShortParse CLI analysis")
+
+    if has_warcraftlogs_credentials():
+        logger.info("Warcraft Logs credentials detected")
+    else:
+        logger.warning("Warcraft Logs credentials are missing")
+
     logger.info("Analyzing report %s", report_code)
 
     client = WarcraftLogsClient()

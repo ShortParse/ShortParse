@@ -59,3 +59,10 @@ WCL_CLIENT_SECRET = os.getenv(
 
 APP_NAME = "ShortParse"
 APP_VERSION = "0.1.0"
+
+
+def has_warcraftlogs_credentials() -> bool:
+    return bool(
+        WCL_CLIENT_ID
+        and WCL_CLIENT_SECRET
+    )
