@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from fastapi import BackgroundTasks
 from fastapi import FastAPI
 from fastapi import HTTPException
 from pydantic import BaseModel
@@ -43,7 +44,10 @@ def health_check() -> dict:
     }
 
 @app.post("/jobs")
-def create_analysis_job(request: JobRequest) -> dict:
+def create_analysis_job(
+    request: JobRequest,
+    background_tasks: BackgroundTasks,
+) -> dict:
     report_code = extract_report_code(request.report_url)
 
     job = create_job(
@@ -52,6 +56,11 @@ def create_analysis_job(request: JobRequest) -> dict:
     )
 
     save_job(job)
+
+    background_tasks.add_task(
+        run_analysis_job,
+        job,
+    )
 
     logger.info(
         "Created analysis job: job_id=%s report=%s",
