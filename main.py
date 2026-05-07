@@ -8,10 +8,12 @@ from shortparse.selector import select_best_boss_encounters
 from shortparse.benchmarks.grading import calculate_grade
 
 from shortparse.reports.analysis import build_fight_analysis
-from shortparse.reports.export import save_analysis_json
+#from shortparse.reports.export import save_analysis_json
 
+from shortparse.logging import get_logger
+
+logger = get_logger(__name__)
 console = Console(width=180)
-
 
 def format_number(value: int) -> str:
     return f"{value:,}"
@@ -455,6 +457,9 @@ def main():
     url = input("Paste Warcraft Logs report URL: ").strip()
     report_code = extract_report_code(url)
 
+    logger.info("Starting ShortParse CLI analysis")
+    logger.info("Analyzing report %s", report_code)
+
     client = WarcraftLogsClient()
     report = client.get_report_fights(report_code)
 
@@ -497,6 +502,13 @@ def main():
             #     analysis,
             #     output_path,
             # )
+
+            logger.info(
+                "Completed fight analysis: report=%s fight_id=%s boss=%s",
+                report_code,
+                fight["id"],
+                analysis["fight"]["name"],
+            )
 
             print_fight_analysis(analysis)
 

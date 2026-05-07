@@ -5,7 +5,10 @@ from shortparse.client import WarcraftLogsClient
 from shortparse.report_parser import extract_report_code
 from shortparse.selector import select_best_boss_encounters
 from shortparse.reports.analysis import build_fight_analysis
+from shortparse.logging import get_logger
 
+
+logger = get_logger(__name__)
 
 app = FastAPI(
     title="ShortParse API",
@@ -19,6 +22,8 @@ class AnalyzeRequest(BaseModel):
 
 @app.get("/health")
 def health_check() -> dict:
+    logger.info("Health check requested")
+
     return {
         "status": "ok",
     }
@@ -27,6 +32,11 @@ def health_check() -> dict:
 @app.post("/analyze")
 def analyze_report(request: AnalyzeRequest) -> dict:
     report_code = extract_report_code(request.report_url)
+
+    logger.info(
+        "API analysis requested for report %s",
+        report_code,
+    )
 
     client = WarcraftLogsClient()
     report = client.get_report_fights(report_code)
@@ -57,11 +67,24 @@ def analyze_report(request: AnalyzeRequest) -> dict:
                 events,
             )
 
+            logger.info(
+                "Completed fight analysis: report=%s fight_id=%s boss=%s",
+                report_code,
+                fight["id"],
+                analysis["fight"]["name"],
+            )
+
             analysis["raid"] = {
                 "name": raid_name,
             }
 
             analyses.append(analysis)
+
+    logger.info(
+        "Completed report analysis: report=%s fights=%s",
+        report_code,
+        len(analyses),
+    )
 
     return {
         "report": {
