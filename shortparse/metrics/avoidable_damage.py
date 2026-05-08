@@ -19,17 +19,52 @@ def calculate_avoidable_damage(
     avoidable_events = []
 
     for event in events:
+        spell_id = event.get("abilityGameID")
+
+        # =========================================================
+        # DEBUG: Midnight Falls avoidable damage investigation
+        # =========================================================
+        if (
+            encounter_id == 3183
+            and spell_id in avoidable_mechanics
+        ):
+            print(
+                "DEBUG FOUND SPELL:",
+                {
+                    "spell_id": spell_id,
+                    "spell_name": avoidable_mechanics[spell_id]["name"],
+                    "event_type": event.get("type"),
+                    "targetID": event.get("targetID"),
+                    "sourceID": event.get("sourceID"),
+                    "amount": event.get("amount"),
+                    "timestamp": event.get("timestamp"),
+                },
+            )
+
+        # =========================================================
+        # Only count damage events against this actor
+        # =========================================================
         if event.get("targetID") != actor_id:
             continue
 
         if event.get("type") != "damage":
             continue
 
-        spell_id = event.get("abilityGameID")
         mechanic = avoidable_mechanics.get(spell_id)
 
         if not mechanic:
             continue
+
+        print(
+            "DEBUG MATCHED AVOIDABLE DAMAGE:",
+            {
+                "actor_id": actor_id,
+                "spell_id": spell_id,
+                "spell_name": mechanic["name"],
+                "amount": event.get("amount"),
+                "timestamp": event.get("timestamp"),
+            },
+        )
 
         avoidable_events.append(
             {

@@ -128,7 +128,14 @@ class WarcraftLogsClient:
         }
         """
 
-        data = self.graphql(query, {"code": report_code, "fightIDs": [fight_id]})
+        data = self.graphql(
+            query,
+            {
+                "code": report_code,
+                "fightIDs": [fight_id],
+            },
+        )
+
         report_data = data["reportData"]["report"]
 
         save_cached_fight_player_data(report_code, fight_id, report_data)
@@ -153,15 +160,18 @@ class WarcraftLogsClient:
         query = """
         query(
           $code: String!,
+          $fightID: Int!,
           $startTime: Float!,
           $endTime: Float!
         ) {
           reportData {
             report(code: $code) {
               events(
-                startTime: $startTime,
-                endTime: $endTime
-              ) {
+                dataType: DamageTaken,
+                  fightIDs: [$fightID],
+                    startTime: $startTime,
+                      endTime: $endTime
+                      ) {
                 data
                 nextPageTimestamp
               }
@@ -178,6 +188,7 @@ class WarcraftLogsClient:
                 query,
                 {
                     "code": report_code,
+                    "fightID": fight_id,
                     "startTime": next_timestamp,
                     "endTime": end_time,
                 },
