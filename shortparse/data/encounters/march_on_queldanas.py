@@ -23,7 +23,7 @@ AVOIDABLE_DAMAGE_BY_ENCOUNTER_ID = {
         },
         1251649: {
             "name": "Disintegration",
-            "severity": "Minor",
+            "severity": "Warning",
         },
         1254076: {
             "name": "Heaven's Glaives",
