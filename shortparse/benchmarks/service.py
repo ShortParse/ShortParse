@@ -123,11 +123,50 @@ class BenchmarkService:
 
         return rankings
 
+    def build_compare_url(
+        self,
+        request: BenchmarkRequest,
+        ranking: dict,
+    ) -> str | None:
+
+        report = ranking.get("report", {})
+
+        benchmark_report_code = report.get("code")
+        benchmark_fight_id = report.get("fightID")
+        benchmark_player_name = ranking.get("name")
+
+        if not benchmark_report_code:
+            return None
+
+        if not benchmark_fight_id:
+            return None
+
+        if not benchmark_player_name:
+            return None
+
+        compare_type = (
+            "healing"
+            if request.metric == "hps"
+            else "damage-done"
+        )
+
+        return (
+            "https://www.warcraftlogs.com/reports/compare/"
+            f"{request.report_code}/{benchmark_report_code}"
+            f"?fight={request.fight_id}%2C{benchmark_fight_id}"
+            f"&type={compare_type}"
+            f"&source={request.player_name}%2C{benchmark_player_name}"
+        )
+
     def build_entry(
         self,
+        request: BenchmarkRequest,
         rank: int,
         ranking: dict,
     ) -> BenchmarkEntry:
+
+        report = ranking.get("report", {})
+
         return BenchmarkEntry(
             rank=rank,
             player_name=ranking.get("name", "Unknown"),
@@ -140,18 +179,43 @@ class BenchmarkService:
                 else None
             ),
             value=float(ranking.get("amount") or 0),
+            report_code=report.get("code"),
+            fight_id=report.get("fightID"),
+            compare_url=self.build_compare_url(
+                request,
+                ranking,
+            ),
         )
 
     def get_benchmark_result(
         self,
         request: BenchmarkRequest,
     ) -> BenchmarkResult:
+
         rankings = self.fetch_character_rankings(request)
         rankings = self.filter_rankings_for_request(request, rankings)
 
-        top_1 = self.build_entry(1, rankings[0]) if len(rankings) >= 1 else None
-        top_5 = self.build_entry(5, rankings[4]) if len(rankings) >= 5 else None
-        top_10 = self.build_entry(10, rankings[9]) if len(rankings) >= 10 else None
+        # Muted output of rank comparison links.
+        # if rankings:
+        #     print(rankings[0])
+
+        top_1 = (
+            self.build_entry(request, 1, rankings[0])
+            if len(rankings) >= 1
+            else None
+        )
+
+        top_5 = (
+            self.build_entry(request, 5, rankings[4])
+            if len(rankings) >= 5
+            else None
+        )
+
+        top_10 = (
+            self.build_entry(request, 10, rankings[9])
+            if len(rankings) >= 10
+            else None
+        )
 
         average_values = [
             entry.value

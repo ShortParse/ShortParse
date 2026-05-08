@@ -26,6 +26,9 @@ class BenchmarkEntry:
     item_level: int | None
     fight_duration_seconds: float | None
     value: float
+    report_code: str | None = None
+    fight_id: int | None = None
+    compare_url: str | None = None
 
 
 @dataclass(frozen=True)
