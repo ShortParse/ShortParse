@@ -150,12 +150,15 @@ class BenchmarkService:
             else "damage-done"
         )
 
+        if not request.source_id:
+            return None
+
         return (
             "https://www.warcraftlogs.com/reports/compare/"
             f"{request.report_code}/{benchmark_report_code}"
             f"?fight={request.fight_id}%2C{benchmark_fight_id}"
             f"&type={compare_type}"
-            f"&source={request.player_name}%2C{benchmark_player_name}"
+            f"&source={request.source_id}%2C{benchmark_player_name}"
         )
 
     def build_entry(

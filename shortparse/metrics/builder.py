@@ -74,6 +74,7 @@ def build_player_metrics(
         metrics[name] = {
             "identity": {
                 "name": name,
+                "actor_id": player["actor_id"],
                 "class": player["class"],
                 "spec": player["spec"],
                 "role": player["role"],

@@ -10,6 +10,7 @@ class BenchmarkRequest:
     raid_size: int | None
     fight_duration_seconds: float
     player_name: str
+    source_id: int | None
     class_name: str
     spec_name: str
     role: str

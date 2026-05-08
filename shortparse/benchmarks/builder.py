@@ -36,6 +36,7 @@ def build_benchmark_requests(
                 raid_size=None,
                 fight_duration_seconds=fight_duration_seconds,
                 player_name=player_name,
+                source_id=identity.get("actor_id"),
                 class_name=identity["class"],
                 spec_name=identity["spec"],
                 role=role,
