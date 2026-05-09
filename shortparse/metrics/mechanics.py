@@ -21,27 +21,20 @@ def calculate_mechanics(
         if event.get("type") != "damage":
             continue
 
-        spell_id = event.get("abilityGameID")
+        actor_id = event.get("targetID")
+        player_name = player_lookup.get(actor_id)
 
+        if not player_name:
+            continue
+
+        spell_id = event.get("abilityGameID")
         mechanic = mechanics.get(spell_id)
 
         if not mechanic:
             continue
 
-        target_id = event.get("targetID")
-
-        player_name = player_lookup.get(target_id)
-
-        if not player_name:
-            continue
-
         mechanic_name = mechanic["name"]
-
-        damage = event.get("amount", 0)
-
-        #
-        # PLAYER DATA
-        #
+        damage = int(event.get("amount") or 0)
 
         if player_name not in player_mechanics:
             player_mechanics[player_name] = {}
@@ -54,10 +47,6 @@ def calculate_mechanics(
 
         player_mechanics[player_name][mechanic_name]["hits"] += 1
         player_mechanics[player_name][mechanic_name]["damage"] += damage
-
-        #
-        # RAID DATA
-        #
 
         if mechanic_name not in raid_mechanics:
             raid_mechanics[mechanic_name] = {
@@ -73,10 +62,6 @@ def calculate_mechanics(
         raid_entry["hits"] += 1
         raid_entry["damage"] += damage
         raid_entry["players_hit"].add(player_name)
-
-    #
-    # DETERMINE WORST OFFENDER
-    #
 
     for mechanic_name, raid_entry in raid_mechanics.items():
         worst_player = None
@@ -96,10 +81,7 @@ def calculate_mechanics(
 
         raid_entry["worst_player"] = worst_player
         raid_entry["worst_hits"] = worst_hits
-
-        raid_entry["players_hit"] = sorted(
-            raid_entry["players_hit"]
-        )
+        raid_entry["players_hit"] = sorted(raid_entry["players_hit"])
 
     return {
         "player_mechanics": player_mechanics,

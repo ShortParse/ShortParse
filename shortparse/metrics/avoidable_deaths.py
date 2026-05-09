@@ -11,7 +11,6 @@ def calculate_avoidable_deaths(
     encounter_id: int,
 ) -> dict:
     avoidable_mechanics = get_avoidable_damage(encounter_id)
-    avoidable_deaths = []
 
     if not avoidable_mechanics:
         return {
@@ -19,26 +18,38 @@ def calculate_avoidable_deaths(
             "avoidable_deaths": [],
         }
 
+    avoidable_deaths = []
+
     for death in death_events:
         death_timestamp = death.get("timestamp")
 
         if death_timestamp is None:
             continue
 
-        lookback_start = death_timestamp - (DEATH_LOOKBACK_SECONDS * 1000)
-
-        recent_damage_events = [
-            event
-            for event in events
-            if event.get("targetID") == actor_id
-            and event.get("type") == "damage"
-            and lookback_start <= event.get("timestamp", 0) <= death_timestamp
-        ]
+        lookback_start = (
+            death_timestamp
+            - (DEATH_LOOKBACK_SECONDS * 1000)
+        )
 
         matched_mechanics = []
 
-        for event in recent_damage_events:
+        for event in events:
+            if event.get("type") != "damage":
+                continue
+
+            if event.get("targetID") != actor_id:
+                continue
+
+            timestamp = event.get("timestamp", 0)
+
+            if timestamp < lookback_start:
+                continue
+
+            if timestamp > death_timestamp:
+                continue
+
             spell_id = event.get("abilityGameID")
+
             mechanic = avoidable_mechanics.get(spell_id)
 
             if not mechanic:
@@ -49,18 +60,40 @@ def calculate_avoidable_deaths(
                     "spell_id": spell_id,
                     "name": mechanic["name"],
                     "severity": mechanic.get("severity", "Critical"),
-                    "timestamp": event.get("timestamp"),
-                    "amount": event.get("amount", 0),
+                    "timestamp": timestamp,
+                    "amount": int(event.get("amount") or 0),
                 }
             )
 
-        if matched_mechanics:
-            avoidable_deaths.append(
-                {
-                    "death_timestamp": death_timestamp,
-                    "matched_mechanics": matched_mechanics,
-                }
+        if not matched_mechanics:
+            continue
+
+        # =====================================================
+        # Deduplicate repeated aura ticks / spam
+        # =====================================================
+
+        unique_mechanics = {}
+
+        for mechanic in matched_mechanics:
+            key = (
+                mechanic["spell_id"],
+                mechanic["timestamp"],
             )
+
+            existing = unique_mechanics.get(key)
+
+            if (
+                not existing
+                or mechanic["amount"] > existing["amount"]
+            ):
+                unique_mechanics[key] = mechanic
+
+        avoidable_deaths.append(
+            {
+                "death_timestamp": death_timestamp,
+                "matched_mechanics": list(unique_mechanics.values()),
+            }
+        )
 
     return {
         "avoidable_death_count": len(avoidable_deaths),

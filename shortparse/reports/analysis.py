@@ -19,6 +19,14 @@ def build_fight_analysis(
 
     roster = build_roster_from_fight_data(fight_data)
 
+    damage_taken_table = fight_data.get("damageTaken", {})
+
+    # import json
+    #
+    # print("\n=== DAMAGE TAKEN TABLE DEBUG ===")
+    # print(json.dumps(damage_taken_table, indent=2)[:15000])
+    # print("=== END DAMAGE TAKEN TABLE DEBUG ===\n")
+
     fight_duration_seconds = (
         fight["endTime"] - fight["startTime"]
     ) / 1000
@@ -26,6 +34,7 @@ def build_fight_analysis(
     player_metrics = build_player_metrics(
         roster,
         events,
+        damage_taken_table,
         fight_duration_seconds,
         fight["startTime"],
         fight["endTime"],

@@ -10,6 +10,7 @@ from shortparse.metrics.cooldowns import calculate_cooldowns
 def build_player_metrics(
     roster: list[dict],
     events: list[dict],
+    damage_taken_table: dict,
     fight_duration_seconds: float,
     fight_start_time: int,
     fight_end_time: int,

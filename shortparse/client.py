@@ -167,11 +167,10 @@ class WarcraftLogsClient:
           reportData {
             report(code: $code) {
               events(
-                dataType: DamageTaken,
-                  fightIDs: [$fightID],
-                    startTime: $startTime,
-                      endTime: $endTime
-                      ) {
+                fightIDs: [$fightID],
+                startTime: $startTime,
+                endTime: $endTime
+              ) {
                 data
                 nextPageTimestamp
               }
