@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 ITEM_LEVEL_TOLERANCE = 5
 RAID_SIZE_TOLERANCE = 2
 FIGHT_DURATION_TOLERANCE_SECONDS = 30
@@ -18,6 +20,23 @@ from shortparse.cache import (
 from shortparse.client import WarcraftLogsClient
 
 
+@dataclass(frozen=True)
+class BenchmarkFilterTier:
+    name: str
+    item_level_tolerance: int | None
+    fight_duration_tolerance_seconds: int | None
+    raid_size_tolerance: int | None
+    healer_count_tolerance: int | None
+
+
+FILTER_TIERS = [
+    BenchmarkFilterTier("Strict", 5, 30, 2, 1),
+    BenchmarkFilterTier("Relaxed", 8, 60, 4, 2),
+    BenchmarkFilterTier("Broad", 12, None, None, 2),
+    BenchmarkFilterTier("Emergency", None, None, None, None),
+]
+
+
 class BenchmarkService:
     def __init__(self):
         self.client = WarcraftLogsClient()
@@ -26,20 +45,10 @@ class BenchmarkService:
         self,
         request: BenchmarkRequest,
         rankings: list[dict],
+        tier: BenchmarkFilterTier,
     ) -> list[dict]:
 
         filtered = []
-
-        min_item_level = request.item_level - ITEM_LEVEL_TOLERANCE
-        max_item_level = request.item_level + ITEM_LEVEL_TOLERANCE
-
-        min_duration_ms = (
-            request.fight_duration_seconds - FIGHT_DURATION_TOLERANCE_SECONDS
-        ) * 1000
-
-        max_duration_ms = (
-            request.fight_duration_seconds + FIGHT_DURATION_TOLERANCE_SECONDS
-        ) * 1000
 
         for ranking in rankings:
             item_level = ranking.get("bracketData")
@@ -49,49 +58,112 @@ class BenchmarkService:
             if item_level is None or duration is None:
                 continue
 
-            if request.metric == "hps" and request.raid_size is not None:
+            if tier.item_level_tolerance is not None:
+                min_item_level = request.item_level - tier.item_level_tolerance
+                max_item_level = request.item_level + tier.item_level_tolerance
+
+                if not min_item_level <= item_level <= max_item_level:
+                    continue
+
+            if (
+                request.kill
+                and tier.fight_duration_tolerance_seconds is not None
+            ):
+                min_duration_ms = (
+                    request.fight_duration_seconds
+                    - tier.fight_duration_tolerance_seconds
+                ) * 1000
+
+                max_duration_ms = (
+                    request.fight_duration_seconds
+                    + tier.fight_duration_tolerance_seconds
+                ) * 1000
+
+                if not min_duration_ms <= duration <= max_duration_ms:
+                    continue
+
+            if (
+                request.metric == "hps"
+                and request.raid_size is not None
+                and tier.raid_size_tolerance is not None
+            ):
                 if size is None:
                     continue
 
-                min_size = request.raid_size - RAID_SIZE_TOLERANCE
-                max_size = request.raid_size + RAID_SIZE_TOLERANCE
+                min_size = request.raid_size - tier.raid_size_tolerance
+                max_size = request.raid_size + tier.raid_size_tolerance
 
                 if not min_size <= size <= max_size:
                     continue
 
-            if request.metric == "hps":
-                if request.healer_count is not None:
-                    report = ranking.get("report", {})
+            if (
+                request.metric == "hps"
+                and request.healer_count is not None
+                and tier.healer_count_tolerance is not None
+            ):
+                report = ranking.get("report", {})
 
-                    report_code = report.get("code")
-                    fight_id = report.get("fightID")
+                report_code = report.get("code")
+                fight_id = report.get("fightID")
 
-                    if not report_code or not fight_id:
-                        continue
+                if not report_code or not fight_id:
+                    continue
 
-                    benchmark_healer_count = (
-                        self.get_healer_count_for_report_fight(
-                            report_code,
-                            fight_id,
-                        )
+                benchmark_healer_count = (
+                    self.get_healer_count_for_report_fight(
+                        report_code,
+                        fight_id,
                     )
+                )
 
-                    if abs(
-                            benchmark_healer_count
-                            - request.healer_count
-                    ) > 1:
-                        continue
-
-            if not min_item_level <= item_level <= max_item_level:
-                continue
-
-            if request.kill:
-                if not min_duration_ms <= duration <= max_duration_ms:
+                if abs(
+                    benchmark_healer_count
+                    - request.healer_count
+                ) > tier.healer_count_tolerance:
                     continue
 
             filtered.append(ranking)
 
         return filtered
+
+    def filter_rankings_with_fallbacks(
+        self,
+        request: BenchmarkRequest,
+        rankings: list[dict],
+    ) -> list[dict]:
+
+        best_available = []
+
+        for tier in FILTER_TIERS:
+            filtered = self.filter_rankings_for_request(
+                request,
+                rankings,
+                tier,
+            )
+
+            if len(filtered) > len(best_available):
+                best_available = filtered
+
+            if len(filtered) >= 10:
+                print(
+                    "[BENCHMARK TIER]",
+                    request.player_name,
+                    request.metric,
+                    tier.name,
+                    f"{len(filtered)} matches",
+                )
+
+                return filtered
+
+        print(
+            "[BENCHMARK TIER]",
+            request.player_name,
+            request.metric,
+            "BestAvailable",
+            f"{len(best_available)} matches",
+        )
+
+        return best_available
 
     def fetch_character_rankings(
         self,
@@ -162,9 +234,9 @@ class BenchmarkService:
         return rankings
 
     def get_healer_count_for_report_fight(
-            self,
-            report_code: str,
-            fight_id: int,
+        self,
+        report_code: str,
+        fight_id: int,
     ) -> int:
 
         cached = get_cached_healer_count(report_code, fight_id)
@@ -282,7 +354,7 @@ class BenchmarkService:
     ) -> BenchmarkResult:
 
         rankings = self.fetch_character_rankings(request)
-        rankings = self.filter_rankings_for_request(request, rankings)
+        rankings = self.filter_rankings_with_fallbacks(request, rankings)
 
         top_1 = (
             self.build_entry(request, 1, rankings[0])
