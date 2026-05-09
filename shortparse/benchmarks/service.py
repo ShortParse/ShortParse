@@ -85,8 +85,9 @@ class BenchmarkService:
             if not min_item_level <= item_level <= max_item_level:
                 continue
 
-            if not min_duration_ms <= duration <= max_duration_ms:
-                continue
+            if request.kill:
+                if not min_duration_ms <= duration <= max_duration_ms:
+                    continue
 
             filtered.append(ranking)
 

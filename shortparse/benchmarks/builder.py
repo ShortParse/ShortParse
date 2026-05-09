@@ -39,6 +39,7 @@ def build_benchmark_requests(
                 fight_id=fight["id"],
                 encounter_id=fight["encounterID"],
                 difficulty=fight["difficulty"],
+                kill=fight["kill"],
                 raid_size=len(player_metrics),
                 healer_count=healer_count,
                 fight_duration_seconds=fight_duration_seconds,

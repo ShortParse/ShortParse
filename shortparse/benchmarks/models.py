@@ -7,6 +7,7 @@ class BenchmarkRequest:
     fight_id: int
     encounter_id: int
     difficulty: int
+    kill: bool
     raid_size: int | None
     healer_count: int | None
     fight_duration_seconds: float
