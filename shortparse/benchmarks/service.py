@@ -127,10 +127,10 @@ class BenchmarkService:
         return filtered
 
     def filter_rankings_with_fallbacks(
-        self,
-        request: BenchmarkRequest,
-        rankings: list[dict],
-    ) -> list[dict]:
+            self,
+            request: BenchmarkRequest,
+            rankings: list[dict],
+    ) -> tuple[list[dict], str, bool]:
 
         best_available = []
 
