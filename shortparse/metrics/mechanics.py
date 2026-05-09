@@ -50,6 +50,8 @@ def calculate_mechanics(
 
         if mechanic_name not in raid_mechanics:
             raid_mechanics[mechanic_name] = {
+                "severity": mechanic.get("severity", "Info"),
+                "note": mechanic.get("note", ""),
                 "hits": 0,
                 "damage": 0,
                 "players_hit": set(),
