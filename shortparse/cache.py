@@ -10,7 +10,7 @@ REPORT_CACHE_ROOT = CACHE_ROOT / "reports"
 BENCHMARK_CACHE_ROOT = CACHE_ROOT / "benchmarks"
 
 BENCHMARK_CACHE_TTL_HOURS = 12
-
+HEALER_COUNT_CACHE_TTL_HOURS = 24
 
 def get_report_cache_dir(report_code: str) -> Path:
     cache_dir = REPORT_CACHE_ROOT / report_code
@@ -179,3 +179,65 @@ def save_cached_benchmark_rankings(
     )
 
     save_json(path, data)
+
+def get_healer_count_cache_path(
+    report_code: str,
+    fight_id: int,
+) -> Path:
+    filename = "_".join(
+        [
+            sanitize_cache_key(report_code),
+            str(fight_id),
+            "healer_count",
+        ]
+    )
+
+    return BENCHMARK_CACHE_ROOT / "healer_counts" / f"{filename}.json"
+
+
+def get_cached_healer_count(
+    report_code: str,
+    fight_id: int,
+) -> int | None:
+    path = get_healer_count_cache_path(
+        report_code,
+        fight_id,
+    )
+
+    if not is_cache_fresh(
+        path,
+        HEALER_COUNT_CACHE_TTL_HOURS,
+    ):
+        return None
+
+    data = load_json(path)
+
+    if not isinstance(data, dict):
+        return None
+
+    healer_count = data.get("healer_count")
+
+    if healer_count is None:
+        return None
+
+    return int(healer_count)
+
+
+def save_cached_healer_count(
+    report_code: str,
+    fight_id: int,
+    healer_count: int,
+) -> None:
+    path = get_healer_count_cache_path(
+        report_code,
+        fight_id,
+    )
+
+    save_json(
+        path,
+        {
+            "report_code": report_code,
+            "fight_id": fight_id,
+            "healer_count": healer_count,
+        },
+    )

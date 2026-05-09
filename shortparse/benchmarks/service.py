@@ -1,4 +1,5 @@
 ITEM_LEVEL_TOLERANCE = 5
+RAID_SIZE_TOLERANCE = 2
 FIGHT_DURATION_TOLERANCE_SECONDS = 30
 
 from shortparse.benchmarks.models import (
@@ -10,6 +11,8 @@ from shortparse.benchmarks.models import (
 from shortparse.cache import (
     get_cached_benchmark_rankings,
     save_cached_benchmark_rankings,
+    get_cached_healer_count,
+    save_cached_healer_count,
 )
 
 from shortparse.client import WarcraftLogsClient
@@ -41,9 +44,43 @@ class BenchmarkService:
         for ranking in rankings:
             item_level = ranking.get("bracketData")
             duration = ranking.get("duration")
+            size = ranking.get("size")
 
             if item_level is None or duration is None:
                 continue
+
+            if request.raid_size is not None:
+                if size is None:
+                    continue
+
+                min_size = request.raid_size - RAID_SIZE_TOLERANCE
+                max_size = request.raid_size + RAID_SIZE_TOLERANCE
+
+                if not min_size <= size <= max_size:
+                    continue
+
+            if request.metric == "hps":
+                if request.healer_count is not None:
+                    report = ranking.get("report", {})
+
+                    report_code = report.get("code")
+                    fight_id = report.get("fightID")
+
+                    if not report_code or not fight_id:
+                        continue
+
+                    benchmark_healer_count = (
+                        self.get_healer_count_for_report_fight(
+                            report_code,
+                            fight_id,
+                        )
+                    )
+
+                    if abs(
+                            benchmark_healer_count
+                            - request.healer_count
+                    ) > 1:
+                        continue
 
             if not min_item_level <= item_level <= max_item_level:
                 continue
@@ -123,6 +160,54 @@ class BenchmarkService:
 
         return rankings
 
+    def get_healer_count_for_report_fight(
+            self,
+            report_code: str,
+            fight_id: int,
+    ) -> int:
+
+        cached = get_cached_healer_count(report_code, fight_id)
+
+        if cached is not None:
+            return cached
+
+        query = f"""
+        query {{
+          reportData {{
+            report(code: "{report_code}") {{
+              playerDetails(
+                fightIDs: [{fight_id}]
+              )
+            }}
+          }}
+        }}
+        """
+
+        data = self.client.graphql(query)
+
+        player_details = (
+            data["reportData"]
+            ["report"]
+            ["playerDetails"]
+        )
+
+        healers = (
+            player_details
+            .get("data", {})
+            .get("playerDetails", {})
+            .get("healers", [])
+        )
+
+        healer_count = len(healers)
+
+        save_cached_healer_count(
+            report_code,
+            fight_id,
+            healer_count,
+        )
+
+        return healer_count
+
     def build_compare_url(
         self,
         request: BenchmarkRequest,
@@ -197,10 +282,6 @@ class BenchmarkService:
 
         rankings = self.fetch_character_rankings(request)
         rankings = self.filter_rankings_for_request(request, rankings)
-
-        # Muted output of rank comparison links.
-        # if rankings:
-        #     print(rankings[0])
 
         top_1 = (
             self.build_entry(request, 1, rankings[0])

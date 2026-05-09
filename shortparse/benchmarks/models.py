@@ -8,6 +8,7 @@ class BenchmarkRequest:
     encounter_id: int
     difficulty: int
     raid_size: int | None
+    healer_count: int | None
     fight_duration_seconds: float
     player_name: str
     source_id: int | None

@@ -22,6 +22,12 @@ def build_benchmark_requests(
         fight["endTime"] - fight["startTime"]
     ) / 1000
 
+    healer_count = sum(
+        1
+        for metric_data in player_metrics.values()
+        if metric_data["identity"]["role"] == "Healer"
+    )
+
     for player_name, metric_data in player_metrics.items():
         identity = metric_data["identity"]
         role = identity["role"]
@@ -33,7 +39,8 @@ def build_benchmark_requests(
                 fight_id=fight["id"],
                 encounter_id=fight["encounterID"],
                 difficulty=fight["difficulty"],
-                raid_size=None,
+                raid_size=len(player_metrics),
+                healer_count=healer_count,
                 fight_duration_seconds=fight_duration_seconds,
                 player_name=player_name,
                 source_id=identity.get("actor_id"),
