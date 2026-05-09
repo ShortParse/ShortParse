@@ -1,9 +1,5 @@
 from dataclasses import dataclass
 
-ITEM_LEVEL_TOLERANCE = 5
-RAID_SIZE_TOLERANCE = 2
-FIGHT_DURATION_TOLERANCE_SECONDS = 30
-
 from shortparse.benchmarks.models import (
     BenchmarkEntry,
     BenchmarkRequest,
@@ -130,9 +126,9 @@ class BenchmarkService:
         return filtered
 
     def filter_rankings_with_fallbacks(
-            self,
-            request: BenchmarkRequest,
-            rankings: list[dict],
+        self,
+        request: BenchmarkRequest,
+        rankings: list[dict],
     ) -> tuple[list[dict], str, bool]:
 
         best_available = []
@@ -223,19 +219,7 @@ class BenchmarkService:
         }}
         """
 
-        try:
-            data = self.client.graphql(query)
-        except RuntimeError as error:
-            print(
-                "[HEALER COUNT SKIP]",
-                report_code,
-                fight_id,
-                error,
-            )
-
-            # Unknown healer count. Return -1 so strict healer-count filters reject it,
-            # but broader fallback tiers can still recover if needed.
-            return -1
+        data = self.client.graphql(query)
 
         payload = (
             data["worldData"]
@@ -279,7 +263,18 @@ class BenchmarkService:
         }}
         """
 
-        data = self.client.graphql(query)
+        try:
+            data = self.client.graphql(query)
+
+        except RuntimeError as error:
+            print(
+                "[HEALER COUNT SKIP]",
+                report_code,
+                fight_id,
+                error,
+            )
+
+            return -1
 
         player_details = (
             data["reportData"]
