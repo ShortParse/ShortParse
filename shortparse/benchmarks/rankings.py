@@ -89,4 +89,7 @@ def compare_player_to_benchmark(
         percent_of_top_10=percent_of_top_10,
         percent_of_average=percent_of_average,
         grade=grade,
+        used_relaxed_filters=benchmark.used_relaxed_filters,
+        filter_tier_used=benchmark.filter_tier_used,
+        filter_match_count=benchmark.filter_match_count,
     )

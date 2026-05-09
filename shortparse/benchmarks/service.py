@@ -153,7 +153,11 @@ class BenchmarkService:
                     f"{len(filtered)} matches",
                 )
 
-                return filtered
+                return (
+                    filtered,
+                    tier.name,
+                    tier.name != "Strict",
+                )
 
         print(
             "[BENCHMARK TIER]",
@@ -163,7 +167,11 @@ class BenchmarkService:
             f"{len(best_available)} matches",
         )
 
-        return best_available
+        return (
+            best_available,
+            "BestAvailable",
+            True,
+        )
 
     def fetch_character_rankings(
         self,
@@ -354,7 +362,15 @@ class BenchmarkService:
     ) -> BenchmarkResult:
 
         rankings = self.fetch_character_rankings(request)
-        rankings = self.filter_rankings_with_fallbacks(request, rankings)
+
+        (
+            rankings,
+            filter_tier_used,
+            used_relaxed_filters,
+        ) = self.filter_rankings_with_fallbacks(
+            request,
+            rankings,
+        )
 
         top_1 = (
             self.build_entry(request, 1, rankings[0])
@@ -392,4 +408,7 @@ class BenchmarkService:
             top_5=top_5,
             top_10=top_10,
             average_baseline=average_baseline,
+            filter_tier_used=filter_tier_used,
+            filter_match_count=len(rankings),
+            used_relaxed_filters=used_relaxed_filters,
         )

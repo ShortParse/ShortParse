@@ -41,6 +41,9 @@ class BenchmarkResult:
     top_5: BenchmarkEntry | None
     top_10: BenchmarkEntry | None
     average_baseline: float | None
+    filter_tier_used: str
+    filter_match_count: int
+    used_relaxed_filters: bool
 
     def best_available_baseline(self) -> BenchmarkEntry | None:
         return self.top_10 or self.top_5 or self.top_1
@@ -57,3 +60,6 @@ class PlayerBenchmarkComparison:
     percent_of_top_10: float | None
     percent_of_average: float | None
     grade: str
+    used_relaxed_filters: bool
+    filter_tier_used: str
+    filter_match_count: int
