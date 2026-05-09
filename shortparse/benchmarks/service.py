@@ -116,6 +116,9 @@ class BenchmarkService:
                     )
                 )
 
+                if benchmark_healer_count < 0:
+                    continue
+
                 if abs(
                     benchmark_healer_count
                     - request.healer_count
@@ -220,7 +223,19 @@ class BenchmarkService:
         }}
         """
 
-        data = self.client.graphql(query)
+        try:
+            data = self.client.graphql(query)
+        except RuntimeError as error:
+            print(
+                "[HEALER COUNT SKIP]",
+                report_code,
+                fight_id,
+                error,
+            )
+
+            # Unknown healer count. Return -1 so strict healer-count filters reject it,
+            # but broader fallback tiers can still recover if needed.
+            return -1
 
         payload = (
             data["worldData"]
