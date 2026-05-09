@@ -49,7 +49,7 @@ class BenchmarkService:
             if item_level is None or duration is None:
                 continue
 
-            if request.raid_size is not None:
+            if request.metric == "hps" and request.raid_size is not None:
                 if size is None:
                     continue
 
