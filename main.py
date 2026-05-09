@@ -494,36 +494,6 @@ def main():
                 fight["endTime"],
             )
 
-            if fight["encounterID"] == 3183:
-                seen = {}
-
-                for event in events:
-                    if event.get("type") != "damage":
-                        continue
-
-                    spell_id = event.get("abilityGameID")
-                    spell_name = event.get("ability", {}).get("name") or event.get("abilityName")
-
-                    if not spell_id:
-                        continue
-
-                    seen[spell_id] = spell_name
-
-                print("\n=== RAW DAMAGE SPELL IDS ===")
-                for spell_id, spell_name in sorted(seen.items()):
-                    print(spell_id, spell_name)
-                print("=== END RAW DAMAGE SPELL IDS ===\n")
-
-            from shortparse.data.encounters.registry import get_avoidable_damage
-
-            if fight["encounterID"] == 3183:
-                mechanics = get_avoidable_damage(3183)
-
-                print("\n=== LOADED MARCH MECHANIC IDS ===")
-                for spell_id, mechanic in sorted(mechanics.items()):
-                    print(spell_id, mechanic["name"])
-                print("=== END LOADED MARCH MECHANIC IDS ===\n")
-
             analysis = build_fight_analysis(
                 report_code,
                 report["title"],
