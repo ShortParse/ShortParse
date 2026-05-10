@@ -374,6 +374,12 @@ Usually:
 
 ```python
 "damage_taken"
+"buff_applied"
+"debuff_applied"
+"cast_success"
+"death"
+"interrupt"
+"dispel"
 ```
 
 ---
