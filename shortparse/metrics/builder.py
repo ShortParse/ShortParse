@@ -53,12 +53,14 @@ def build_player_metrics(
             events,
             deaths["death_events"],
             encounter_id,
+            player["role"],
         )
 
         avoidable_damage = calculate_avoidable_damage(
             player["actor_id"],
             events,
             encounter_id,
+            player["role"],
         )
 
         cooldowns = calculate_cooldowns(

@@ -1,0 +1,5 @@
+ALL_ROLES = ["DPS", "Healer", "Tank"]
+NON_TANK_ROLES = ["DPS", "Healer"]
+DPS_ONLY = ["DPS"]
+HEALER_ONLY = ["Healer"]
+TANK_ONLY = ["Tank"]

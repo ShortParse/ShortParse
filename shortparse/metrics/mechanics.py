@@ -1,4 +1,14 @@
 from shortparse.data.encounters.registry import get_avoidable_damage
+from shortparse.data.encounters.constants import ALL_ROLES
+
+
+def mechanic_applies_to_player(
+    mechanic: dict,
+    player_role: str,
+) -> bool:
+    applies_to = mechanic.get("applies_to", ALL_ROLES)
+
+    return player_role in applies_to
 
 
 def calculate_mechanics(
@@ -10,7 +20,7 @@ def calculate_mechanics(
     mechanics = get_avoidable_damage(encounter_id)
 
     player_lookup = {
-        player["actor_id"]: player["name"]
+        player["actor_id"]: player
         for player in roster
     }
 
@@ -22,15 +32,24 @@ def calculate_mechanics(
             continue
 
         actor_id = event.get("targetID")
-        player_name = player_lookup.get(actor_id)
+        player = player_lookup.get(actor_id)
 
-        if not player_name:
+        if not player:
             continue
+
+        player_name = player["name"]
+        player_role = player.get("role", "Unknown")
 
         spell_id = event.get("abilityGameID")
         mechanic = mechanics.get(spell_id)
 
         if not mechanic:
+            continue
+
+        if not mechanic_applies_to_player(
+            mechanic,
+            player_role,
+        ):
             continue
 
         mechanic_name = mechanic["name"]
@@ -52,6 +71,10 @@ def calculate_mechanics(
             raid_mechanics[mechanic_name] = {
                 "severity": mechanic.get("severity", "Info"),
                 "note": mechanic.get("note", ""),
+                "recommendation": mechanic.get("recommendation", ""),
+                "category": mechanic.get("category", "Unknown"),
+                "failure_type": mechanic.get("failure_type", ""),
+                "applies_to": mechanic.get("applies_to", ALL_ROLES),
                 "hits": 0,
                 "damage": 0,
                 "players_hit": set(),

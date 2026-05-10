@@ -1,10 +1,21 @@
 from shortparse.data.encounters.registry import get_avoidable_damage
+from shortparse.data.encounters.constants import ALL_ROLES
+
+
+def mechanic_applies_to_player(
+    mechanic: dict,
+    player_role: str,
+) -> bool:
+    applies_to = mechanic.get("applies_to", ALL_ROLES)
+
+    return player_role in applies_to
 
 
 def calculate_avoidable_damage(
     actor_id: int,
     events: list[dict],
     encounter_id: int,
+    player_role: str = "Unknown",
 ) -> dict:
     avoidable_mechanics = get_avoidable_damage(encounter_id)
 
@@ -29,6 +40,12 @@ def calculate_avoidable_damage(
         mechanic = avoidable_mechanics.get(spell_id)
 
         if not mechanic:
+            continue
+
+        if not mechanic_applies_to_player(
+            mechanic,
+            player_role,
+        ):
             continue
 
         avoidable_events.append(

@@ -1,7 +1,17 @@
 from shortparse.data.encounters.registry import get_avoidable_damage
+from shortparse.data.encounters.constants import ALL_ROLES
 
 
 DEATH_LOOKBACK_SECONDS = 8
+
+
+def mechanic_applies_to_player(
+    mechanic: dict,
+    player_role: str,
+) -> bool:
+    applies_to = mechanic.get("applies_to", ALL_ROLES)
+
+    return player_role in applies_to
 
 
 def calculate_avoidable_deaths(
@@ -9,6 +19,7 @@ def calculate_avoidable_deaths(
     events: list[dict],
     death_events: list[dict],
     encounter_id: int,
+    player_role: str = "Unknown",
 ) -> dict:
     avoidable_mechanics = get_avoidable_damage(encounter_id)
 
@@ -49,10 +60,15 @@ def calculate_avoidable_deaths(
                 continue
 
             spell_id = event.get("abilityGameID")
-
             mechanic = avoidable_mechanics.get(spell_id)
 
             if not mechanic:
+                continue
+
+            if not mechanic_applies_to_player(
+                mechanic,
+                player_role,
+            ):
                 continue
 
             matched_mechanics.append(
@@ -67,10 +83,6 @@ def calculate_avoidable_deaths(
 
         if not matched_mechanics:
             continue
-
-        # =====================================================
-        # Deduplicate repeated aura ticks / spam
-        # =====================================================
 
         unique_mechanics = {}
 
