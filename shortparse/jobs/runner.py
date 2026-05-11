@@ -175,6 +175,11 @@ def run_analysis_job(
                     fight,
                     fight_data,
                     events,
+                    progress_callback=lambda message, boss_name=boss_name: append_job_log(
+                        job_id,
+                        f"{boss_name}: {message}",
+                        current_step=f"{boss_name}: {message}",
+                    ),
                 )
 
                 analysis["raid"] = {

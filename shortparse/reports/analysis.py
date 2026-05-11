@@ -15,21 +15,24 @@ def build_fight_analysis(
     fight: dict,
     fight_data: dict,
     events: list[dict],
+    progress_callback=None,
 ) -> dict:
+
+    def progress(message: str) -> None:
+        if progress_callback:
+            progress_callback(message)
+
+    progress("building roster...")
 
     roster = build_roster_from_fight_data(fight_data)
 
     damage_taken_table = fight_data.get("damageTaken", {})
 
-    # import json
-    #
-    # print("\n=== DAMAGE TAKEN TABLE DEBUG ===")
-    # print(json.dumps(damage_taken_table, indent=2)[:15000])
-    # print("=== END DAMAGE TAKEN TABLE DEBUG ===\n")
-
     fight_duration_seconds = (
         fight["endTime"] - fight["startTime"]
     ) / 1000
+
+    progress("calculating player metrics...")
 
     player_metrics = build_player_metrics(
         roster,
@@ -41,11 +44,15 @@ def build_fight_analysis(
         fight["encounterID"],
     )
 
+    progress("calculating tracked mechanics...")
+
     mechanics_data = calculate_mechanics(
         roster,
         events,
         fight["encounterID"],
     )
+
+    progress("building fight timeline...")
 
     timeline = build_timeline(
         roster,
@@ -55,22 +62,30 @@ def build_fight_analysis(
         fight["encounterID"],
     )
 
+    progress("comparing players against benchmarks...")
+
     benchmark_comparisons = build_benchmark_comparisons(
         report_code,
         fight,
         player_metrics,
     )
 
+    progress("building raid issues...")
+
     issues = build_raid_issues(
         player_metrics,
         benchmark_comparisons,
     )
+
+    progress("building scorecard...")
 
     scorecard = build_scorecard(
         player_metrics,
         issues,
         benchmark_comparisons,
     )
+
+    progress("fight analysis complete.")
 
     return {
         "report": {
