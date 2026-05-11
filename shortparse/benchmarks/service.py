@@ -187,21 +187,19 @@ class BenchmarkService:
 
         if cached is not None:
             print(
-                "[CACHE HIT] benchmark:",
-                request.encounter_id,
-                request.metric,
-                request.class_name,
-                request.spec_name,
+                f"[CACHE HIT] "
+                f"{request.class_name} "
+                f"{request.spec_name} "
+                f"{request.metric.upper()}"
             )
 
             return cached
 
         print(
-            "[CACHE MISS] benchmark:",
-            request.encounter_id,
-            request.metric,
-            request.class_name,
-            request.spec_name,
+            f"[CACHE MISS] "
+            f"{request.class_name} "
+            f"{request.spec_name} "
+            f"{request.metric.upper()}"
         )
 
         query = f"""

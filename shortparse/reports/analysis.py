@@ -68,6 +68,7 @@ def build_fight_analysis(
         report_code,
         fight,
         player_metrics,
+        progress_callback=progress,
     )
 
     progress("building raid issues...")

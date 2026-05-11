@@ -60,6 +60,7 @@ def build_benchmark_comparisons(
     report_code: str,
     fight: dict,
     player_metrics: dict,
+    progress_callback=None,
 ) -> dict:
 
     comparisons = {}
@@ -71,7 +72,16 @@ def build_benchmark_comparisons(
         player_metrics,
     )
 
-    for request in requests:
+    for index, request in enumerate(requests, start=1):
+        if progress_callback:
+            progress_callback(
+                (
+                    f"benchmarking "
+                    f"{request.player_name} "
+                    f"({index}/{len(requests)})..."
+                )
+            )
+
         metric_data = player_metrics[request.player_name]
         performance = metric_data["performance"]
 
