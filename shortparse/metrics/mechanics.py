@@ -80,6 +80,7 @@ def calculate_mechanics(
                 "players_hit": set(),
                 "worst_player": None,
                 "worst_hits": 0,
+                "player_failures": {},
             }
 
         raid_entry = raid_mechanics[mechanic_name]
@@ -87,6 +88,14 @@ def calculate_mechanics(
         raid_entry["hits"] += 1
         raid_entry["damage"] += damage
         raid_entry["players_hit"].add(player_name)
+        if player_name not in raid_entry["player_failures"]:
+            raid_entry["player_failures"][player_name] = {
+                "hits": 0,
+                "damage": 0,
+            }
+
+        raid_entry["player_failures"][player_name]["hits"] += 1
+        raid_entry["player_failures"][player_name]["damage"] += damage
 
     for mechanic_name, raid_entry in raid_mechanics.items():
         worst_player = None
