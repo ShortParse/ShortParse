@@ -8,6 +8,7 @@ from shortparse.metrics.timeline import build_timeline
 from shortparse.benchmarks.builder import build_benchmark_comparisons
 from shortparse.reports.scorecard import build_scorecard
 
+from shortparse.reports.coach.summary import build_raid_coach_summary
 
 def build_fight_analysis(
     report_code: str,
@@ -86,6 +87,18 @@ def build_fight_analysis(
         benchmark_comparisons,
     )
 
+    progress("building raid coach summary...")
+
+    raid_coach = build_raid_coach_summary(
+        fight=fight,
+        roster=roster,
+        player_metrics=player_metrics,
+        mechanics=mechanics_data,
+        benchmarks=benchmark_comparisons,
+        issues=issues,
+        scorecard=scorecard,
+    )
+
     progress("fight analysis complete.")
 
     return {
@@ -113,4 +126,5 @@ def build_fight_analysis(
         "benchmarks": benchmark_comparisons,
         "issues": issues,
         "scorecard": scorecard,
+        "raid_coach": raid_coach,
     }
