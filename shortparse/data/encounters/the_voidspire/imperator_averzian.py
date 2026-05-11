@@ -106,6 +106,58 @@ SHADOW_PHALANX = {
     "wcl_type": "damage_taken",
 }
 
+BLACK_MIASMA = {
+    "name": "Black Miasma",
+    "severity": "Warning",
+    "avoidable": True,
+    "category": "Decurse",
+    "failure_type": "Long curse application",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 4,
+    "score_per_hit": 20,
+    "applies_to": ALL_ROLES,
+    "note": "Multiple players are afflicted with Black Miasma.",
+    "recommendation": "Decurse these players.",
+    "wcl_type": "damage_taken",
+}
+
+DARK_BARRAGE = {
+    "name": "Dark Barrage",
+    "severity": "Major",
+    "avoidable": True,
+    "category": "Ground Effect",
+    "failure_type": "Repeated avoidable hits",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 2,
+    "score_per_hit": 60,
+    "applies_to": ALL_ROLES,
+    "note": (
+        "Adds will hurl dark energy at several players."
+    ),
+    "recommendation": (
+        "Review movement pathing and avoid purple circles on the floor."
+    ),
+    "wcl_type": "damage_taken",
+}
+
+GNASHING_VOID = {
+    "name": "Gnashing Void",
+    "severity": "Info",
+    "avoidable": True,
+    "category": "Add Management",
+    "failure_type": "Eliminate adds quickly",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 15,
+    "score_per_hit": 1,
+    "applies_to": ALL_ROLES,
+    "note": (
+        "Adds apply stacking shadow damage dot."
+    ),
+    "recommendation": (
+        "Eliminate the adds faster."
+    ),
+    "wcl_type": "damage_taken",
+}
 
 AVOIDABLE_DAMAGE = {
     # Void Rupture
@@ -136,5 +188,20 @@ AVOIDABLE_DAMAGE = {
     **mechanic_aliases(
         [1284786],
         SHADOW_PHALANX,
+    ),
+    # Black Miasma
+    **mechanic_aliases(
+        [1275059],
+        BLACK_MIASMA,
+    ),
+    # Dark Barrage
+    **mechanic_aliases(
+        [1274846],
+        DARK_BARRAGE,
+    ),
+    # Gnashing Void
+    **mechanic_aliases(
+        [1255683],
+        GNASHING_VOID,
     ),
 }
