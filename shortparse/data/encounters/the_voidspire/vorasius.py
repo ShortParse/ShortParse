@@ -175,7 +175,7 @@ AVOIDABLE_DAMAGE = {
     ),
     # Shadowclaw Slam
     **mechanic_aliases(
-        [1272328, 1241808, 1281954, 1281906, 1272329, 1241807],
+        [1281954, 1281906],
         SHADOWCLAW_SLAM,
     ),
     # Void Breath
