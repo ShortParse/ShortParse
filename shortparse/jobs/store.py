@@ -1,6 +1,6 @@
 from shortparse.jobs.models import JobStatus
+from shortparse.jobs.models import add_job_log
 from shortparse.jobs.models import update_job_status
-
 
 JOBS: dict[str, dict] = {}
 
@@ -59,4 +59,24 @@ def mark_job_failed(
         job,
         JobStatus.FAILED,
         error=error,
+    )
+
+def append_job_log(
+    job_id: str,
+    message: str,
+    level: str = "info",
+    progress: int | None = None,
+    current_step: str | None = None,
+) -> dict | None:
+    job = get_job(job_id)
+
+    if not job:
+        return None
+
+    return add_job_log(
+        job,
+        message,
+        level=level,
+        progress=progress,
+        current_step=current_step,
     )
