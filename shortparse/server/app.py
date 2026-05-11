@@ -139,6 +139,11 @@ def get_job_summary(job_id: str) -> dict:
         "updated_at": job["updated_at"],
         "has_result": bool(job.get("result_path")),
         "error": job.get("error"),
+
+        # Live console fields
+        "progress": job.get("progress", 0),
+        "current_step": job.get("current_step", job["status"]),
+        "logs": job.get("logs", []),
     }
 
 
