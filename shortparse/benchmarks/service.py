@@ -187,19 +187,21 @@ class BenchmarkService:
 
         if cached is not None:
             print(
-                f"[CACHE HIT] "
-                f"{request.class_name} "
-                f"{request.spec_name} "
-                f"{request.metric.upper()}"
+                "[CACHE HIT] benchmark:",
+                request.encounter_id,
+                request.metric,
+                request.class_name,
+                request.spec_name,
             )
 
             return cached
 
         print(
-            f"[CACHE MISS] "
-            f"{request.class_name} "
-            f"{request.spec_name} "
-            f"{request.metric.upper()}"
+            "[CACHE MISS] benchmark:",
+            request.encounter_id,
+            request.metric,
+            request.class_name,
+            request.spec_name,
         )
 
         query = f"""
@@ -280,12 +282,24 @@ class BenchmarkService:
             ["playerDetails"]
         )
 
-        healers = (
-            player_details
-            .get("data", {})
-            .get("playerDetails", {})
-            .get("healers", [])
-        )
+        details_data = player_details.get("data", {})
+        details = details_data.get("playerDetails", {})
+
+        if isinstance(details, dict):
+            healers = details.get("healers", [])
+
+        elif isinstance(details, list):
+            healers = [
+                player
+                for player in details
+                if (
+                    player.get("type") == "Healer"
+                    or player.get("role") == "Healer"
+                )
+            ]
+
+        else:
+            healers = []
 
         healer_count = len(healers)
 
