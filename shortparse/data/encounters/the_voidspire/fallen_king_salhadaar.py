@@ -38,7 +38,7 @@ SHADOW_FRACTURE = {
     "severity": "Major",
     "avoidable": True,
     "category": "Interrupt",
-    "failure_type": "interrupt_adds",
+    "failure_type": "interrupt",
     "counts_as_failure": True,
     "max_reasonable_hits": 4,
     "score_per_hit": 80,
@@ -49,7 +49,7 @@ SHADOW_FRACTURE = {
     "recommendation": (
         "Stop the adds from casting with an interrupt."
     ),
-    "wcl_type": "damage_taken",
+    "wcl_type": "cast events",
 }
 
 UMBRAL_BEAMS = {
