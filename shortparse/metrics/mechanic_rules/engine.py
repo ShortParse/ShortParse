@@ -8,15 +8,18 @@ from shortparse.metrics.mechanic_rules.handlers.missed_interrupt import (
     analyze_missed_interrupt,
 )
 
+from shortparse.metrics.mechanic_rules.handlers.required_soak import (
+    analyze_required_soak,
+)
 
 HANDLERS = {
     "avoidable_damage": analyze_avoidable_damage,
     "interrupt": analyze_missed_interrupt,
     "missed_interrupt": analyze_missed_interrupt,
+    "required_soak": analyze_required_soak,
 
     # These are intentionally stubbed for now.
     # They require full-fight/window-level analysis later.
-    "required_soak": None,
     "bad_soak": None,
 }
 
@@ -28,6 +31,10 @@ DAMAGE_LIKE_FAILURE_TYPES = {
     "ground_effect",
     "boss_threat",
     "dodge_gravity",
+}
+
+WHOLE_FIGHT_FAILURE_TYPES = {
+    "required_soak",
 }
 
 
@@ -140,6 +147,55 @@ def calculate_mechanics(
     player_mechanics = {}
     raid_mechanics = {}
 
+    processed_whole_fight_mechanics = set()
+
+    for spell_id, mechanic in mechanics.items():
+        failure_type = normalize_failure_type(
+            mechanic.get("failure_type", "avoidable_damage")
+        )
+
+        if failure_type not in WHOLE_FIGHT_FAILURE_TYPES:
+            continue
+
+        mechanic_name = mechanic["name"]
+
+        if mechanic_name in processed_whole_fight_mechanics:
+            continue
+
+        processed_whole_fight_mechanics.add(mechanic_name)
+
+        handler = HANDLERS.get(failure_type)
+
+        if not handler:
+            continue
+
+        failures = handler(
+            mechanic=mechanic,
+            events=events,
+            roster=roster,
+            player_lookup=player_lookup,
+        )
+
+        for failure in failures:
+            raid_entry = get_or_create_raid_entry(
+                raid_mechanics,
+                failure.mechanic_name,
+                mechanic,
+            )
+
+            add_player_mechanic_failure(
+                player_mechanics,
+                failure.player_name,
+                failure.mechanic_name,
+                damage=failure.damage,
+            )
+
+            add_raid_mechanic_failure(
+                raid_entry,
+                failure.player_name,
+                damage=failure.damage,
+            )
+
     for event in events:
         spell_id = event.get("abilityGameID")
         mechanic = mechanics.get(spell_id)
@@ -152,6 +208,9 @@ def calculate_mechanics(
         failure_type = normalize_failure_type(
             mechanic.get("failure_type", "avoidable_damage")
         )
+
+        if failure_type in WHOLE_FIGHT_FAILURE_TYPES:
+            continue
 
         handler = HANDLERS.get(failure_type)
 

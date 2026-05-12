@@ -147,6 +147,26 @@ GLOOMFIELD = {
     "wcl_type": "damage_taken",
 }
 
+GLOOM = {
+    "name": "Gloom",
+    "severity": "Info",
+    "avoidable": True,
+    "category": "Required Soak",
+    "failure_type": "required_soak",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 0,
+    "score_per_hit": 100,
+    "applies_to": ALL_ROLES,
+    "spell_ids": [1245500],
+    "note": (
+        "Ezzorak ejects a moving mass of pure darkness in a frontal direction."
+    ),
+    "recommendation": (
+        "Minimum of 5 players must soak this orb (On higher difficulties rotate soaks)."
+    ),
+    "wcl_type": "damage_taken",
+}
+
 AVOIDABLE_DAMAGE = {
     # Tail Lash
     **mechanic_aliases(
@@ -182,5 +202,11 @@ AVOIDABLE_DAMAGE = {
     **mechanic_aliases(
         [1245421],
         MIDNIGHT_FLAMES,
+    ),
+
+    # Gloom
+    **mechanic_aliases(
+        [1245500],
+        GLOOM,
     ),
 }
