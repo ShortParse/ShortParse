@@ -28,16 +28,39 @@ TAIL_LASH = {
         "Vaelgor knocks away players within a 35 yard rear cone."
     ),
     "recommendation": (
-        "Review movement pathing and avoid standing behind vaelgor."
+        "Review movement pathing and avoid standing behind Vaelgor."
     ),
     "wcl_type": "damage_taken",
 }
 
+IMPALE = {
+    "name": "Impale",
+    "severity": "Major",
+    "avoidable": True,
+    "category": "Positioning",
+    "failure_type": "bad_position",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 2,
+    "score_per_hit": 100,
+    "applies_to": ALL_ROLES,
+    "note": (
+        "Ezzorak slams targets within a 35 yard rear cone."
+    ),
+    "recommendation": (
+        "Review movement pathing and avoid standing behind Ezzorak."
+    ),
+    "wcl_type": "damage_taken",
+}
 
 AVOIDABLE_DAMAGE = {
     # Tail Lash
     **mechanic_aliases(
         [1264467],
         TAIL_LASH,
+    ),
+    # Impale
+    **mechanic_aliases(
+        [1265152],
+        IMPALE,
     ),
 }
