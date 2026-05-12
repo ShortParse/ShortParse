@@ -14,31 +14,30 @@ from shortparse.data.encounters.mechanic_helper import (
 ENCOUNTER_ID = 3178
 ENCOUNTER_NAME = "Vaelgor & Ezzorak"
 
-VOID_RUPTURE = {
-    "name": "Void Rupture",
-    "severity": "Critical",
+TAIL_LASH = {
+    "name": "Tail Lash",
+    "severity": "Major",
     "avoidable": True,
-    "category": "Ground Effect",
-    "failure_type": "Repeated avoidable hits",
+    "category": "Positioning",
+    "failure_type": "bad_position",
     "counts_as_failure": True,
-    "max_reasonable_hits": 1,
-    "score_per_hit": 80,
+    "max_reasonable_hits": 2,
+    "score_per_hit": 100,
     "applies_to": ALL_ROLES,
     "note": (
-        "The remaining add will explode in a 12yd range and several beams "
-        "will shoot out from the claimed space for a short time."
+        "Vaelgor knocks away players within a 35 yard rear cone."
     ),
     "recommendation": (
-        "Review movement pathing and avoid blue circles on the floor."
+        "Review movement pathing and avoid standing behind vaelgor."
     ),
     "wcl_type": "damage_taken",
 }
 
 
 AVOIDABLE_DAMAGE = {
-    # Void Rupture
+    # Tail Lash
     **mechanic_aliases(
-        [1261249, 1279890],
-        VOID_RUPTURE,
+        [1264467],
+        TAIL_LASH,
     ),
 }
