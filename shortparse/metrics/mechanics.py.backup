@@ -1,41 +1,14 @@
 from shortparse.data.encounters.registry import get_avoidable_damage
 from shortparse.data.encounters.constants import ALL_ROLES
 
-from shortparse.metrics.mechanic_rules.handlers.avoidable_damage import (
-    analyze_avoidable_damage,
-)
-from shortparse.metrics.mechanic_rules.handlers.missed_interrupt import (
-    analyze_missed_interrupt,
-)
 
+def mechanic_applies_to_player(
+    mechanic: dict,
+    player_role: str,
+) -> bool:
+    applies_to = mechanic.get("applies_to", ALL_ROLES)
 
-HANDLERS = {
-    "avoidable_damage": analyze_avoidable_damage,
-    "interrupt": analyze_missed_interrupt,
-    "missed_interrupt": analyze_missed_interrupt,
-
-    # These are intentionally stubbed for now.
-    # They require full-fight/window-level analysis later.
-    "required_soak": None,
-    "bad_soak": None,
-}
-
-
-DAMAGE_LIKE_FAILURE_TYPES = {
-    "dodge_adds",
-    "dodge_oneshot",
-    "spread_out",
-    "ground_effect",
-    "boss_threat",
-    "dodge_gravity",
-}
-
-
-def normalize_failure_type(failure_type: str) -> str:
-    if failure_type in DAMAGE_LIKE_FAILURE_TYPES:
-        return "avoidable_damage"
-
-    return failure_type or "avoidable_damage"
+    return player_role in applies_to
 
 
 def get_or_create_raid_entry(
@@ -100,10 +73,120 @@ def add_raid_mechanic_failure(
     raid_entry["player_failures"][player_name]["damage"] += damage
 
 
-def finalize_raid_mechanics(
-    raid_mechanics: dict,
-    player_mechanics: dict,
-) -> None:
+def get_event_source_name(
+    event: dict,
+) -> str:
+    source = event.get("source")
+
+    if isinstance(source, dict):
+        name = source.get("name")
+
+        if name:
+            return name
+
+    return (
+        event.get("sourceName")
+        or event.get("source")
+        or "Unknown Caster"
+    )
+
+
+def calculate_mechanics(
+    roster: list[dict],
+    events: list[dict],
+    encounter_id: int,
+) -> dict:
+
+    mechanics = get_avoidable_damage(encounter_id)
+
+    player_lookup = {
+        player["actor_id"]: player
+        for player in roster
+    }
+
+    player_mechanics = {}
+    raid_mechanics = {}
+
+    for event in events:
+        spell_id = event.get("abilityGameID")
+        mechanic = mechanics.get(spell_id)
+
+        if not mechanic:
+            continue
+
+        failure_type = mechanic.get(
+            "failure_type",
+            "avoidable_damage",
+        )
+
+        mechanic_name = mechanic["name"]
+
+        if failure_type == "interrupt":
+            if event.get("type") != "cast":
+                continue
+
+            caster_name = get_event_source_name(event)
+
+            raid_entry = get_or_create_raid_entry(
+                raid_mechanics,
+                mechanic_name,
+                mechanic,
+            )
+
+            add_player_mechanic_failure(
+                player_mechanics,
+                caster_name,
+                mechanic_name,
+                damage=0,
+            )
+
+            add_raid_mechanic_failure(
+                raid_entry,
+                caster_name,
+                damage=0,
+            )
+
+            continue
+
+        if event.get("type") != "damage":
+            continue
+
+        actor_id = event.get("targetID")
+        player = player_lookup.get(actor_id)
+
+        if not player:
+            continue
+
+        player_name = player["name"]
+        player_role = player.get("role", "Unknown")
+
+        if not mechanic_applies_to_player(
+            mechanic,
+            player_role,
+        ):
+            continue
+
+        damage = int(event.get("amount") or 0)
+
+        add_player_mechanic_failure(
+            player_mechanics,
+            player_name,
+            mechanic_name,
+            damage=damage,
+        )
+
+        raid_entry = get_or_create_raid_entry(
+            raid_mechanics,
+            mechanic_name,
+            mechanic,
+        )
+
+        add_raid_mechanic_failure(
+            raid_entry,
+            player_name,
+            damage=damage,
+        )
+
     for mechanic_name, raid_entry in raid_mechanics.items():
         worst_player = None
         worst_hits = 0
@@ -123,73 +206,6 @@ def finalize_raid_mechanics(
         raid_entry["worst_player"] = worst_player
         raid_entry["worst_hits"] = worst_hits
         raid_entry["players_hit"] = sorted(raid_entry["players_hit"])
-
-
-def calculate_mechanics(
-    roster: list[dict],
-    events: list[dict],
-    encounter_id: int,
-) -> dict:
-    mechanics = get_avoidable_damage(encounter_id)
-
-    player_lookup = {
-        player["actor_id"]: player
-        for player in roster
-    }
-
-    player_mechanics = {}
-    raid_mechanics = {}
-
-    for event in events:
-        spell_id = event.get("abilityGameID")
-        mechanic = mechanics.get(spell_id)
-
-        if not mechanic:
-            continue
-
-        mechanic_name = mechanic["name"]
-
-        failure_type = normalize_failure_type(
-            mechanic.get("failure_type", "avoidable_damage")
-        )
-
-        handler = HANDLERS.get(failure_type)
-
-        if not handler:
-            continue
-
-        failure = handler(
-            mechanic=mechanic,
-            event=event,
-            player_lookup=player_lookup,
-        )
-
-        if not failure:
-            continue
-
-        raid_entry = get_or_create_raid_entry(
-            raid_mechanics,
-            mechanic_name,
-            mechanic,
-        )
-
-        add_player_mechanic_failure(
-            player_mechanics,
-            failure.player_name,
-            failure.mechanic_name,
-            damage=failure.damage,
-        )
-
-        add_raid_mechanic_failure(
-            raid_entry,
-            failure.player_name,
-            damage=failure.damage,
-        )
-
-    finalize_raid_mechanics(
-        raid_mechanics,
-        player_mechanics,
-    )
 
     return {
         "player_mechanics": player_mechanics,

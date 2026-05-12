@@ -204,7 +204,7 @@ AVOIDABLE_DAMAGE = {
     # Despotic Command
     **mechanic_aliases(
         [1260835],
-        SHADOW_FRACTURE,
+        DESPOTIC_COMMAND,
     ),
     # Twilight Spikes
     **mechanic_aliases(
