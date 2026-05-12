@@ -52,6 +52,101 @@ IMPALE = {
     "wcl_type": "damage_taken",
 }
 
+VAELWING = {
+    "name": "Vaelwing",
+    "severity": "Major",
+    "avoidable": True,
+    "category": "Boss Threat",
+    "failure_type": "boss_threat",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 100,
+    "applies_to": NON_TANK_ROLES,
+    "note": (
+        "Vaelgor buffets his primary target."
+    ),
+    "recommendation": (
+        "Avoid taking threat from the tank."
+    ),
+    "wcl_type": "damage_taken",
+}
+
+RAKFANG = {
+    "name": "Rakfang",
+    "severity": "Major",
+    "avoidable": True,
+    "category": "Boss Threat",
+    "failure_type": "boss_threat",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 100,
+    "applies_to": NON_TANK_ROLES,
+    "note": (
+        "Ezzorak strikes his primary target."
+    ),
+    "recommendation": (
+        "Avoid taking threat from the tank."
+    ),
+    "wcl_type": "damage_taken",
+}
+
+NULLSCATTER = {
+    "name": "Nullscatter",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "Ground Effect",
+    "failure_type": "ground_effect",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": (
+        "Nullzone's first tether snap releases a cascade of cosmic hail."
+    ),
+    "recommendation": (
+        "Review movement pathing and avoid the impact zones."
+    ),
+    "wcl_type": "damage_taken",
+}
+
+MIDNIGHT_FLAMES = {
+    "name": "Midnight Flames",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "Ground Effect",
+    "failure_type": "ground_effect",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 0,
+    "score_per_hit": 100,
+    "applies_to": ALL_ROLES,
+    "note": (
+        "Upon reaching 100 energy, Vaelgor and Ezzorak fly as one."
+    ),
+    "recommendation": (
+        "Review movement pathing and stay in the safe-zone bubble."
+    ),
+    "wcl_type": "damage_taken",
+}
+
+GLOOMFIELD = {
+    "name": "Gloomfield",
+    "severity": "Major",
+    "avoidable": True,
+    "category": "Ground Effect",
+    "failure_type": "ground_effect",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 60,
+    "applies_to": ALL_ROLES,
+    "note": (
+        "Galactic emptiness engulfs a massive location in darkness."
+    ),
+    "recommendation": (
+        "Review movement pathing and avoid the impact zones."
+    ),
+    "wcl_type": "damage_taken",
+}
+
 AVOIDABLE_DAMAGE = {
     # Tail Lash
     **mechanic_aliases(
@@ -62,5 +157,30 @@ AVOIDABLE_DAMAGE = {
     **mechanic_aliases(
         [1265152],
         IMPALE,
+    ),
+    # Vaelwing
+    **mechanic_aliases(
+        [1265139],
+        VAELWING,
+    ),
+    # Rakfang
+    **mechanic_aliases(
+        [1245652, 1245647],
+        RAKFANG,
+    ),
+    # Nullscatter
+    **mechanic_aliases(
+        [1266570],
+        NULLSCATTER,
+    ),
+    # Midnight Flames
+    **mechanic_aliases(
+        [1249748],
+        MIDNIGHT_FLAMES,
+    ),
+    # Gloomfield
+    **mechanic_aliases(
+        [1245421],
+        MIDNIGHT_FLAMES,
     ),
 }

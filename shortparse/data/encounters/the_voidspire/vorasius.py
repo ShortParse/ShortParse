@@ -85,8 +85,7 @@ OVERPOWERING_PULSE = {
         "is within melee range."
     ),
     "recommendation": (
-        "At least one tank must remain in melee range "
-        "at all times."
+        "At least one tank must remain in melee range at all times."
     ),
     "wcl_type": "damage_taken",
 }
@@ -143,7 +142,7 @@ PARASITE_EXPULSION = {
         "The boss will frequently spray globs of dark ichor across the battlefield."
     ),
     "recommendation": (
-        "Avoid being in the explosive circle when they land."
+        "Review movement pathing and avoid the impact zones."
     ),
     "wcl_type": "damage_taken",
 }

@@ -30,7 +30,7 @@ VOID_RUPTURE = {
         "will shoot out from the claimed space for a short time."
     ),
     "recommendation": (
-        "Review movement pathing and avoid blue circles on the floor."
+        "Review movement pathing and avoid the impact zones."
     ),
     "wcl_type": "damage_taken",
 }
@@ -50,7 +50,7 @@ VOID_FALL = {
         "Knockback followed by AOE circles on the ground that you need to dodge."
     ),
     "recommendation": (
-        "Review movement pathing and avoid blue circles on the floor."
+        "Review movement pathing and avoid the impact zones."
     ),
     "wcl_type": "damage_taken",
 }
@@ -135,7 +135,7 @@ DARK_BARRAGE = {
         "Adds will hurl dark energy at several players."
     ),
     "recommendation": (
-        "Review movement pathing and avoid purple circles on the floor."
+        "Review movement pathing and avoid the impact zones."
     ),
     "wcl_type": "damage_taken",
 }

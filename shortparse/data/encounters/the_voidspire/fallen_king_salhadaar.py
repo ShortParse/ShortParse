@@ -123,7 +123,7 @@ TORTURUS_EXTRACT = {
         "Players drop void pools, standing in them does damage."
     ),
     "recommendation": (
-        "Check positioning and avoid standing in void pools."
+        "Review movement pathing and avoid the impact zones."
     ),
     "wcl_type": "damage_taken",
 }
@@ -180,7 +180,7 @@ QUINTESSENCE = {
         "Boss lobs several missiles at the ground."
     ),
     "recommendation": (
-        "Avoid standing in the ground missles."
+        "Review movement pathing and avoid the impact zones."
     ),
     "wcl_type": "damage_taken",
 }
