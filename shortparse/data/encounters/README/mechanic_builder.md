@@ -27,6 +27,10 @@ Goal:
 | Too many players hit together | Players failed spread | `spread_failure` | `spread`, `chain`, `splash` |
 | Too few players hit together | Players failed stack/share | `stack_failure` | `stack`, `shared_damage`, `group_soak` |
 | Non-tank got hit by tank/boss attack | Wrong role had threat or positioning | `avoidable_damage` for now, later `tank_hit` or `boss_threat` | `boss_threat`, `tank_buster` |
+| Player was forced/pulled/knocked into danger | Failed forced movement mechanic | `avoidable_damage` | `forced_movement` |
+| Tank was not in boss melee range | Boss positional/tank failure | `boss_range` | `boss_range`, `tank_positioning` |
+| Adds lived too long or repeatedly damaged the raid | Raid failed add control | `avoidable_damage` for now, later `add_management` | `add_management`, `add_priority` |
+| Dangerous effect triggered after add death | Player failed corpse explosion mechanic | `avoidable_damage` | `corpse_explosion` |
 
 ---
 
@@ -403,6 +407,144 @@ BAD_GLOOM_SOAK = {
 }
 ```
 
+# Example: Forced Movement
+
+Use this when a player is pulled, pushed, knocked back, or otherwise forced into danger.
+
+```python
+FALLING = {
+    "name": "Falling",
+
+    "severity": "Critical",
+    "avoidable": True,
+
+    "category": "forced_movement",
+    "failure_type": "avoidable_damage",
+
+    "counts_as_failure": True,
+
+    "max_reasonable_hits": 1,
+    "score_per_hit": 100,
+
+    "applies_to": ALL_ROLES,
+
+    "note": (
+        "Players were knocked or forced into lethal space."
+    ),
+
+    "recommendation": (
+        "Position carefully to avoid being forced into danger."
+    ),
+
+    "wcl_type": "damage_taken",
+}
+```
+
+---
+
+# Example: Boss Range
+
+Use this when the boss should always have a valid tank/melee target nearby.
+
+```python
+OVERPOWERING_PULSE = {
+    "name": "Overpowering Pulse",
+
+    "severity": "Major",
+    "avoidable": False,
+
+    "category": "boss_range",
+    "failure_type": "boss_range",
+
+    "counts_as_failure": True,
+
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+
+    "applies_to": TANK_ONLY,
+
+    "note": (
+        "The boss emitted a pulse because no valid tank remained in range."
+    ),
+
+    "recommendation": (
+        "Keep a tank in proper boss range at all times."
+    ),
+
+    "wcl_type": "damage_taken",
+}
+```
+
+---
+
+# Example: Corpse Explosion
+
+Use this when an add leaves behind a dangerous explosion or puddle after death.
+
+```python
+DARK_GOO = {
+    "name": "Dark Goo",
+
+    "severity": "Major",
+    "avoidable": True,
+
+    "category": "corpse_explosion",
+    "failure_type": "avoidable_damage",
+
+    "counts_as_failure": True,
+
+    "max_reasonable_hits": 2,
+    "score_per_hit": 40,
+
+    "applies_to": ALL_ROLES,
+
+    "note": (
+        "The add exploded after death, leaving dangerous ground effects."
+    ),
+
+    "recommendation": (
+        "Move away from add corpses before they explode."
+    ),
+
+    "wcl_type": "damage_taken",
+}
+```
+
+---
+
+# Example: Add Management
+
+Use this when adds lived too long or repeatedly damaged the raid.
+
+```python
+BLISTERBURST = {
+    "name": "Blisterburst",
+
+    "severity": "Major",
+    "avoidable": True,
+
+    "category": "add_management",
+    "failure_type": "avoidable_damage",
+
+    "counts_as_failure": True,
+
+    "max_reasonable_hits": 4,
+    "score_per_hit": 50,
+
+    "applies_to": ALL_ROLES,
+
+    "note": (
+        "Adds survived too long and repeatedly damaged the raid."
+    ),
+
+    "recommendation": (
+        "Prioritize killing or controlling the adds faster."
+    ),
+
+    "wcl_type": "damage_taken",
+}
+```
+
 ---
 
 # Severity Guide
@@ -456,6 +598,9 @@ frontal
 rear_cone
 beam
 swirl
+movement
+forced_movement
+corpse_explosion
 interrupt
 minimum_soak
 soak_participation
@@ -464,10 +609,11 @@ dispel
 spread
 stack
 boss_threat
+boss_range
 tank_buster
+tank_positioning
 add_management
 add_priority
-movement
 bait
 ```
 

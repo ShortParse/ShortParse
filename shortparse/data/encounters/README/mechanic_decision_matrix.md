@@ -58,6 +58,10 @@ Then use the table below.
 | Did a player fail to use a defensive? | Player took lethal/high damage without defensive | `missed_defensive` later | `defensive`, `survivability` | Player died without available defensive |
 | Did a tank fail a swap/stack rule? | Tank had too many stacks or wrong tank was hit | `tank_swap_failure` later | `tank_swap`, `tank_buster` | Same tank took repeated busters |
 | Did a player drop/bait something badly? | Placement was harmful | `bad_placement` later | `bait`, `drop_location`, `puddle_drop` | Puddle dropped in raid path |
+| Was a player pushed, pulled, or knocked into danger? | Player failed forced movement mechanic | `avoidable_damage` | `forced_movement` | Knockback into lava/platform edge |
+| Did the boss lose a valid tank target in range? | Boss positional/tank failure | `boss_range` | `boss_range`, `tank_positioning` | Boss pulse due to range failure |
+| Did adds survive too long or repeatedly pressure the raid? | Raid failed add control | `avoidable_damage` for now, later `add_management` | `add_management`, `add_priority` | Repeated add explosions |
+| Did an add explode or leave danger after death? | Player failed post-death add mechanic | `avoidable_damage` | `corpse_explosion` | Exploding add corpse |
 
 ---
 
@@ -326,6 +330,90 @@ When unsure, use `minimum_soak` for soak-specific mechanics.
 
 ---
 
+## `boss_range`
+
+Use when:
+
+```text
+The boss required a tank or player to remain in valid melee/range positioning, and nobody was present.
+```
+
+Good example:
+
+```python
+OVERPOWERING_PULSE = {
+    "category": "boss_range",
+    "failure_type": "boss_range",
+}
+```
+
+Use this for:
+
+```text
+Boss emitted raid damage because tanks moved too far away.
+Boss became untanked.
+Boss pulsed because nobody remained in melee range.
+```
+
+---
+
+## `forced_movement`
+
+Use this category when:
+
+```text
+Players are pushed, pulled, knocked back, gripped, or otherwise forced into danger.
+```
+
+Good examples:
+
+```text
+Knockback into lava
+Pull into void zone
+Wind pushing players off platform
+Grip mechanic into hazard
+```
+
+---
+
+## `corpse_explosion`
+
+Use this category when:
+
+```text
+An add creates danger after death.
+```
+
+Good examples:
+
+```text
+Exploding corpses
+Death puddles
+Lingering explosions
+Post-death void zones
+```
+
+---
+
+## `add_management`
+
+Use this category when:
+
+```text
+Adds lived too long, repeatedly pressured the raid, or were not prioritized correctly.
+```
+
+Good examples:
+
+```text
+Add repeatedly cast dangerous ability
+Fixate add survived too long
+Raid ignored priority adds
+Add death timing caused overlaps
+```
+
+---
+
 # Category Guide
 
 Categories should be lowercase snake_case.
@@ -340,6 +428,7 @@ rear_cone
 beam
 swirl
 movement
+forced_movement
 interrupt
 minimum_soak
 soak_participation
@@ -348,10 +437,13 @@ dispel
 spread
 stack
 boss_threat
+boss_range
 tank_buster
 tank_swap
+tank_positioning
 add_management
 add_priority
+corpse_explosion
 bait
 drop_location
 defensive
