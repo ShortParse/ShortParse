@@ -6,6 +6,13 @@ Each boss encounter contains manually curated avoidable mechanics, role filterin
 
 ---
 
+# Additional Documentation
+
+- `README/mechanic_builder.md`
+- `README/mechanic_decision_matrix.md`
+
+---
+
 # Folder Structure
 
 ```text
