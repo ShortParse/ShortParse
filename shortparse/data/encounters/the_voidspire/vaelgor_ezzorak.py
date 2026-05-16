@@ -1,3 +1,5 @@
+from shortparse.data.encounters.types import Mechanic
+
 from shortparse.data.encounters.constants import (
     ALL_ROLES,
     NON_TANK_ROLES,
@@ -14,7 +16,7 @@ from shortparse.data.encounters.mechanic_helper import (
 ENCOUNTER_ID = 3178
 ENCOUNTER_NAME = "Vaelgor & Ezzorak"
 
-TAIL_LASH = {
+TAIL_LASH: Mechanic = {
     "name": "Tail Lash",
     "severity": "Major",
     "avoidable": True,
@@ -33,7 +35,7 @@ TAIL_LASH = {
     "wcl_type": "damage_taken",
 }
 
-IMPALE = {
+IMPALE: Mechanic = {
     "name": "Impale",
     "severity": "Major",
     "avoidable": True,
@@ -52,7 +54,7 @@ IMPALE = {
     "wcl_type": "damage_taken",
 }
 
-VAELWING = {
+VAELWING: Mechanic = {
     "name": "Vaelwing",
     "severity": "Major",
     "avoidable": True,
@@ -71,7 +73,7 @@ VAELWING = {
     "wcl_type": "damage_taken",
 }
 
-RAKFANG = {
+RAKFANG: Mechanic = {
     "name": "Rakfang",
     "severity": "Major",
     "avoidable": True,
@@ -90,7 +92,7 @@ RAKFANG = {
     "wcl_type": "damage_taken",
 }
 
-NULLSCATTER = {
+NULLSCATTER: Mechanic = {
     "name": "Nullscatter",
     "severity": "Critical",
     "avoidable": True,
@@ -109,7 +111,7 @@ NULLSCATTER = {
     "wcl_type": "damage_taken",
 }
 
-MIDNIGHT_FLAMES = {
+MIDNIGHT_FLAMES: Mechanic = {
     "name": "Midnight Flames",
     "severity": "Critical",
     "avoidable": True,
@@ -128,7 +130,7 @@ MIDNIGHT_FLAMES = {
     "wcl_type": "damage_taken",
 }
 
-GLOOMFIELD = {
+GLOOMFIELD: Mechanic = {
     "name": "Gloomfield",
     "severity": "Major",
     "avoidable": True,
@@ -147,7 +149,7 @@ GLOOMFIELD = {
     "wcl_type": "damage_taken",
 }
 
-GLOOM = {
+GLOOM: Mechanic = {
     "name": "Gloom",
     "severity": "Info",
     "avoidable": True,

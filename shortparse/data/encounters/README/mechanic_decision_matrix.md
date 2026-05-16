@@ -58,10 +58,6 @@ Then use the table below.
 | Did a player fail to use a defensive? | Player took lethal/high damage without defensive | `missed_defensive` later | `defensive`, `survivability` | Player died without available defensive |
 | Did a tank fail a swap/stack rule? | Tank had too many stacks or wrong tank was hit | `tank_swap_failure` later | `tank_swap`, `tank_buster` | Same tank took repeated busters |
 | Did a player drop/bait something badly? | Placement was harmful | `bad_placement` later | `bait`, `drop_location`, `puddle_drop` | Puddle dropped in raid path |
-| Was a player pushed, pulled, or knocked into danger? | Player failed forced movement mechanic | `avoidable_damage` | `forced_movement` | Knockback into lava/platform edge |
-| Did the boss lose a valid tank target in range? | Boss positional/tank failure | `boss_range` | `boss_range`, `tank_positioning` | Boss pulse due to range failure |
-| Did adds survive too long or repeatedly pressure the raid? | Raid failed add control | `avoidable_damage` for now, later `add_management` | `add_management`, `add_priority` | Repeated add explosions |
-| Did an add explode or leave danger after death? | Player failed post-death add mechanic | `avoidable_damage` | `corpse_explosion` | Exploding add corpse |
 
 ---
 
@@ -85,20 +81,23 @@ rear_cone
 beam
 swirl
 movement
+forced_movement
+lane_movement
+debuff_damage
 boss_threat
 ```
 
 Good examples:
 
 ```python
-VOID_FALL = {
+VOID_FALL: Mechanic = {
     "category": "ground_effect",
     "failure_type": "avoidable_damage",
 }
 ```
 
 ```python
-OBLIVIONS_WRATH = {
+OBLIVIONS_WRATH: Mechanic = {
     "category": "traveling_projectile",
     "failure_type": "avoidable_damage",
 }
@@ -128,7 +127,7 @@ This uses cast events, not damage events.
 Good example:
 
 ```python
-SHADOW_FRACTURE = {
+SHADOW_FRACTURE: Mechanic = {
     "category": "interrupt",
     "failure_type": "missed_interrupt",
     "wcl_type": "cast",
@@ -154,7 +153,7 @@ This is usually a raid/group failure.
 Good example:
 
 ```python
-GLOOM_MINIMUM_SOAK = {
+GLOOM_MINIMUM_SOAK: Mechanic = {
     "category": "minimum_soak",
     "failure_type": "minimum_soak",
     "minimum_soakers": 5,
@@ -185,7 +184,7 @@ A player had zero involvement in a mechanic they were expected to help with.
 Good example:
 
 ```python
-GLOOM_PARTICIPATION = {
+GLOOM_PARTICIPATION: Mechanic = {
     "category": "soak_participation",
     "failure_type": "zero_participation",
     "spell_ids": [1245500],
@@ -330,86 +329,60 @@ When unsure, use `minimum_soak` for soak-specific mechanics.
 
 ---
 
-## `boss_range`
+## `lane_movement`
 
-Use when:
+Use this category when:
 
 ```text
-The boss required a tank or player to remain in valid melee/range positioning, and nobody was present.
+Players must avoid marching adds, lane sweeps, or moving lane-based hazards.
 ```
 
-Good example:
+Good examples:
+
+```text
+Marching add lanes
+Boss army crossing the room
+Moving wall/lane hazard
+Lane sweep that kills players on contact
+```
+
+Use with:
 
 ```python
-OVERPOWERING_PULSE = {
-    "category": "boss_range",
-    "failure_type": "boss_range",
-}
-```
-
-Use this for:
-
-```text
-Boss emitted raid damage because tanks moved too far away.
-Boss became untanked.
-Boss pulsed because nobody remained in melee range.
+"category": "lane_movement",
+"failure_type": "avoidable_damage",
 ```
 
 ---
 
-## `forced_movement`
+## `debuff_damage`
 
 Use this category when:
 
 ```text
-Players are pushed, pulled, knocked back, gripped, or otherwise forced into danger.
+The current engine is tracking damage ticks from a debuff, not true dispel timing.
 ```
 
 Good examples:
 
 ```text
-Knockback into lava
-Pull into void zone
-Wind pushing players off platform
-Grip mechanic into hazard
+Curse tick damage
+Magic debuff tick damage
+DoT damage from a removable mechanic
+Damage taken because a debuff remained active
 ```
 
----
+Use with:
 
-## `corpse_explosion`
-
-Use this category when:
-
-```text
-An add creates danger after death.
+```python
+"category": "debuff_damage",
+"failure_type": "avoidable_damage",
 ```
 
-Good examples:
+Later, when aura duration, dispel timing, and actual dispel events are supported, some `debuff_damage` mechanics may become:
 
-```text
-Exploding corpses
-Death puddles
-Lingering explosions
-Post-death void zones
-```
-
----
-
-## `add_management`
-
-Use this category when:
-
-```text
-Adds lived too long, repeatedly pressured the raid, or were not prioritized correctly.
-```
-
-Good examples:
-
-```text
-Add repeatedly cast dangerous ability
-Fixate add survived too long
-Raid ignored priority adds
-Add death timing caused overlaps
+```python
+"failure_type": "missed_dispel"
 ```
 
 ---
@@ -428,7 +401,6 @@ rear_cone
 beam
 swirl
 movement
-forced_movement
 interrupt
 minimum_soak
 soak_participation
@@ -437,13 +409,10 @@ dispel
 spread
 stack
 boss_threat
-boss_range
 tank_buster
 tank_swap
-tank_positioning
 add_management
 add_priority
-corpse_explosion
 bait
 drop_location
 defensive
@@ -574,10 +543,41 @@ Unless the mechanic is specifically about mitigating, dispelling, soaking, or su
 
 ---
 
+# Typed Mechanic Definitions
+
+Encounter mechanics should use the shared `Mechanic` type:
+
+```python
+from shortparse.data.encounters.types import Mechanic
+```
+
+Good:
+
+```python
+VOID_FALL: Mechanic = {
+    "name": "Void Fall",
+    "category": "swirl",
+    "failure_type": "avoidable_damage",
+}
+```
+
+This improves PyCharm autocomplete and makes invalid `category` or `failure_type` strings easier to catch.
+
+The spell mapping does not change:
+
+```python
+**mechanic_aliases(
+    [1258883],
+    VOID_FALL,
+),
+```
+
+---
+
 # Standard Mechanic Template
 
 ```python
-MECHANIC_CONSTANT = {
+MECHANIC_CONSTANT: Mechanic = {
     "name": "Display Name",
 
     "severity": "Major",
@@ -612,7 +612,7 @@ MECHANIC_CONSTANT = {
 ## Ground Effect
 
 ```python
-VOID_FALL = {
+VOID_FALL: Mechanic = {
     "name": "Void Fall",
     "severity": "Critical",
     "avoidable": True,
@@ -635,7 +635,7 @@ VOID_FALL = {
 ## Traveling Projectile
 
 ```python
-OBLIVIONS_WRATH = {
+OBLIVIONS_WRATH: Mechanic = {
     "name": "Oblivion's Wrath",
     "severity": "Warning",
     "avoidable": True,
@@ -658,7 +658,7 @@ OBLIVIONS_WRATH = {
 ## Missed Interrupt
 
 ```python
-SHADOW_FRACTURE = {
+SHADOW_FRACTURE: Mechanic = {
     "name": "Shadow Fracture",
     "severity": "Major",
     "avoidable": True,
@@ -681,7 +681,7 @@ SHADOW_FRACTURE = {
 ## Minimum Soak
 
 ```python
-GLOOM_MINIMUM_SOAK = {
+GLOOM_MINIMUM_SOAK: Mechanic = {
     "name": "Gloom",
     "severity": "Critical",
     "avoidable": False,
@@ -706,7 +706,7 @@ GLOOM_MINIMUM_SOAK = {
 ## Zero Participation
 
 ```python
-GLOOM_PARTICIPATION = {
+GLOOM_PARTICIPATION: Mechanic = {
     "name": "Gloom Participation",
     "severity": "Warning",
     "avoidable": False,

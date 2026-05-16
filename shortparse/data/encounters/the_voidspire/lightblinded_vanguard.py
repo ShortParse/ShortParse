@@ -1,3 +1,5 @@
+from shortparse.data.encounters.types import Mechanic
+
 from shortparse.data.encounters.constants import (
     ALL_ROLES,
     NON_TANK_ROLES,
@@ -14,7 +16,7 @@ from shortparse.data.encounters.mechanic_helper import (
 ENCOUNTER_ID = 3180
 ENCOUNTER_NAME = "Lightblinded Vanguard"
 
-VOID_RUPTURE = {
+VOID_RUPTURE: Mechanic = {
     "name": "Void Rupture",
     "severity": "Critical",
     "avoidable": True,

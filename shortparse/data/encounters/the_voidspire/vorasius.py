@@ -1,3 +1,5 @@
+from shortparse.data.encounters.types import Mechanic
+
 from shortparse.data.encounters.constants import (
     ALL_ROLES,
     NON_TANK_ROLES,
@@ -13,7 +15,7 @@ from shortparse.data.encounters.mechanic_helper import (
 ENCOUNTER_ID = 3177
 ENCOUNTER_NAME = "Vorasius"
 
-FALLING = {
+FALLING: Mechanic = {
     "name": "Falling",
     "severity": "Critical",
     "avoidable": True,
@@ -27,16 +29,16 @@ FALLING = {
         "The boss will attempt to pull players off the platform."
     ),
     "recommendation": (
-        "Review movement pathing and avoid getting pulled off the platform."
+        "Position carefully to avoid being pulled off the platform."
     ),
     "wcl_type": "damage_taken",
 }
 
-SHADOWCLAW_SLAM = {
+SHADOWCLAW_SLAM: Mechanic = {
     "name": "Shadowclaw Slam",
     "severity": "Critical",
     "avoidable": True,
-    "category": "ground_effect",
+    "category": "tank_buster",
     "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 1,
@@ -51,11 +53,11 @@ SHADOWCLAW_SLAM = {
     "wcl_type": "damage_taken",
 }
 
-VOID_BREATH = {
+VOID_BREATH: Mechanic = {
     "name": "Void Breath",
     "severity": "Critical",
     "avoidable": True,
-    "category": "frontal",
+    "category": "beam",
     "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 0,
@@ -70,11 +72,11 @@ VOID_BREATH = {
     "wcl_type": "damage_taken",
 }
 
-OVERPOWERING_PULSE = {
+OVERPOWERING_PULSE: Mechanic = {
     "name": "Overpowering Pulse",
     "severity": "Critical",
     "avoidable": True,
-    "category": "tank_buster",
+    "category": "boss_range",
     "failure_type": "boss_range",
     "counts_as_failure": True,
     "max_reasonable_hits": 0,
@@ -89,12 +91,12 @@ OVERPOWERING_PULSE = {
     "wcl_type": "damage_taken",
 }
 
-AFTERSHOCK = {
+AFTERSHOCK: Mechanic = {
     "name": "Aftershock",
     "severity": "Critical",
     "avoidable": True,
     "category": "ground_effect",
-    "failure_type": "ground_effect",
+    "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 2,
     "score_per_hit": 60,
@@ -108,12 +110,12 @@ AFTERSHOCK = {
     "wcl_type": "damage_taken",
 }
 
-DARK_GOO = {
+DARK_GOO: Mechanic = {
     "name": "Dark Goo",
     "severity": "Warning",
     "avoidable": True,
     "category": "corpse_explosion",
-    "failure_type": "ground_effect",
+    "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 4,
     "score_per_hit": 20,
@@ -127,12 +129,12 @@ DARK_GOO = {
     "wcl_type": "damage_taken",
 }
 
-PARASITE_EXPULSION = {
+PARASITE_EXPULSION: Mechanic = {
     "name": "Parasite Expulsion",
     "severity": "Critical",
     "avoidable": True,
-    "category": "Ground Effect",
-    "failure_type": "ground_effect",
+    "category": "swirl",
+    "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 2,
     "score_per_hit": 80,
@@ -141,13 +143,13 @@ PARASITE_EXPULSION = {
         "The boss will frequently spray globs of dark ichor across the battlefield."
     ),
     "recommendation": (
-        "Review movement pathing and avoid the impact zones."
+        "Move out of the impact swirl before detonation."
     ),
     "wcl_type": "damage_taken",
 }
 
-BLISTERBURST = {
-    "name": "Blistburst",
+BLISTERBURST: Mechanic = {
+    "name": "Blisterburst",
     "severity": "Warning",
     "avoidable": True,
     "category": "add_management",

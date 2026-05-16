@@ -1,3 +1,5 @@
+from shortparse.data.encounters.types import Mechanic
+
 from shortparse.data.encounters.constants import (
     ALL_ROLES,
     NON_TANK_ROLES,
@@ -15,11 +17,11 @@ ENCOUNTER_ID = 3176
 ENCOUNTER_NAME = "Imperator Averzian"
 
 
-VOID_RUPTURE = {
+VOID_RUPTURE: Mechanic = {
     "name": "Void Rupture",
     "severity": "Critical",
     "avoidable": True,
-    "category": "ground_effect",
+    "category": "swirl",
     "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 1,
@@ -30,17 +32,17 @@ VOID_RUPTURE = {
         "will shoot out from the claimed space for a short time."
     ),
     "recommendation": (
-        "Review movement pathing and avoid the impact zones."
+        "Move out of the impact swirl before detonation."
     ),
     "wcl_type": "damage_taken",
 }
 
 
-VOID_FALL = {
+VOID_FALL: Mechanic = {
     "name": "Void Fall",
     "severity": "Critical",
     "avoidable": True,
-    "category": "ground_effect",
+    "category": "swirl",
     "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 1,
@@ -50,13 +52,13 @@ VOID_FALL = {
         "Knockback followed by AOE circles on the ground that you need to dodge."
     ),
     "recommendation": (
-        "Review movement pathing and avoid the impact zones."
+        "Move out of the impact swirl before detonation."
     ),
     "wcl_type": "damage_taken",
 }
 
 
-OBLIVIONS_WRATH = {
+OBLIVIONS_WRATH: Mechanic = {
     "name": "Oblivion's Wrath",
     "severity": "Warning",
     "avoidable": True,
@@ -74,7 +76,7 @@ OBLIVIONS_WRATH = {
 }
 
 
-SHADOWS_ADVANCE = {
+SHADOWS_ADVANCE: Mechanic = {
     "name": "Shadow's Advance",
     "severity": "Critical",
     "avoidable": True,
@@ -90,7 +92,7 @@ SHADOWS_ADVANCE = {
 }
 
 
-SHADOW_PHALANX = {
+SHADOW_PHALANX: Mechanic = {
     "name": "Shadow Phalanx",
     "severity": "Critical",
     "avoidable": True,
@@ -105,7 +107,7 @@ SHADOW_PHALANX = {
     "wcl_type": "damage_taken",
 }
 
-BLACK_MIASMA = {
+BLACK_MIASMA: Mechanic = {
     "name": "Black Miasma",
     "severity": "Warning",
     "avoidable": False,
@@ -120,11 +122,11 @@ BLACK_MIASMA = {
     "wcl_type": "damage_taken",
 }
 
-DARK_BARRAGE = {
+DARK_BARRAGE: Mechanic = {
     "name": "Dark Barrage",
     "severity": "Major",
     "avoidable": True,
-    "category": "ground_effect",
+    "category": "swirl",
     "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 2,
@@ -134,12 +136,12 @@ DARK_BARRAGE = {
         "Adds will hurl dark energy at several players."
     ),
     "recommendation": (
-        "Review movement pathing and avoid the impact zones."
+        "Move out of the impact swirl before detonation."
     ),
     "wcl_type": "damage_taken",
 }
 
-GNASHING_VOID = {
+GNASHING_VOID: Mechanic = {
     "name": "Gnashing Void",
     "severity": "Info",
     "avoidable": False,

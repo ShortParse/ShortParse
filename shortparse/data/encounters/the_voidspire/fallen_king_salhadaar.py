@@ -1,3 +1,5 @@
+from shortparse.data.encounters.types import Mechanic
+
 from shortparse.data.encounters.constants import (
     ALL_ROLES,
     NON_TANK_ROLES,
@@ -14,12 +16,12 @@ from shortparse.data.encounters.mechanic_helper import (
 ENCOUNTER_ID = 3179
 ENCOUNTER_NAME = "Fallen-King Salhadaar"
 
-VOID_INFUSION = {
+VOID_INFUSION: Mechanic = {
     "name": "Void Infusion",
     "severity": "Critical",
     "avoidable": True,
-    "category": "Boss Kite",
-    "failure_type": "dodge_adds",
+    "category": "add_priority",
+    "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 0,
     "score_per_hit": 100,
@@ -33,12 +35,12 @@ VOID_INFUSION = {
     "wcl_type": "damage_taken",
 }
 
-SHADOW_FRACTURE = {
+SHADOW_FRACTURE: Mechanic = {
     "name": "Shadow Fracture",
     "severity": "Major",
     "avoidable": True,
-    "category": "Interrupt",
-    "failure_type": "interrupt",
+    "category": "interrupt",
+    "failure_type": "missed_interrupt",
     "counts_as_failure": True,
     "max_reasonable_hits": 4,
     "score_per_hit": 80,
@@ -52,12 +54,12 @@ SHADOW_FRACTURE = {
     "wcl_type": "cast events",
 }
 
-UMBRAL_BEAMS = {
+UMBRAL_BEAMS: Mechanic = {
     "name": "Umbral Beams",
     "severity": "Critical",
     "avoidable": True,
-    "category": "Dodge Lines",
-    "failure_type": "dodge_oneshot",
+    "category": "beam",
+    "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 0,
     "score_per_hit": 100,
@@ -71,12 +73,12 @@ UMBRAL_BEAMS = {
     "wcl_type": "damage_taken",
 }
 
-DESPOTIC_COMMAND = {
+DESPOTIC_COMMAND: Mechanic = {
     "name": "Despotic Command",
     "severity": "Major",
     "avoidable": True,
-    "category": "Spread Out",
-    "failure_type": "spread_out",
+    "category": "spread",
+    "failure_type": "spread_failure",
     "counts_as_failure": True,
     "max_reasonable_hits": 10,
     "score_per_hit": 50,
@@ -90,7 +92,7 @@ DESPOTIC_COMMAND = {
     "wcl_type": "damage_taken",
 }
 
-TWILIGHT_SPIKES = {
+TWILIGHT_SPIKES: Mechanic = {
     "name": "Twilight Spikes",
     "severity": "Major",
     "avoidable": True,
@@ -109,7 +111,7 @@ TWILIGHT_SPIKES = {
     "wcl_type": "damage_taken",
 }
 
-TORTURUS_EXTRACT = {
+TORTURUS_EXTRACT: Mechanic = {
     "name": "Torturous Extract",
     "severity": "Info",
     "avoidable": True,
@@ -128,7 +130,7 @@ TORTURUS_EXTRACT = {
     "wcl_type": "damage_taken",
 }
 
-DESTABILIZING_STRIKES = {
+DESTABILIZING_STRIKES: Mechanic = {
     "name": "Destabilizing Strikes",
     "severity": "Info",
     "avoidable": True,
@@ -147,7 +149,7 @@ DESTABILIZING_STRIKES = {
     "wcl_type": "damage_taken",
 }
 
-VOID_CRUSH = {
+VOID_CRUSH: Mechanic = {
     "name": "Void Crush",
     "severity": "Info",
     "avoidable": True,
@@ -166,7 +168,7 @@ VOID_CRUSH = {
     "wcl_type": "damage_taken",
 }
 
-QUINTESSENCE = {
+QUINTESSENCE: Mechanic = {
     "name": "Quintessence",
     "severity": "Major",
     "avoidable": True,
