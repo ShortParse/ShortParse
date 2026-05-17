@@ -8,26 +8,8 @@ Goal:
 2. Decide what failure means.
 3. Choose the correct `failure_type`.
 4. Choose a clear `category`.
-5. Generate a clean typed Python mechanic block.
+5. Generate a clean Python mechanic block.
 6. Add the spell ID mapping with `mechanic_aliases()`.
-
-ShortParse encounter files should import and use the shared `Mechanic` type:
-
-```python
-from shortparse.data.encounters.types import Mechanic
-```
-
-Then define mechanics like this:
-
-```python
-VOID_FALL: Mechanic = {
-    "name": "Void Fall",
-    "category": "swirl",
-    "failure_type": "avoidable_damage",
-}
-```
-
-This lets PyCharm autocomplete valid mechanic keys, `category` values, and `failure_type` values.
 
 ---
 
@@ -134,54 +116,12 @@ Example: This is avoidable ground damage and indicates poor movement.
 
 ---
 
-# Typed Mechanic Definitions
-
-Use the shared `Mechanic` type on every mechanic dictionary.
-
-```python
-from shortparse.data.encounters.types import Mechanic
-```
-
-Good:
-
-```python
-VOID_FALL: Mechanic = {
-    "name": "Void Fall",
-    "category": "swirl",
-    "failure_type": "avoidable_damage",
-}
-```
-
-Avoid:
-
-```python
-VOID_FALL: Mechanic = {
-    "name": "Void Fall",
-    "category": "Swirl",
-    "failure_type": "ground_effect",
-}
-```
-
-Why this matters:
-
-```text
-PyCharm can suggest valid keys.
-PyCharm can autocomplete category values.
-PyCharm can autocomplete failure_type values.
-Typos are easier to catch before runtime.
-Contributor submissions stay more consistent.
-```
-
-You do not need to change `mechanic_aliases()` or the spell mapping when adding `: Mechanic`.
-
----
-
 # Generate Mechanic Block Template
 
 Fill in the placeholders.
 
 ```python
-MECHANIC_CONSTANT_NAME: Mechanic = {
+MECHANIC_CONSTANT_NAME = {
     "name": "MECHANIC DISPLAY NAME",
 
     "severity": "Major",
@@ -227,7 +167,7 @@ AVOIDABLE_DAMAGE = {
 Use this when the player took damage from something they should have dodged.
 
 ```python
-VOID_FALL: Mechanic = {
+VOID_FALL = {
     "name": "Void Fall",
 
     "severity": "Critical",
@@ -271,7 +211,7 @@ Mapping:
 Use this when players are hit by moving projectiles or missiles.
 
 ```python
-OBLIVIONS_WRATH: Mechanic = {
+OBLIVIONS_WRATH = {
     "name": "Oblivion's Wrath",
 
     "severity": "Warning",
@@ -308,7 +248,7 @@ Use this when an enemy cast completed and should have been stopped.
 Important: use the cast spell ID, not the damage spell ID.
 
 ```python
-SHADOW_FRACTURE: Mechanic = {
+SHADOW_FRACTURE = {
     "name": "Shadow Fracture",
 
     "severity": "Major",
@@ -345,7 +285,7 @@ Use this when each soak event requires at least a certain number of players.
 Failure is group-level: not enough players soaked.
 
 ```python
-GLOOM_MINIMUM_SOAK: Mechanic = {
+GLOOM_MINIMUM_SOAK = {
     "name": "Gloom",
 
     "severity": "Critical",
@@ -388,7 +328,7 @@ Example question:
 > Did Jimmy never touch Gloom at all?
 
 ```python
-GLOOM_PARTICIPATION: Mechanic = {
+GLOOM_PARTICIPATION = {
     "name": "Gloom Participation",
 
     "severity": "Warning",
@@ -431,7 +371,7 @@ Example:
 - Player is not assigned to that soak.
 
 ```python
-BAD_GLOOM_SOAK: Mechanic = {
+BAD_GLOOM_SOAK = {
     "name": "Bad Gloom Soak",
 
     "severity": "Critical",
@@ -462,78 +402,6 @@ BAD_GLOOM_SOAK: Mechanic = {
     "wcl_type": "damage_taken",
 }
 ```
-
----
-
-# Example: Lane Movement
-
-Use this when players must avoid marching adds, moving lanes, or lane-based hazards.
-
-```python
-SHADOW_PHALANX: Mechanic = {
-    "name": "Shadow Phalanx",
-
-    "severity": "Critical",
-    "avoidable": True,
-
-    "category": "lane_movement",
-    "failure_type": "avoidable_damage",
-
-    "counts_as_failure": True,
-
-    "max_reasonable_hits": 0,
-    "score_per_hit": 100,
-
-    "applies_to": ALL_ROLES,
-
-    "note": (
-        "The boss sends units marching through a lane."
-    ),
-
-    "recommendation": (
-        "Avoid touching the marching lane hazard."
-    ),
-
-    "wcl_type": "damage_taken",
-}
-```
-
----
-
-# Example: Debuff Damage
-
-Use this when the current engine is only tracking damage ticks from a debuff.
-
-```python
-BLACK_MIASMA: Mechanic = {
-    "name": "Black Miasma",
-
-    "severity": "Warning",
-    "avoidable": False,
-
-    "category": "debuff_damage",
-    "failure_type": "avoidable_damage",
-
-    "counts_as_failure": True,
-
-    "max_reasonable_hits": 4,
-    "score_per_hit": 20,
-
-    "applies_to": ALL_ROLES,
-
-    "note": (
-        "Players are afflicted with a debuff that causes ticking damage."
-    ),
-
-    "recommendation": (
-        "Remove the debuff quickly when possible."
-    ),
-
-    "wcl_type": "damage_taken",
-}
-```
-
-Use `missed_dispel` later when the engine is tracking aura duration, dispel timing, or actual dispel events.
 
 ---
 
