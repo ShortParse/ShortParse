@@ -8,8 +8,30 @@ Goal:
 2. Decide what failure means.
 3. Choose the correct `failure_type`.
 4. Choose a clear `category`.
-5. Generate a clean Python mechanic block.
+5. Generate a clean typed Python mechanic block.
 6. Add the spell ID mapping with `mechanic_aliases()`.
+
+---
+
+# Typed Mechanic Definitions
+
+ShortParse encounter files should import and use the shared `Mechanic` type:
+
+```python
+from shortparse.data.encounters.types import Mechanic
+```
+
+Then define mechanics like this:
+
+```python
+VOID_FALL: Mechanic = {
+    "name": "Void Fall",
+    "category": "swirl",
+    "failure_type": "avoidable_damage",
+}
+```
+
+You do not need to change `mechanic_aliases()` or the spell mapping when adding `: Mechanic`.
 
 ---
 
@@ -19,14 +41,20 @@ Goal:
 |---|---|---|---|
 | Player got hit by something avoidable | Player took avoidable damage | `avoidable_damage` | `ground_effect`, `traveling_projectile`, `frontal`, `rear_cone`, `swirl`, `beam`, `movement` |
 | Enemy cast completed | Cast should have been interrupted | `missed_interrupt` | `interrupt` |
-| Too few players soaked | Group failed minimum soak requirement | `minimum_soak` | `soak`, `orb_soak`, `group_soak` |
+| Too few players soaked | Group failed minimum soak requirement | `minimum_soak` | `minimum_soak`, `group_soak`, `orb_soak` |
 | Player never touched/handled mechanic | Player did not participate | `zero_participation` | `soak_participation`, `interrupt_participation`, `add_priority` |
-| Player soaked while ineligible | Wrong player soaked | `bad_soak` | `soak`, `vulnerability`, `wrong_assignment` |
+| Player soaked while ineligible | Wrong player soaked | `bad_soak` | `bad_soak`, `vulnerability`, `wrong_assignment` |
 | Debuff was not removed in time | Dispel was missed or late | `missed_dispel` | `dispel`, `curse`, `magic`, `poison`, `disease` |
-| Debuff was removed at the wrong time | Bad/early/unsafe dispel | `bad_dispel` | `dispel`, `explosive_dispel` |
+| Debuff was removed at the wrong time | Bad/early/unsafe dispel | `bad_dispel` | `bad_dispel`, `explosive_dispel` |
 | Too many players hit together | Players failed spread | `spread_failure` | `spread`, `chain`, `splash` |
 | Too few players hit together | Players failed stack/share | `stack_failure` | `stack`, `shared_damage`, `group_soak` |
 | Non-tank got hit by tank/boss attack | Wrong role had threat or positioning | `avoidable_damage` for now, later `tank_hit` or `boss_threat` | `boss_threat`, `tank_buster` |
+| Player was forced/pulled/knocked into danger | Failed forced movement mechanic | `avoidable_damage` | `forced_movement` |
+| Tank was not in boss melee range | Boss positional/tank failure | `boss_range` | `boss_range`, `tank_positioning` |
+| Adds lived too long or repeatedly damaged the raid | Raid failed add control | `avoidable_damage` for now, later `add_management` | `add_management`, `add_priority` |
+| Dangerous effect triggered after add death | Player failed corpse explosion mechanic | `avoidable_damage` | `corpse_explosion` |
+| Player touched a moving lane hazard | Player failed lane movement | `avoidable_damage` | `lane_movement` |
+| Player took debuff tick damage | Engine tracks damage ticks, not true dispel timing yet | `avoidable_damage` | `debuff_damage` |
 
 ---
 
@@ -67,13 +95,17 @@ WHAT DOES FAILURE MEAN?
 [ ] Players failed to spread
 [ ] Players failed to stack
 [ ] Wrong role/player was hit
+[ ] Player was forced/pulled/knocked into danger
+[ ] Boss lost valid melee/range target
+[ ] Adds lived too long
+[ ] Add corpse/post-death effect exploded
 [ ] Other: __________
 
 RECOMMENDED failure_type:
 Example: avoidable_damage
 
 RECOMMENDED category:
-Example: ground_effect
+Example: swirl, beam, forced_movement, add_priority
 
 SEVERITY:
 [ ] Info
@@ -103,7 +135,7 @@ NOTE:
 Example: Void circle impact from add projectile.
 
 RECOMMENDATION:
-Example: Move out of the landing circle before impact.
+Example: Move out of the impact swirl before detonation.
 
 SHOULD THIS BE TRACKED?
 [ ] Yes
@@ -111,17 +143,15 @@ SHOULD THIS BE TRACKED?
 [ ] Unsure, needs review
 
 WHY SHOULD / SHOULD NOT THIS BE TRACKED?
-Example: This is avoidable ground damage and indicates poor movement.
+Example: This is avoidable damage and indicates poor movement.
 ```
 
 ---
 
 # Generate Mechanic Block Template
 
-Fill in the placeholders.
-
 ```python
-MECHANIC_CONSTANT_NAME = {
+MECHANIC_CONSTANT_NAME: Mechanic = {
     "name": "MECHANIC DISPLAY NAME",
 
     "severity": "Major",
@@ -162,18 +192,18 @@ AVOIDABLE_DAMAGE = {
 
 ---
 
-# Example: Avoidable Ground Effect
+# Example: Swirl
 
-Use this when the player took damage from something they should have dodged.
+Use this when a telegraphed circle/swirl appears and then detonates.
 
 ```python
-VOID_FALL = {
+VOID_FALL: Mechanic = {
     "name": "Void Fall",
 
     "severity": "Critical",
     "avoidable": True,
 
-    "category": "ground_effect",
+    "category": "swirl",
     "failure_type": "avoidable_damage",
 
     "counts_as_failure": True,
@@ -184,24 +214,50 @@ VOID_FALL = {
     "applies_to": ALL_ROLES,
 
     "note": (
-        "Adds launch void energy into the air, creating a ground impact circle."
+        "A telegraphed impact swirl appears before detonating."
     ),
 
     "recommendation": (
-        "Move out of the impact circle before it lands."
+        "Move out of the impact swirl before detonation."
     ),
 
     "wcl_type": "damage_taken",
 }
 ```
 
-Mapping:
+---
+
+# Example: Ground Effect
+
+Use this when players stand in lingering bad ground, puddles, pools, or zones.
 
 ```python
-**mechanic_aliases(
-    [1258883],
-    VOID_FALL,
-),
+VOID_ZONE: Mechanic = {
+    "name": "Void Zone",
+
+    "severity": "Major",
+    "avoidable": True,
+
+    "category": "ground_effect",
+    "failure_type": "avoidable_damage",
+
+    "counts_as_failure": True,
+
+    "max_reasonable_hits": 3,
+    "score_per_hit": 30,
+
+    "applies_to": ALL_ROLES,
+
+    "note": (
+        "Players stood in a lingering ground effect."
+    ),
+
+    "recommendation": (
+        "Do not stand in lingering ground effects."
+    ),
+
+    "wcl_type": "damage_taken",
+}
 ```
 
 ---
@@ -211,7 +267,7 @@ Mapping:
 Use this when players are hit by moving projectiles or missiles.
 
 ```python
-OBLIVIONS_WRATH = {
+OBLIVIONS_WRATH: Mechanic = {
     "name": "Oblivion's Wrath",
 
     "severity": "Warning",
@@ -228,11 +284,46 @@ OBLIVIONS_WRATH = {
     "applies_to": ALL_ROLES,
 
     "note": (
-        "Void projectiles travel outward from the boss, damaging and knocking back players hit."
+        "Void projectiles travel outward from the boss, damaging players hit."
     ),
 
     "recommendation": (
         "Avoid the outward-moving projectiles."
+    ),
+
+    "wcl_type": "damage_taken",
+}
+```
+
+---
+
+# Example: Beam
+
+Use this when players are hit by a beam or laser-style mechanic.
+
+```python
+VOID_BREATH: Mechanic = {
+    "name": "Void Breath",
+
+    "severity": "Critical",
+    "avoidable": True,
+
+    "category": "beam",
+    "failure_type": "avoidable_damage",
+
+    "counts_as_failure": True,
+
+    "max_reasonable_hits": 0,
+    "score_per_hit": 100,
+
+    "applies_to": ALL_ROLES,
+
+    "note": (
+        "The boss sweeps a deadly beam across the room."
+    ),
+
+    "recommendation": (
+        "Avoid touching the beam."
     ),
 
     "wcl_type": "damage_taken",
@@ -248,7 +339,7 @@ Use this when an enemy cast completed and should have been stopped.
 Important: use the cast spell ID, not the damage spell ID.
 
 ```python
-SHADOW_FRACTURE = {
+SHADOW_FRACTURE: Mechanic = {
     "name": "Shadow Fracture",
 
     "severity": "Major",
@@ -282,10 +373,8 @@ SHADOW_FRACTURE = {
 
 Use this when each soak event requires at least a certain number of players.
 
-Failure is group-level: not enough players soaked.
-
 ```python
-GLOOM_MINIMUM_SOAK = {
+GLOOM_MINIMUM_SOAK: Mechanic = {
     "name": "Gloom",
 
     "severity": "Critical",
@@ -310,7 +399,7 @@ GLOOM_MINIMUM_SOAK = {
     ),
 
     "recommendation": (
-        "Assign soak groups and make sure at least 5 eligible players touch each orb."
+        "Assign soak groups and make sure enough eligible players soak."
     ),
 
     "wcl_type": "damage_taken",
@@ -323,12 +412,8 @@ GLOOM_MINIMUM_SOAK = {
 
 Use this when you want to know who never engaged with a required mechanic.
 
-Example question:
-
-> Did Jimmy never touch Gloom at all?
-
 ```python
-GLOOM_PARTICIPATION = {
+GLOOM_PARTICIPATION: Mechanic = {
     "name": "Gloom Participation",
 
     "severity": "Warning",
@@ -364,14 +449,8 @@ GLOOM_PARTICIPATION = {
 
 Use this when taking the soak is bad for certain players.
 
-Example:
-- Player has a vulnerability debuff.
-- Player already soaked recently.
-- Player is the wrong role.
-- Player is not assigned to that soak.
-
 ```python
-BAD_GLOOM_SOAK = {
+BAD_GLOOM_SOAK: Mechanic = {
     "name": "Bad Gloom Soak",
 
     "severity": "Critical",
@@ -405,37 +484,288 @@ BAD_GLOOM_SOAK = {
 
 ---
 
+# Example: Forced Movement
+
+Use this when a player is pulled, pushed, knocked back, or otherwise forced into danger.
+
+```python
+FALLING: Mechanic = {
+    "name": "Falling",
+
+    "severity": "Critical",
+    "avoidable": True,
+
+    "category": "forced_movement",
+    "failure_type": "avoidable_damage",
+
+    "counts_as_failure": True,
+
+    "max_reasonable_hits": 0,
+    "score_per_hit": 100,
+
+    "applies_to": ALL_ROLES,
+
+    "note": (
+        "Players were knocked, pulled, or forced into lethal space."
+    ),
+
+    "recommendation": (
+        "Position carefully to avoid being forced into danger."
+    ),
+
+    "wcl_type": "damage_taken",
+}
+```
+
+---
+
+# Example: Boss Range
+
+Use this when the boss should always have a valid tank/melee target nearby.
+
+```python
+OVERPOWERING_PULSE: Mechanic = {
+    "name": "Overpowering Pulse",
+
+    "severity": "Critical",
+    "avoidable": True,
+
+    "category": "boss_range",
+    "failure_type": "boss_range",
+
+    "counts_as_failure": True,
+
+    "max_reasonable_hits": 0,
+    "score_per_hit": 100,
+
+    "applies_to": TANK_ONLY,
+
+    "note": (
+        "The boss emitted a pulse because no valid tank remained in range."
+    ),
+
+    "recommendation": (
+        "Keep a tank in proper boss range at all times."
+    ),
+
+    "wcl_type": "damage_taken",
+}
+```
+
+---
+
+# Example: Corpse Explosion
+
+Use this when an add leaves behind a dangerous explosion or puddle after death.
+
+```python
+DARK_GOO: Mechanic = {
+    "name": "Dark Goo",
+
+    "severity": "Warning",
+    "avoidable": True,
+
+    "category": "corpse_explosion",
+    "failure_type": "avoidable_damage",
+
+    "counts_as_failure": True,
+
+    "max_reasonable_hits": 4,
+    "score_per_hit": 20,
+
+    "applies_to": ALL_ROLES,
+
+    "note": (
+        "The add exploded after death, leaving dangerous ground effects."
+    ),
+
+    "recommendation": (
+        "Move away from add corpses before they explode."
+    ),
+
+    "wcl_type": "damage_taken",
+}
+```
+
+---
+
+# Example: Add Management
+
+Use this when adds lived too long or repeatedly damaged the raid.
+
+```python
+BLISTERBURST: Mechanic = {
+    "name": "Blisterburst",
+
+    "severity": "Warning",
+    "avoidable": True,
+
+    "category": "add_management",
+    "failure_type": "avoidable_damage",
+
+    "counts_as_failure": True,
+
+    "max_reasonable_hits": 10,
+    "score_per_hit": 10,
+
+    "applies_to": ALL_ROLES,
+
+    "note": (
+        "Adds survived too long and repeatedly damaged the raid."
+    ),
+
+    "recommendation": (
+        "Prioritize killing or controlling the adds faster."
+    ),
+
+    "wcl_type": "damage_taken",
+}
+```
+
+---
+
+# Example: Add Priority
+
+Use this when specific priority adds or orbs must be killed before they empower the boss or trigger raid damage.
+
+```python
+VOID_INFUSION: Mechanic = {
+    "name": "Void Infusion",
+
+    "severity": "Critical",
+    "avoidable": True,
+
+    "category": "add_priority",
+    "failure_type": "avoidable_damage",
+
+    "counts_as_failure": True,
+
+    "max_reasonable_hits": 0,
+    "score_per_hit": 100,
+
+    "applies_to": ALL_ROLES,
+
+    "note": (
+        "Priority orbs were not killed before the boss absorbed them."
+    ),
+
+    "recommendation": (
+        "Prioritize killing the orbs before the boss reaches them."
+    ),
+
+    "wcl_type": "damage_taken",
+}
+```
+
+---
+
+# Example: Lane Movement
+
+Use this when players must avoid marching adds, moving lanes, or lane-based hazards.
+
+```python
+SHADOW_PHALANX: Mechanic = {
+    "name": "Shadow Phalanx",
+
+    "severity": "Critical",
+    "avoidable": True,
+
+    "category": "lane_movement",
+    "failure_type": "avoidable_damage",
+
+    "counts_as_failure": True,
+
+    "max_reasonable_hits": 0,
+    "score_per_hit": 100,
+
+    "applies_to": ALL_ROLES,
+
+    "note": (
+        "The boss sends units marching through a lane."
+    ),
+
+    "recommendation": (
+        "Avoid touching the marching lane hazard."
+    ),
+
+    "wcl_type": "damage_taken",
+}
+```
+
+---
+
+# Example: Debuff Damage
+
+Use this when the current engine is only tracking damage ticks from a debuff.
+
+```python
+BLACK_MIASMA: Mechanic = {
+    "name": "Black Miasma",
+
+    "severity": "Warning",
+    "avoidable": False,
+
+    "category": "debuff_damage",
+    "failure_type": "avoidable_damage",
+
+    "counts_as_failure": True,
+
+    "max_reasonable_hits": 4,
+    "score_per_hit": 20,
+
+    "applies_to": ALL_ROLES,
+
+    "note": (
+        "Players are afflicted with a debuff that causes ticking damage."
+    ),
+
+    "recommendation": (
+        "Remove the debuff quickly when possible."
+    ),
+
+    "wcl_type": "damage_taken",
+}
+```
+
+Use `missed_dispel` later when the engine is tracking aura duration, dispel timing, or actual dispel events.
+
+---
+
 # Severity Guide
 
 ## Info
+
 Use for low-impact or informational tracking.
 
-Example:
+Examples:
 - Minor add damage
 - Low-value uptime issue
 - Things worth showing but not punishing heavily
 
 ## Warning
+
 Use for repeated mistakes or medium-impact mechanics.
 
-Example:
+Examples:
 - Projectile hits
 - Low participation
 - Moderate avoidable damage
 
 ## Major
+
 Use for mechanics that strongly affect progression.
 
-Example:
+Examples:
 - Missed interrupts
 - Major avoidable hit
 - Spread failure
 - Important dispel failure
 
 ## Critical
+
 Use for mechanics that can kill players, wipe the raid, or prevent boss progression.
 
-Example:
+Examples:
 - One-shot mechanics
 - Required soak failures
 - Major tank mechanic failures
@@ -456,6 +786,8 @@ frontal
 rear_cone
 beam
 swirl
+movement
+forced_movement
 interrupt
 minimum_soak
 soak_participation
@@ -464,10 +796,14 @@ dispel
 spread
 stack
 boss_threat
+boss_range
 tank_buster
+tank_positioning
 add_management
 add_priority
-movement
+corpse_explosion
+lane_movement
+debuff_damage
 bait
 ```
 
@@ -497,6 +833,7 @@ missed_dispel
 bad_dispel
 spread_failure
 stack_failure
+boss_range
 tank_hit
 ```
 
