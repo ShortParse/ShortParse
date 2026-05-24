@@ -220,14 +220,24 @@ class BenchmarkService:
         """
 
         data = self.client.graphql(query)
-
+        
         payload = (
             data["worldData"]
             ["encounter"]
             ["characterRankings"]
         )
-
         rankings = payload.get("rankings", [])
+        
+        # WCL API does not reliably filter spec/class correctly.
+        # Force strict filtering locally.
+        rankings = [
+            ranking
+            for ranking in rankings
+            if (
+                ranking.get("class") == request.class_name
+                and ranking.get("spec") == request.spec_name
+            )
+        ]
 
         save_cached_benchmark_rankings(
             encounter_id=request.encounter_id,
