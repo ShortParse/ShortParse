@@ -190,7 +190,7 @@ JUDGMENT: Mechanic = {
     "counts_as_failure": True,
     "max_reasonable_hits": 2,
     "score_per_hit": 50,
-    "applies_to": TANK_ROLES,
+    "applies_to": TANK_ONLY,
     "spell_ids": [1251857, 1246736],
     "note": (
         "Judgment increases damage taken from the follow-up tank strike."
@@ -210,7 +210,7 @@ FINAL_VERDICT: Mechanic = {
     "counts_as_failure": True,
     "max_reasonable_hits": 1,
     "score_per_hit": 60,
-    "applies_to": TANK_ROLES,
+    "applies_to": TANK_ONLY,
     "spell_ids": [1251812],
     "note": (
         "Heavy follow-up tank strike after Judgment."
@@ -230,7 +230,7 @@ SHIELD_OF_THE_RIGHTEOUS: Mechanic = {
     "counts_as_failure": True,
     "max_reasonable_hits": 1,
     "score_per_hit": 60,
-    "applies_to": TANK_ROLES,
+    "applies_to": TANK_ONLY,
     "spell_ids": [1251859],
     "note": (
         "Heavy follow-up tank strike after Judgment."
@@ -250,7 +250,7 @@ EXORCISM: Mechanic = {
     "counts_as_failure": True,
     "max_reasonable_hits": 3,
     "score_per_hit": 30,
-    "applies_to": TANK_ROLES,
+    "applies_to": TANK_ONLY,
     "spell_ids": [1246745],
     "note": (
         "Heavy Holy damage strike against the current tank."
