@@ -1,4 +1,8 @@
 import requests
+import threading
+
+_log_lock = threading.Lock()
+_last_rate_limit_logged = 0.0
 
 from shortparse.auth import get_access_token
 from shortparse.cache import (
@@ -48,10 +52,14 @@ class WarcraftLogsClient:
                 else:
                     sleep_time = backoff_factor ** attempt + random.uniform(0.1, 1.0)
 
-                print(
-                    f"[RATE LIMIT 429] Hit 429 for WCL API. "
-                    f"Retrying in {sleep_time:.2f}s... (Attempt {attempt + 1}/{max_retries})"
-                )
+                with _log_lock:
+                    now = time.time()
+                    if now - _last_rate_limit_logged > 5.0:
+                        _last_rate_limit_logged = now
+                        print(
+                            f"[RATE LIMIT 429] Hit 429 for WCL API. "
+                            f"Retrying in {sleep_time:.2f}s... (Attempt {attempt + 1}/{max_retries})"
+                        )
                 time.sleep(sleep_time)
                 continue
 
@@ -74,10 +82,14 @@ class WarcraftLogsClient:
 
                 if is_rate_limit:
                     sleep_time = backoff_factor ** attempt + random.uniform(0.1, 1.0)
-                    print(
-                        f"[RATE LIMIT GRAPHQL] GraphQL rate limit error. "
-                        f"Retrying in {sleep_time:.2f}s... (Attempt {attempt + 1}/{max_retries})"
-                    )
+                    with _log_lock:
+                        now = time.time()
+                        if now - _last_rate_limit_logged > 5.0:
+                            _last_rate_limit_logged = now
+                            print(
+                                f"[RATE LIMIT GRAPHQL] GraphQL rate limit error. "
+                                f"Retrying in {sleep_time:.2f}s... (Attempt {attempt + 1}/{max_retries})"
+                            )
                     time.sleep(sleep_time)
                     continue
 
