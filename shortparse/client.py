@@ -18,26 +18,74 @@ class WarcraftLogsClient:
         self.access_token = get_access_token()
 
     def graphql(self, query: str, variables: dict | None = None) -> dict:
-        response = requests.post(
-            GRAPHQL_URL,
-            json={
-                "query": query,
-                "variables": variables or {},
-            },
-            headers={
-                "Authorization": f"Bearer {self.access_token}",
-                "Content-Type": "application/json",
-            },
-            timeout=60,
-        )
+        import time
+        import random
 
-        response.raise_for_status()
-        payload = response.json()
+        max_retries = 5
+        backoff_factor = 2.0
 
-        if "errors" in payload:
-            raise RuntimeError(payload["errors"])
+        for attempt in range(max_retries):
+            response = requests.post(
+                GRAPHQL_URL,
+                json={
+                    "query": query,
+                    "variables": variables or {},
+                },
+                headers={
+                    "Authorization": f"Bearer {self.access_token}",
+                    "Content-Type": "application/json",
+                },
+                timeout=60,
+            )
 
-        return payload["data"]
+            if response.status_code == 429:
+                retry_after = response.headers.get("Retry-After")
+                if retry_after:
+                    try:
+                        sleep_time = float(retry_after)
+                    except ValueError:
+                        sleep_time = backoff_factor ** attempt + random.uniform(0.1, 1.0)
+                else:
+                    sleep_time = backoff_factor ** attempt + random.uniform(0.1, 1.0)
+
+                print(
+                    f"[RATE LIMIT 429] Hit 429 for WCL API. "
+                    f"Retrying in {sleep_time:.2f}s... (Attempt {attempt + 1}/{max_retries})"
+                )
+                time.sleep(sleep_time)
+                continue
+
+            response.raise_for_status()
+            payload = response.json()
+
+            if "errors" in payload:
+                errors = payload["errors"]
+                is_rate_limit = False
+                for err in errors:
+                    msg = err.get("message", "").lower()
+                    if (
+                        "rate limit" in msg
+                        or "too many requests" in msg
+                        or "points limit" in msg
+                        or "throttled" in msg
+                    ):
+                        is_rate_limit = True
+                        break
+
+                if is_rate_limit:
+                    sleep_time = backoff_factor ** attempt + random.uniform(0.1, 1.0)
+                    print(
+                        f"[RATE LIMIT GRAPHQL] GraphQL rate limit error. "
+                        f"Retrying in {sleep_time:.2f}s... (Attempt {attempt + 1}/{max_retries})"
+                    )
+                    time.sleep(sleep_time)
+                    continue
+
+                raise RuntimeError(errors)
+
+            return payload["data"]
+
+        raise RuntimeError("Exhausted WCL API retries due to rate limit 429")
 
     def get_report_fights(self, report_code: str) -> dict:
         cached = get_cached_report_fights(report_code)
