@@ -42,11 +42,15 @@ class BenchmarkService:
         request: BenchmarkRequest,
         rankings: list[dict],
         tier: BenchmarkFilterTier,
+        limit: int | None = 10,
     ) -> list[dict]:
 
         filtered = []
 
         for ranking in rankings:
+            if limit is not None and len(filtered) >= limit:
+                break
+
             item_level = ranking.get("bracketData")
             duration = ranking.get("duration")
             size = ranking.get("size")
@@ -138,6 +142,7 @@ class BenchmarkService:
                 request,
                 rankings,
                 tier,
+                limit=10,
             )
 
             if len(filtered) > len(best_available):
@@ -394,6 +399,42 @@ class BenchmarkService:
     ) -> BenchmarkResult:
 
         rankings = self.fetch_character_rankings(request)
+
+        # Pre-fetch healer counts concurrently for HPS requests to avoid sequential GraphQL requests during filtering
+        if request.metric == "hps" and request.healer_count is not None:
+            import concurrent.futures
+
+            # Broadest tolerance filter in FILTER_TIERS is Broad (item_level_tolerance is 12)
+            # Find candidate rankings within item level tolerance of 12
+            candidates = []
+            for ranking in rankings:
+                item_level = ranking.get("bracketData")
+                if item_level is not None and abs(item_level - request.item_level) <= 12:
+                    candidates.append(ranking)
+
+            # Find all unique uncached healer counts for these candidates
+            uncached_keys = set()
+            for candidate in candidates:
+                report = candidate.get("report", {})
+                report_code = report.get("code")
+                fight_id = report.get("fightID")
+                if report_code and fight_id:
+                    if get_cached_healer_count(report_code, fight_id) is None:
+                        uncached_keys.add((report_code, fight_id))
+
+            # Fetch the uncached healer counts concurrently
+            if uncached_keys:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+                    futures = [
+                        executor.submit(
+                            self.get_healer_count_for_report_fight,
+                            report_code,
+                            fight_id,
+                        )
+                        for report_code, fight_id in uncached_keys
+                    ]
+                    # Consume futures to ensure they execute
+                    concurrent.futures.wait(futures)
 
         (
             rankings,

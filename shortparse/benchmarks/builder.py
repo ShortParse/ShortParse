@@ -1,3 +1,5 @@
+import concurrent.futures
+
 from shortparse.benchmarks.models import BenchmarkRequest
 from shortparse.benchmarks.rankings import compare_player_to_benchmark
 from shortparse.benchmarks.service import BenchmarkService
@@ -72,26 +74,44 @@ def build_benchmark_comparisons(
         player_metrics,
     )
 
-    for index, request in enumerate(requests, start=1):
+    completed_count = 0
+
+    def process_request(request):
+        nonlocal completed_count
+        benchmark = service.get_benchmark_result(request)
+        completed_count += 1
         if progress_callback:
             progress_callback(
                 (
                     f"benchmarking "
                     f"{request.player_name} "
-                    f"({index}/{len(requests)})..."
+                    f"({completed_count}/{len(requests)})..."
                 )
             )
+        return request.player_name, benchmark
 
-        metric_data = player_metrics[request.player_name]
+    # Execute requests concurrently using a ThreadPoolExecutor
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(process_request, req) for req in requests]
+        
+        results = {}
+        for future in concurrent.futures.as_completed(futures):
+            player_name, benchmark = future.result()
+            results[player_name] = benchmark
+
+    # Build final comparisons dictionary preserving order of requests
+    for request in requests:
+        player_name = request.player_name
+        metric_data = player_metrics[player_name]
         performance = metric_data["performance"]
 
         player_value = performance.get(request.metric, 0)
-        benchmark = service.get_benchmark_result(request)
+        benchmark = results[player_name]
 
-        comparisons[request.player_name] = compare_player_to_benchmark(
+        comparisons[player_name] = compare_player_to_benchmark(
             request,
             player_value,
             benchmark,
         )
 
-    return comparisons
+    return comparisons

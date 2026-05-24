@@ -1,5 +1,11 @@
 import json
 
+try:
+    import orjson
+    HAS_ORJSON = True
+except ImportError:
+    HAS_ORJSON = False
+
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -22,6 +28,12 @@ def load_json(path: Path) -> dict | list | None:
     if not path.exists():
         return None
 
+    if HAS_ORJSON:
+        try:
+            return orjson.loads(path.read_bytes())
+        except Exception:
+            pass
+
     with path.open("r", encoding="utf-8") as file:
         return json.load(file)
 
@@ -29,8 +41,16 @@ def load_json(path: Path) -> dict | list | None:
 def save_json(path: Path, data: dict | list) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
+    if HAS_ORJSON:
+        try:
+            path.write_bytes(orjson.dumps(data, option=orjson.OPT_INDENT_2))
+            return
+        except Exception:
+            pass
+
     with path.open("w", encoding="utf-8") as file:
         json.dump(data, file, indent=2, ensure_ascii=False)
+
 
 
 def is_cache_fresh(path: Path, ttl_hours: int) -> bool:
