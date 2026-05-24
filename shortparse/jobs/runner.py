@@ -50,7 +50,26 @@ def run_analysis_job(
             current_step="Connecting",
         )
 
-        client = WarcraftLogsClient()
+        # If this job belongs to a registered user, use their personal Warcraft Logs OAuth token
+        user_access_token = None
+        user_id = job.get("user_id")
+        if user_id:
+            from shortparse.database import SessionLocal
+            from shortparse.db_models import LinkedAccount
+            db = SessionLocal()
+            try:
+                account = db.query(LinkedAccount).filter(
+                    LinkedAccount.user_id == user_id,
+                    LinkedAccount.provider == "warcraftlogs"
+                ).first()
+                if account:
+                    user_access_token = account.access_token
+            except Exception as e:
+                logger.error("Failed to query logged-in user OAuth access token in background job: %s", e)
+            finally:
+                db.close()
+
+        client = WarcraftLogsClient(access_token=user_access_token)
 
         append_job_log(
             job_id,

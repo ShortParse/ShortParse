@@ -8,6 +8,7 @@ from pathlib import Path
 from fastapi import BackgroundTasks
 from fastapi import FastAPI
 from fastapi import HTTPException
+from fastapi import Request
 from pydantic import BaseModel
 
 from shortparse.client import WarcraftLogsClient
@@ -28,8 +29,11 @@ from shortparse.settings import (
     APP_VERSION,
     ENVIRONMENT,
     has_warcraftlogs_credentials,
+    JWT_SECRET_KEY,
+    JWT_EXPIRATION_HOURS,
 )
-
+from starlette.middleware.sessions import SessionMiddleware
+from shortparse.server.oauth import router as oauth_router
 
 logger = get_logger(__name__)
 
@@ -37,6 +41,17 @@ app = FastAPI(
     title="ShortParse API",
     version=APP_VERSION,
 )
+
+# Enable signed session cookies for authentication
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=JWT_SECRET_KEY,
+    session_cookie="shortparse_session",
+    max_age=JWT_EXPIRATION_HOURS * 3600,
+)
+
+# Register authentication routes
+app.include_router(oauth_router)
 
 
 class AnalyzeRequest(BaseModel):
@@ -92,6 +107,7 @@ def version() -> dict:
 @app.post("/jobs")
 def create_analysis_job(
     request: JobRequest,
+    http_request: Request,
     background_tasks: BackgroundTasks,
 ) -> dict:
     report_code = extract_report_code(request.report_url)
@@ -100,6 +116,9 @@ def create_analysis_job(
         request.report_url,
         report_code,
     )
+    
+    # Associate the job with the logged-in user if authenticated
+    job["user_id"] = http_request.session.get("user_id")
 
     save_job(job)
 

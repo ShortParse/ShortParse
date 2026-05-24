@@ -52,6 +52,18 @@ WCL_CLIENT_SECRET = os.getenv(
     "",
 )
 
+WCL_REDIRECT_URI = os.getenv(
+    "WARCRAFTLOGS_REDIRECT_URI",
+    "http://localhost:8000/api/auth/warcraftlogs/callback",
+)
+
+JWT_SECRET_KEY = os.getenv(
+    "JWT_SECRET_KEY",
+    "shortparse_secure_jwt_secret_key_placeholder",
+)
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRATION_HOURS = 24
+
 
 #
 # Redis Cache

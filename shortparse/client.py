@@ -18,8 +18,8 @@ GRAPHQL_URL = "https://www.warcraftlogs.com/api/v2/client"
 
 
 class WarcraftLogsClient:
-    def __init__(self):
-        self.access_token = get_access_token()
+    def __init__(self, access_token: str | None = None):
+        self.access_token = access_token or get_access_token()
 
     def graphql(self, query: str, variables: dict | None = None) -> dict:
         import time
