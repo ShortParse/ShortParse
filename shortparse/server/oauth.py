@@ -62,13 +62,11 @@ def warcraftlogs_login():
             detail="Warcraft Logs OAuth client credentials are not configured in settings."
         )
 
-    # Scopes: public (read public logs), user_read (read user info/private logs)
     authorize_url = (
         f"{WCL_AUTHORIZE_URL}"
         f"?client_id={WCL_CLIENT_ID}"
         f"&redirect_uri={WCL_REDIRECT_URI}"
         f"&response_type=code"
-        f"&scope=public"
     )
     return RedirectResponse(url=authorize_url)
 
