@@ -199,7 +199,12 @@ class BenchmarkService:
                 request.spec_name,
             )
 
-            return cached
+            # Filter out anonymous reports to ensure comparison URL validity
+            return [
+                ranking
+                for ranking in cached
+                if ranking.get("name", "").lower() != "anonymous"
+            ]
 
         print(
             "[CACHE MISS] benchmark:",
@@ -234,13 +239,14 @@ class BenchmarkService:
         rankings = payload.get("rankings", [])
         
         # WCL API does not reliably filter spec/class correctly.
-        # Force strict filtering locally.
+        # Force strict filtering locally and remove anonymous reports.
         rankings = [
             ranking
             for ranking in rankings
             if (
                 ranking.get("class") == request.class_name
                 and ranking.get("spec") == request.spec_name
+                and ranking.get("name", "").lower() != "anonymous"
             )
         ]
 
