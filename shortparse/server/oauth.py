@@ -13,7 +13,7 @@ from shortparse.settings import (
     WCL_REDIRECT_URI,
 )
 
-router = APIRouter(prefix="/api/auth", tags=["Authentication"])
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 WCL_AUTHORIZE_URL = "https://www.warcraftlogs.com/oauth/authorize"
 WCL_TOKEN_URL = "https://www.warcraftlogs.com/oauth/token"
