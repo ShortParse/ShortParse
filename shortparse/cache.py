@@ -1,4 +1,5 @@
 import json
+import redis
 
 try:
     import orjson
@@ -8,6 +9,28 @@ except ImportError:
 
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+from shortparse.settings import (
+    REDIS_HOST,
+    REDIS_PORT,
+    REDIS_DB,
+    REDIS_PASSWORD,
+)
+
+# Attempt connection to Redis with fallback verification
+try:
+    redis_client = redis.Redis(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        db=REDIS_DB,
+        password=REDIS_PASSWORD or None,
+        socket_timeout=2.0,
+    )
+    redis_client.ping()
+    HAS_REDIS = True
+except Exception:
+    redis_client = None
+    HAS_REDIS = False
 
 
 CACHE_ROOT = Path("cache")
@@ -165,6 +188,17 @@ def get_cached_benchmark_rankings(
     class_name: str,
     spec_name: str,
 ) -> list[dict] | None:
+    if HAS_REDIS:
+        try:
+            key = f"shortparse:benchmark:{encounter_id}:{difficulty}:{metric}:{class_name}:{spec_name}"
+            value = redis_client.get(key)
+            if value is not None:
+                if HAS_ORJSON:
+                    return orjson.loads(value)
+                return json.loads(value.decode("utf-8"))
+        except Exception:
+            pass
+
     path = get_benchmark_cache_path(
         encounter_id,
         difficulty,
@@ -190,6 +224,18 @@ def save_cached_benchmark_rankings(
     spec_name: str,
     data: list[dict],
 ) -> None:
+    if HAS_REDIS:
+        try:
+            key = f"shortparse:benchmark:{encounter_id}:{difficulty}:{metric}:{class_name}:{spec_name}"
+            if HAS_ORJSON:
+                serialized = orjson.dumps(data)
+            else:
+                serialized = json.dumps(data)
+            # TTL: 12 hours (43200 seconds)
+            redis_client.setex(key, 43200, serialized)
+        except Exception:
+            pass
+
     path = get_benchmark_cache_path(
         encounter_id,
         difficulty,
@@ -219,6 +265,15 @@ def get_cached_healer_count(
     report_code: str,
     fight_id: int,
 ) -> int | None:
+    if HAS_REDIS:
+        try:
+            key = f"shortparse:healer_count:{report_code}:{fight_id}"
+            value = redis_client.get(key)
+            if value is not None:
+                return int(value)
+        except Exception:
+            pass
+
     path = get_healer_count_cache_path(
         report_code,
         fight_id,
@@ -248,6 +303,14 @@ def save_cached_healer_count(
     fight_id: int,
     healer_count: int,
 ) -> None:
+    if HAS_REDIS:
+        try:
+            key = f"shortparse:healer_count:{report_code}:{fight_id}"
+            # TTL: 24 hours (86400 seconds)
+            redis_client.setex(key, 86400, healer_count)
+        except Exception:
+            pass
+
     path = get_healer_count_cache_path(
         report_code,
         fight_id,
