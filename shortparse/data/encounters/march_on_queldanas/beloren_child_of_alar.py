@@ -209,7 +209,7 @@ GUARDIANS_EDICT: Mechanic = {
     "counts_as_failure": True,
     "max_reasonable_hits": 0,
     "score_per_hit": 100,
-    "applies_to": TANKS,
+    "applies_to": TANK_ONLY,
     "spell_ids": [1260826],
     "note": (
         "Guardian's Edict failed or hit incorrect players."
