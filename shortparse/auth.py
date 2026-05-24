@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 from dotenv import load_dotenv
 
@@ -6,8 +7,16 @@ load_dotenv()
 
 TOKEN_URL = "https://www.warcraftlogs.com/oauth/token"
 
+_cached_token = None
+_token_expires_at = 0.0
+
 
 def get_access_token() -> str:
+    global _cached_token, _token_expires_at
+
+    if _cached_token and time.time() < _token_expires_at - 60:
+        return _cached_token
+
     client_id = os.getenv("WARCRAFTLOGS_CLIENT_ID")
     client_secret = os.getenv("WARCRAFTLOGS_CLIENT_SECRET")
 
@@ -24,4 +33,10 @@ def get_access_token() -> str:
     )
 
     response.raise_for_status()
-    return response.json()["access_token"]
+    payload = response.json()
+
+    _cached_token = payload["access_token"]
+    expires_in = payload.get("expires_in", 3600)
+    _token_expires_at = time.time() + expires_in
+
+    return _cached_token
