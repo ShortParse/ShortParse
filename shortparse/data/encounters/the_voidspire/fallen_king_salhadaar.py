@@ -188,49 +188,13 @@ QUINTESSENCE: Mechanic = {
 }
 
 AVOIDABLE_DAMAGE = {
-    # Void Infusion
-    **mechanic_aliases(
-        [1245960],
-        VOID_INFUSION,
-    ),
-    # Shadow Fracture
-    **mechanic_aliases(
-        [1254088],
-        SHADOW_FRACTURE,
-    ),
-    # Umbral Beams
-    **mechanic_aliases(
-        [1260030],
-        UMBRAL_BEAMS,
-    ),
-    # Despotic Command
-    **mechanic_aliases(
-        [1260835],
-        DESPOTIC_COMMAND,
-    ),
-    # Twilight Spikes
-    **mechanic_aliases(
-        [1251213],
-        TWILIGHT_SPIKES,
-    ),
-    # Torturous Extract
-    **mechanic_aliases(
-        [1245592],
-        TORTURUS_EXTRACT,
-    ),
-    # Destabilizing Strikes
-    **mechanic_aliases(
-        [1284963],
-        DESTABILIZING_STRIKES,
-    ),
-    # Void Crush
-    **mechanic_aliases(
-        [1239667],
-        VOID_CRUSH,
-    ),
-    # Quintessence
-    **mechanic_aliases(
-        [1246094],
-        QUINTESSENCE,
-    ),
+    **mechanic_aliases([1245960], VOID_INFUSION),
+    **mechanic_aliases([1254088], SHADOW_FRACTURE),
+    **mechanic_aliases([1260030], UMBRAL_BEAMS),
+    **mechanic_aliases([1260835], DESPOTIC_COMMAND),
+    **mechanic_aliases([1251213], TWILIGHT_SPIKES),
+    **mechanic_aliases([1245592], TORTURUS_EXTRACT),
+    **mechanic_aliases([1284963], DESTABILIZING_STRIKES),
+    **mechanic_aliases([1239667], VOID_CRUSH),
+    **mechanic_aliases([1246094], QUINTESSENCE),
 }

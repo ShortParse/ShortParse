@@ -20,8 +20,8 @@ TAIL_LASH: Mechanic = {
     "name": "Tail Lash",
     "severity": "Major",
     "avoidable": True,
-    "category": "Positioning",
-    "failure_type": "bad_position",
+    "category": "rear_cone",
+    "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 2,
     "score_per_hit": 100,
@@ -39,8 +39,8 @@ IMPALE: Mechanic = {
     "name": "Impale",
     "severity": "Major",
     "avoidable": True,
-    "category": "Positioning",
-    "failure_type": "bad_position",
+    "category": "rear_cone",
+    "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 2,
     "score_per_hit": 100,
@@ -58,8 +58,8 @@ VAELWING: Mechanic = {
     "name": "Vaelwing",
     "severity": "Major",
     "avoidable": True,
-    "category": "Boss Threat",
-    "failure_type": "boss_threat",
+    "category": "boss_threat",
+    "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 1,
     "score_per_hit": 100,
@@ -77,8 +77,8 @@ RAKFANG: Mechanic = {
     "name": "Rakfang",
     "severity": "Major",
     "avoidable": True,
-    "category": "Boss Threat",
-    "failure_type": "boss_threat",
+    "category": "boss_threat",
+    "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 1,
     "score_per_hit": 100,
@@ -96,8 +96,8 @@ NULLSCATTER: Mechanic = {
     "name": "Nullscatter",
     "severity": "Critical",
     "avoidable": True,
-    "category": "Ground Effect",
-    "failure_type": "ground_effect",
+    "category": "swirl",
+    "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 1,
     "score_per_hit": 80,
@@ -106,7 +106,7 @@ NULLSCATTER: Mechanic = {
         "Nullzone's first tether snap releases a cascade of cosmic hail."
     ),
     "recommendation": (
-        "Review movement pathing and avoid the impact zones."
+        "Move out of the impact swirl before detonation."
     ),
     "wcl_type": "damage_taken",
 }
@@ -115,8 +115,8 @@ MIDNIGHT_FLAMES: Mechanic = {
     "name": "Midnight Flames",
     "severity": "Critical",
     "avoidable": True,
-    "category": "Ground Effect",
-    "failure_type": "ground_effect",
+    "category": "safe_zone",
+    "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 0,
     "score_per_hit": 100,
@@ -134,8 +134,8 @@ GLOOMFIELD: Mechanic = {
     "name": "Gloomfield",
     "severity": "Major",
     "avoidable": True,
-    "category": "Ground Effect",
-    "failure_type": "ground_effect",
+    "category": "ground_effect",
+    "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 1,
     "score_per_hit": 60,
@@ -151,64 +151,78 @@ GLOOMFIELD: Mechanic = {
 
 GLOOM: Mechanic = {
     "name": "Gloom",
-    "severity": "Info",
-    "avoidable": True,
-    "category": "Required Soak",
-    "failure_type": "required_soak",
+    "severity": "Critical",
+    "avoidable": False,
+    "category": "minimum_soak",
+    "failure_type": "minimum_soak",
     "counts_as_failure": True,
+    "minimum_soakers": 5,
     "max_reasonable_hits": 0,
     "score_per_hit": 100,
     "applies_to": ALL_ROLES,
     "spell_ids": [1245500],
     "note": (
-        "Ezzorak ejects a moving mass of pure darkness in a frontal direction."
+        "Ezzorak fires a moving orb of darkness. At least 5 players must soak it "
+        "to minimize the platform denial when it reaches the edge."
     ),
     "recommendation": (
-        "Minimum of 5 players must soak this orb (On higher difficulties rotate soaks)."
+        "Assign 5 players to soak each Gloom orb. Avoid sending extra players "
+        "because additional soakers take damage without reducing the zone further."
     ),
     "wcl_type": "damage_taken",
 }
 
-AVOIDABLE_DAMAGE = {
-    # Tail Lash
-    **mechanic_aliases(
-        [1264467],
-        TAIL_LASH,
+DREAD_BREATH: Mechanic = {
+    "name": "Dread Breath",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "beam",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 0,
+    "score_per_hit": 100,
+    "applies_to": ALL_ROLES,
+    "note": (
+        "Vaelgor targets a player with a massive frontal breath. The targeted player "
+        "must aim it away from the raid."
     ),
-    # Impale
-    **mechanic_aliases(
-        [1265152],
-        IMPALE,
+    "recommendation": (
+        "Targeted players should aim Dread Breath away from the raid. Non-targeted "
+        "players should move away from the targeted player and avoid the frontal."
     ),
-    # Vaelwing
-    **mechanic_aliases(
-        [1265139],
-        VAELWING,
-    ),
-    # Rakfang
-    **mechanic_aliases(
-        [1245652, 1245647],
-        RAKFANG,
-    ),
-    # Nullscatter
-    **mechanic_aliases(
-        [1266570],
-        NULLSCATTER,
-    ),
-    # Midnight Flames
-    **mechanic_aliases(
-        [1249748],
-        MIDNIGHT_FLAMES,
-    ),
-    # Gloomfield
-    **mechanic_aliases(
-        [1245421],
-        MIDNIGHT_FLAMES,
-    ),
+    "wcl_type": "damage_taken",
+}
 
-    # Gloom
-    **mechanic_aliases(
-        [1245500],
-        GLOOM,
+NULLBEAM: Mechanic = {
+    "name": "Nullbeam",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "tank_buster",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 0,
+    "score_per_hit": 100,
+    "applies_to": NON_TANK_ROLES,
+    "note": (
+        "Nullbeam should be aimed into the active tank only. Non-tanks hit by the beam are taking avoidable tank mechanic damage."
     ),
+    "recommendation": (
+        "Non-tanks should avoid standing in the Nullbeam frontal."
+    ),
+    "wcl_type": "damage_taken",
+}
+
+
+
+AVOIDABLE_DAMAGE = {
+    **mechanic_aliases([1264467], TAIL_LASH),
+    **mechanic_aliases([1265152], IMPALE),
+    **mechanic_aliases([1265139], VAELWING),
+    **mechanic_aliases([1245652, 1245647], RAKFANG),
+    **mechanic_aliases([1266570], NULLSCATTER),
+    **mechanic_aliases([1249748], MIDNIGHT_FLAMES),
+    **mechanic_aliases([1245421], GLOOMFIELD),
+    **mechanic_aliases([1245500], GLOOM),
+    **mechanic_aliases([1244225], DREAD_BREATH),
+    **mechanic_aliases([1283856], NULLBEAM),
 }

@@ -168,44 +168,12 @@ BLISTERBURST: Mechanic = {
 }
 
 AVOIDABLE_DAMAGE = {
-    # Falling
-    **mechanic_aliases(
-        [3],
-        FALLING,
-    ),
-    # Shadowclaw Slam
-    **mechanic_aliases(
-        [1281954, 1281906],
-        SHADOWCLAW_SLAM,
-    ),
-    # Void Breath
-    **mechanic_aliases(
-        [1257607, 1259923, 1259921],
-        VOID_BREATH,
-    ),
-    # Overpowering Pulse
-    **mechanic_aliases(
-        [1244419],
-        OVERPOWERING_PULSE,
-    ),
-    # Aftershock
-    **mechanic_aliases(
-        [1276584, 1276828, 1276583, 1276829, 1276824, 1276581, 1276588, 1276830, 1276832, 1276812, 1276811, 1276833, 1276834, 1276813, 1276835, 1276817],
-        AFTERSHOCK,
-    ),
-    # Dark Goo
-    **mechanic_aliases(
-        [1243270],
-        DARK_GOO,
-    ),
-    # Parasite Expulsion
-    **mechanic_aliases(
-        [1275558, 1275556],
-        PARASITE_EXPULSION,
-    ),
-    # Blisterburst
-    **mechanic_aliases(
-        [1259186, 1269302],
-        BLISTERBURST,
-    ),
+    **mechanic_aliases([3], FALLING),
+    **mechanic_aliases([1281954, 1281906], SHADOWCLAW_SLAM),
+    **mechanic_aliases([1257607, 1259923, 1259921], VOID_BREATH),
+    **mechanic_aliases([1244419], OVERPOWERING_PULSE),
+    **mechanic_aliases([1276584, 1276828, 1276583, 1276829, 1276824, 1276581, 1276588, 1276830, 1276832, 1276812, 1276811, 1276833, 1276834, 1276813, 1276835, 1276817], AFTERSHOCK),
+    **mechanic_aliases([1243270], DARK_GOO),
+    **mechanic_aliases([1275558, 1275556], PARASITE_EXPULSION),
+    **mechanic_aliases([1259186, 1269302], BLISTERBURST),
 }

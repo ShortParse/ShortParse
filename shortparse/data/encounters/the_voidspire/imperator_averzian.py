@@ -161,48 +161,12 @@ GNASHING_VOID: Mechanic = {
 }
 
 AVOIDABLE_DAMAGE = {
-    # Void Rupture
-    **mechanic_aliases(
-        [1261249, 1279890],
-        VOID_RUPTURE,
-    ),
-
-    # Void Fall
-    **mechanic_aliases(
-        [1269160, 1258883],
-        VOID_FALL,
-    ),
-
-    # Oblivion's Wrath
-    **mechanic_aliases(
-        [1260718],
-        OBLIVIONS_WRATH,
-    ),
-
-    # Shadow's Advance
-    **mechanic_aliases(
-        [1253691],
-        SHADOWS_ADVANCE,
-    ),
-
-    # Shadow Phalanx
-    **mechanic_aliases(
-        [1284786],
-        SHADOW_PHALANX,
-    ),
-    # Black Miasma
-    **mechanic_aliases(
-        [1275059],
-        BLACK_MIASMA,
-    ),
-    # Dark Barrage
-    **mechanic_aliases(
-        [1274846],
-        DARK_BARRAGE,
-    ),
-    # Gnashing Void
-    **mechanic_aliases(
-        [1255683],
-        GNASHING_VOID,
-    ),
+    **mechanic_aliases([1261249, 1279890], VOID_RUPTURE),
+    **mechanic_aliases([1269160, 1258883], VOID_FALL),
+    **mechanic_aliases([1260718], OBLIVIONS_WRATH),
+    **mechanic_aliases([1253691], SHADOWS_ADVANCE),
+    **mechanic_aliases([1284786], SHADOW_PHALANX),
+    **mechanic_aliases([1275059], BLACK_MIASMA),
+    **mechanic_aliases([1274846], DARK_BARRAGE),
+    **mechanic_aliases([1255683], GNASHING_VOID),
 }
