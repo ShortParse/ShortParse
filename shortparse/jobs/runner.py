@@ -91,6 +91,43 @@ def run_analysis_job(
             current_step="Encounters selected",
         )
 
+        # Pre-fetch player data and events concurrently for all selected encounters to merge API wait times
+        append_job_log(
+            job_id,
+            "Pre-downloading player details and fight events concurrently...",
+            progress=32,
+            current_step="Pre-fetching data",
+        )
+
+        all_fights_flat = []
+        for fights in selected.values():
+            all_fights_flat.extend(fights)
+
+        import concurrent.futures
+
+        def fetch_fight_resources(f):
+            append_job_log(
+                job_id,
+                f"Pre-fetching {f.get('name', 'Unknown')}: downloading data and events...",
+                current_step="Pre-fetching",
+            )
+            f_data = client.get_fight_player_data(report_code, f["id"])
+            evts = client.get_fight_events(
+                report_code,
+                f["id"],
+                f["startTime"],
+                f["endTime"],
+            )
+            return f["id"], f_data, evts
+
+        fight_resources = {}
+        if all_fights_flat:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(all_fights_flat), 10)) as executor:
+                futures = [executor.submit(fetch_fight_resources, f) for f in all_fights_flat]
+                for future in concurrent.futures.as_completed(futures):
+                    fid, f_data, evts = future.result()
+                    fight_resources[fid] = (f_data, evts)
+
         analyses = []
 
         base_progress = 30
@@ -138,27 +175,11 @@ def run_analysis_job(
 
                 append_job_log(
                     job_id,
-                    f"{boss_name}: downloading player data...",
-                    current_step=f"{boss_name}: player data",
+                    f"{boss_name}: retrieving pre-fetched data...",
+                    current_step=f"{boss_name}: reading data",
                 )
 
-                fight_data = client.get_fight_player_data(
-                    report_code,
-                    fight["id"],
-                )
-
-                append_job_log(
-                    job_id,
-                    f"{boss_name}: downloading fight events...",
-                    current_step=f"{boss_name}: events",
-                )
-
-                events = client.get_fight_events(
-                    report_code,
-                    fight["id"],
-                    fight["startTime"],
-                    fight["endTime"],
-                )
+                fight_data, events = fight_resources[fight["id"]]
 
                 append_job_log(
                     job_id,

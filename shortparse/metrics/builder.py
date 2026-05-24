@@ -27,47 +27,68 @@ def build_player_metrics(
 
     player_mechanics = mechanics_data["player_mechanics"]
 
+    # Pre-index events by sourceID and targetID to avoid O(P * E) full list scans inside player loop
+    events_by_source = {}
+    events_by_target = {}
+
+    for event in events:
+        source_id = event.get("sourceID")
+        if source_id is not None:
+            if source_id not in events_by_source:
+                events_by_source[source_id] = []
+            events_by_source[source_id].append(event)
+
+        target_id = event.get("targetID")
+        if target_id is not None:
+            if target_id not in events_by_target:
+                events_by_target[target_id] = []
+            events_by_target[target_id].append(event)
+
     for player in roster:
         name = player["name"]
+        actor_id = player["actor_id"]
+
+        player_events_source = events_by_source.get(actor_id, [])
+        player_events_target = events_by_target.get(actor_id, [])
 
         activity = calculate_active_time(
-            player["actor_id"],
-            events,
+            actor_id,
+            player_events_source,
             fight_duration_seconds,
         )
 
         consumables = calculate_consumables(
-            player["actor_id"],
-            events,
+            actor_id,
+            player_events_source,
         )
 
         deaths = calculate_deaths(
-            player["actor_id"],
-            events,
+            actor_id,
+            player_events_target,
             fight_start_time,
             fight_end_time,
         )
 
         avoidable_deaths = calculate_avoidable_deaths(
-            player["actor_id"],
-            events,
+            actor_id,
+            player_events_target,
             deaths["death_events"],
             encounter_id,
             player["role"],
         )
 
         avoidable_damage = calculate_avoidable_damage(
-            player["actor_id"],
-            events,
+            actor_id,
+            player_events_target,
             encounter_id,
             player["role"],
         )
 
         cooldowns = calculate_cooldowns(
-            player["actor_id"],
+            actor_id,
             player["class"],
             player["spec"],
-            events,
+            player_events_source,
             fight_duration_seconds,
         )
 
