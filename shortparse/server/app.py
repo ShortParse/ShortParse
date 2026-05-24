@@ -54,6 +54,22 @@ def startup_check() -> None:
     else:
         logger.warning("Warcraft Logs credentials are missing")
 
+    from shortparse.cache import HAS_REDIS
+    from shortparse.settings import REDIS_PASSWORD, REDIS_HOST, REDIS_PORT
+
+    if HAS_REDIS:
+        logger.info("Redis cache backend connected successfully at %s:%s", REDIS_HOST, REDIS_PORT)
+    else:
+        if REDIS_PASSWORD:
+            logger.error(
+                "Redis connection failed at %s:%s but credentials were provided! "
+                "Falling back to disk cache.",
+                REDIS_HOST,
+                REDIS_PORT,
+            )
+        else:
+            logger.info("Redis cache backend not running. Falling back to disk cache.")
+
 
 @app.get("/health")
 def health_check() -> dict:
