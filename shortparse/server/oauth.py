@@ -71,6 +71,7 @@ def warcraftlogs_login():
         f"?client_id={WCL_CLIENT_ID}"
         f"&redirect_uri={WCL_REDIRECT_URI}"
         f"&response_type=code"
+        f"&scope=view-user-profile view-private-reports"
     )
 
     return RedirectResponse(url=authorize_url)
