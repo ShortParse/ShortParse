@@ -296,7 +296,7 @@ class WarcraftLogsClient:
           userData {
             currentUser {
               characters {
-                guild {
+                guilds {
                   id
                   name
                   faction {
@@ -306,9 +306,9 @@ class WarcraftLogsClient:
                   server {
                     name
                     slug
-                  }
-                  region {
-                    compact
+                    region {
+                      compact
+                    }
                   }
                 }
               }
@@ -334,18 +334,26 @@ class WarcraftLogsClient:
         for char in characters:
             if not char:
                 continue
-            g = char.get("guild")
-            if not g or not g.get("id"):
-                continue
-            guild_id = g["id"]
-            if guild_id not in guilds_map:
-                guilds_map[guild_id] = {
-                    "id": guild_id,
-                    "name": g.get("name"),
-                    "faction": g.get("faction"),
-                    "server": g.get("server"),
-                    "region": g.get("region"),
-                }
+            char_guilds = char.get("guilds") or []
+            for g in char_guilds:
+                if not g or not g.get("id"):
+                    continue
+                guild_id = g["id"]
+                if guild_id not in guilds_map:
+                    server_data = g.get("server") or {}
+                    region_data = server_data.get("region") or {}
+                    guilds_map[guild_id] = {
+                        "id": guild_id,
+                        "name": g.get("name"),
+                        "faction": g.get("faction"),
+                        "server": {
+                            "name": server_data.get("name"),
+                            "slug": server_data.get("slug"),
+                        },
+                        "region": {
+                            "compact": region_data.get("compact"),
+                        },
+                    }
 
         return list(guilds_map.values())
 
