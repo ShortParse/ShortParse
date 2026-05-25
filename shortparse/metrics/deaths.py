@@ -19,7 +19,7 @@ def calculate_deaths(
     actor_lookup = {}
     if master_data:
         for ability in master_data.get("abilities", []):
-            a_id = ability.get("id")
+            a_id = ability.get("gameID")
             a_name = ability.get("name")
             if a_id is not None and a_name:
                 ability_lookup[a_id] = a_name

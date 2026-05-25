@@ -181,7 +181,7 @@ class WarcraftLogsClient:
             report(code: $code) {
               masterData {
                 abilities {
-                  id
+                  gameID
                   name
                 }
                 actors {
