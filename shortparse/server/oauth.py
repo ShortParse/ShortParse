@@ -1,5 +1,4 @@
 import os
-import hashlib
 import requests
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -21,21 +20,46 @@ WCL_TOKEN_URL = "https://www.warcraftlogs.com/oauth/token"
 WCL_GRAPHQL_URL = "https://www.warcraftlogs.com/api/v2/user"
 
 
-def make_wcl_fallback_user_id(access_token: str) -> str:
-    """
-    Warcraft Logs OAuth does not currently expose a simple authenticated
-    user identity field through GraphQL.
+def get_wcl_user_info(access_token: str) -> dict:
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+    }
 
-    This creates a stable-ish provider_user_id from the OAuth token so the
-    login flow can complete and private-report access can work.
+    query = """
+    query {
+        userData {
+            currentUser {
+                id
+                name
+            }
+        }
+    }
     """
-    token_hash = hashlib.sha256(access_token.encode("utf-8")).hexdigest()
-    return f"wcl_oauth_{token_hash[:32]}"
+
+    response = requests.post(
+        WCL_GRAPHQL_URL,
+        json={"query": query},
+        headers=headers,
+        timeout=15,
+    )
+    response.raise_for_status()
+
+    payload = response.json()
+
+    if "errors" in payload:
+        raise RuntimeError(f"WarcraftLogs API returned errors: {payload['errors']}")
+
+    user_data = payload.get("data", {}).get("userData", {}).get("currentUser")
+
+    if not user_data:
+        raise RuntimeError("WarcraftLogs currentUser was not found in the response")
+
+    return user_data
 
 
 @router.get("/warcraftlogs/login")
 def warcraftlogs_login():
-    """Redirects the user to the Warcraft Logs OAuth authorize page."""
     if not WCL_CLIENT_ID or not WCL_CLIENT_SECRET:
         raise HTTPException(
             status_code=500,
@@ -59,18 +83,11 @@ def warcraftlogs_callback(
     error: str | None = None,
     db: Session = Depends(get_db),
 ):
-    """Callback receiver that exchanges authorization code for tokens and signs in user."""
     if error:
-        raise HTTPException(
-            status_code=400,
-            detail=f"OAuth authorization failed: {error}",
-        )
+        raise HTTPException(status_code=400, detail=f"OAuth authorization failed: {error}")
 
     if not code:
-        raise HTTPException(
-            status_code=400,
-            detail="Missing OAuth authorization code.",
-        )
+        raise HTTPException(status_code=400, detail="Missing OAuth authorization code.")
 
     try:
         token_response = requests.post(
@@ -97,10 +114,16 @@ def warcraftlogs_callback(
     expires_in = token_data.get("expires_in", 3600)
     expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
 
-    # Warcraft Logs does not expose a reliable user profile query here.
-    # Do not block OAuth login on user profile lookup.
-    wcl_id = make_wcl_fallback_user_id(access_token)
-    wcl_username = f"WCL User {wcl_id[:8]}"
+    try:
+        wcl_user = get_wcl_user_info(access_token)
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to fetch user profile details from Warcraft Logs: {str(e)}",
+        )
+
+    wcl_id = str(wcl_user["id"])
+    wcl_username = wcl_user["name"]
 
     linked_account = db.query(LinkedAccount).filter(
         LinkedAccount.provider == "warcraftlogs",
@@ -113,11 +136,11 @@ def warcraftlogs_callback(
         linked_account.refresh_token = refresh_token
         linked_account.expires_at = expires_at
         linked_account.updated_at = datetime.utcnow()
+
+        if user.username != wcl_username:
+            user.username = wcl_username
     else:
-        user = User(
-            username=wcl_username,
-            is_premium=False,
-        )
+        user = User(username=wcl_username, is_premium=False)
         db.add(user)
         db.flush()
 
@@ -142,14 +165,10 @@ def warcraftlogs_callback(
 
 @router.get("/me")
 def get_current_user(request: Request, db: Session = Depends(get_db)):
-    """Returns currently authenticated user profile."""
     user_id = request.session.get("user_id")
 
     if not user_id:
-        raise HTTPException(
-            status_code=401,
-            detail="Not authenticated.",
-        )
+        raise HTTPException(status_code=401, detail="Not authenticated.")
 
     user = db.query(User).filter(User.id == user_id).first()
 
@@ -171,6 +190,5 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/logout")
 def logout(request: Request):
-    """Clears the authenticated user session."""
     request.session.clear()
     return {"status": "success", "message": "Successfully logged out."}
