@@ -307,7 +307,7 @@ class WarcraftLogsClient:
                     name
                     slug
                     region {
-                      compact
+                      compactName
                     }
                   }
                 }
@@ -351,7 +351,7 @@ class WarcraftLogsClient:
                             "slug": server_data.get("slug"),
                         },
                         "region": {
-                            "compact": region_data.get("compact"),
+                            "compact": region_data.get("compactName"),
                         },
                     }
 
