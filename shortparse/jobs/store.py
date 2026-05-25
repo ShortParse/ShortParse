@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 from shortparse.database import SessionLocal, engine
 from shortparse.db_models import Base, Job
 
@@ -11,7 +11,7 @@ inspector = inspect(engine)
 columns = [col['name'] for col in inspector.get_columns('users')]
 if 'discord_webhook_url' not in columns:
     with engine.begin() as conn:
-        conn.execute("ALTER TABLE users ADD COLUMN discord_webhook_url VARCHAR")
+        conn.execute(text("ALTER TABLE users ADD COLUMN discord_webhook_url VARCHAR"))
 
 
 def db_job_to_dict(db_job: Job | None) -> dict | None:
