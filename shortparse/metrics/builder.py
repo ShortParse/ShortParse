@@ -15,9 +15,12 @@ def build_player_metrics(
     fight_start_time: int,
     fight_end_time: int,
     encounter_id: int,
+    fight_data: dict = None,
 ) -> dict:
 
     metrics = {}
+
+    master_data = fight_data.get("masterData", {}) if fight_data else {}
 
     mechanics_data = calculate_mechanics(
         roster,
@@ -67,6 +70,7 @@ def build_player_metrics(
             player_events_target,
             fight_start_time,
             fight_end_time,
+            master_data=master_data,
         )
 
         avoidable_deaths = calculate_avoidable_deaths(

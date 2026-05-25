@@ -43,6 +43,7 @@ def build_fight_analysis(
         fight["startTime"],
         fight["endTime"],
         fight["encounterID"],
+        fight_data=fight_data,
     )
 
     progress("calculating tracked mechanics...")

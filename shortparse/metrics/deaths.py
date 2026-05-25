@@ -6,12 +6,29 @@ def calculate_deaths(
     events: list[dict],
     fight_start_time: int,
     fight_end_time: int,
+    master_data: dict = None,
 ) -> dict:
     death_events = []
 
     ignore_after_timestamp = fight_end_time - (
         WIPE_DEATH_IGNORE_WINDOW_SECONDS * 1000
     )
+
+    # Build lookups from masterData to resolve spell names and actor names
+    ability_lookup = {}
+    actor_lookup = {}
+    if master_data:
+        for ability in master_data.get("abilities", []):
+            a_id = ability.get("id")
+            a_name = ability.get("name")
+            if a_id is not None and a_name:
+                ability_lookup[a_id] = a_name
+
+        for actor in master_data.get("actors", []):
+            ac_id = actor.get("id")
+            ac_name = actor.get("name")
+            if ac_id is not None and ac_name:
+                actor_lookup[ac_id] = ac_name
 
     for event in events:
         if event.get("type") != "death":
@@ -41,11 +58,26 @@ def calculate_deaths(
             if not (lookback_start <= e_timestamp <= timestamp):
                 continue
                 
+            spell_id = e.get("abilityGameID")
+            
+            # Resolve ability name from masterData lookup first
             ability_name = "Unknown Spell"
-            if isinstance(e.get("ability"), dict):
-                ability_name = e.get("ability", {}).get("name", "Unknown Spell")
-            elif e.get("abilityName"):
-                ability_name = e.get("abilityName")
+            if spell_id in ability_lookup:
+                ability_name = ability_lookup[spell_id]
+            else:
+                ability_dict = e.get("ability")
+                if isinstance(ability_dict, dict):
+                    ability_name = ability_dict.get("name", "Unknown Spell")
+                elif e.get("abilityName"):
+                    ability_name = e.get("abilityName")
+                
+            # Resolve source name from masterData lookup first
+            source_id = e.get("sourceID")
+            source_name = None
+            if source_id in actor_lookup:
+                source_name = actor_lookup[source_id]
+            else:
+                source_name = e.get("sourceName")
                 
             # 1. Damage events targeting this player
             if e_type == "damage" and e.get("targetID") == actor_id:
@@ -55,9 +87,9 @@ def calculate_deaths(
                     "seconds_offset": round((e_timestamp - timestamp) / 1000, 2),
                     "amount": int(e.get("amount") or 0),
                     "overkill": int(e.get("overkill") or 0),
-                    "ability_id": e.get("abilityGameID"),
+                    "ability_id": spell_id,
                     "ability_name": ability_name,
-                    "source_name": e.get("sourceName") or "Boss/NPC"
+                    "source_name": source_name or "Boss/NPC"
                 })
                 
             # 2. Heal events targeting this player
@@ -68,14 +100,13 @@ def calculate_deaths(
                     "seconds_offset": round((e_timestamp - timestamp) / 1000, 2),
                     "amount": int(e.get("amount") or 0),
                     "overheal": int(e.get("overheal") or 0),
-                    "ability_id": e.get("abilityGameID"),
+                    "ability_id": spell_id,
                     "ability_name": ability_name,
-                    "source_name": e.get("sourceName") or "Healer"
+                    "source_name": source_name or "Healer"
                 })
                 
             # 3. Defensive buffs applied/removed on this player
             elif e_type in ("applybuff", "removebuff") and e.get("targetID") == actor_id:
-                spell_id = e.get("abilityGameID")
                 if spell_id in RAID_COOLDOWNS:
                     cooldown = RAID_COOLDOWNS[spell_id]
                     category = cooldown.get("category", "")
@@ -86,7 +117,7 @@ def calculate_deaths(
                             "seconds_offset": round((e_timestamp - timestamp) / 1000, 2),
                             "ability_id": spell_id,
                             "ability_name": cooldown.get("name", "Defensive"),
-                            "source_name": e.get("sourceName") or "Raid Member"
+                            "source_name": source_name or "Raid Member"
                         })
                         
         # Sort chronologically by timestamp

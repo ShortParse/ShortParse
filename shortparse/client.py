@@ -179,6 +179,18 @@ class WarcraftLogsClient:
         query($code: String!, $fightIDs: [Int]) {
           reportData {
             report(code: $code) {
+              masterData {
+                abilities {
+                  id
+                  name
+                }
+                actors {
+                  id
+                  name
+                  subType
+                }
+              }
+
               playerDetails(
                 fightIDs: $fightIDs,
                 includeCombatantInfo: true
