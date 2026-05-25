@@ -193,3 +193,71 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 def logout(request: Request):
     request.session.clear()
     return {"status": "success", "message": "Successfully logged out."}
+
+
+@router.get("/guilds")
+def get_guilds(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+
+    from shortparse.server.auth_helpers import get_valid_wcl_account
+    from shortparse.client import WarcraftLogsClient
+
+    account = get_valid_wcl_account(db, user_id)
+    if not account:
+        raise HTTPException(
+            status_code=400,
+            detail="User does not have a linked Warcraft Logs account.",
+        )
+
+    try:
+        client = WarcraftLogsClient(
+            access_token=account.access_token,
+            use_user_endpoint=True,
+        )
+        guilds = client.get_user_guilds()
+        return {"guilds": guilds}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch guilds from Warcraft Logs API: {str(e)}",
+        )
+
+
+@router.get("/guilds/{guild_id}/reports")
+def get_guild_reports(
+    guild_id: int,
+    request: Request,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+
+    from shortparse.server.auth_helpers import get_valid_wcl_account
+    from shortparse.client import WarcraftLogsClient
+
+    account = get_valid_wcl_account(db, user_id)
+    if not account:
+        raise HTTPException(
+            status_code=400,
+            detail="User does not have a linked Warcraft Logs account.",
+        )
+
+    try:
+        client = WarcraftLogsClient(
+            access_token=account.access_token,
+            use_user_endpoint=True,
+        )
+        reports = client.get_guild_reports(guild_id, limit=limit)
+        return {"reports": reports}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch guild reports from Warcraft Logs API: {str(e)}",
+        )

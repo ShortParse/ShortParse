@@ -289,3 +289,95 @@ class WarcraftLogsClient:
             save_cached_fight_events(report_code, fight_id, all_events)
 
         return all_events
+
+    def get_user_guilds(self) -> list[dict]:
+        query = """
+        query {
+          userData {
+            currentUser {
+              characters {
+                guilds {
+                  id
+                  name
+                  faction {
+                    id
+                    name
+                  }
+                  server {
+                    name
+                    slug
+                  }
+                  region {
+                    compact
+                  }
+                }
+              }
+            }
+          }
+        }
+        """
+        data = self.graphql(query)
+        if not data:
+            return []
+
+        user_data = data.get("userData")
+        if not user_data:
+            return []
+
+        current_user = user_data.get("currentUser")
+        if not current_user:
+            return []
+
+        characters = current_user.get("characters") or []
+
+        guilds_map = {}
+        for char in characters:
+            if not char:
+                continue
+            char_guilds = char.get("guilds") or []
+            for g in char_guilds:
+                if not g or not g.get("id"):
+                    continue
+                guild_id = g["id"]
+                if guild_id not in guilds_map:
+                    guilds_map[guild_id] = {
+                        "id": guild_id,
+                        "name": g.get("name"),
+                        "faction": g.get("faction"),
+                        "server": g.get("server"),
+                        "region": g.get("region"),
+                    }
+
+        return list(guilds_map.values())
+
+    def get_guild_reports(self, guild_id: int, limit: int = 10) -> list[dict]:
+        query = """
+        query($guildID: Int, $limit: Int) {
+          reportData {
+            reports(guildID: $guildID, limit: $limit) {
+              data {
+                code
+                title
+                startTime
+                endTime
+                owner {
+                  name
+                }
+              }
+            }
+          }
+        }
+        """
+        data = self.graphql(query, {"guildID": guild_id, "limit": limit})
+        if not data:
+            return []
+
+        report_data = data.get("reportData")
+        if not report_data:
+            return []
+
+        reports_pagination = report_data.get("reports")
+        if not reports_pagination:
+            return []
+
+        return reports_pagination.get("data") or []
