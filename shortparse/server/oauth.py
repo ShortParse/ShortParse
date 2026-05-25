@@ -21,35 +21,44 @@ WCL_GRAPHQL_URL = "https://www.warcraftlogs.com/api/v2/client"
 
 
 def get_wcl_user_info(access_token: str) -> dict:
-    """Queries the Warcraft Logs API to fetch the authenticated user's ID and name."""
+    """Queries Warcraft Logs for the authenticated user's identity."""
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
     }
+
     query = """
     query {
-        userData {
+        currentUser {
             id
             name
         }
     }
     """
+
     response = requests.post(
         WCL_GRAPHQL_URL,
         json={"query": query},
         headers=headers,
         timeout=15,
     )
+
     response.raise_for_status()
+
     payload = response.json()
-    
+
     if "errors" in payload:
-        raise RuntimeError(f"WarcraftLogs API returned errors: {payload['errors']}")
-        
-    user_data = payload.get("data", {}).get("userData")
+        raise RuntimeError(
+            f"WarcraftLogs API returned errors: {payload['errors']}"
+        )
+
+    user_data = payload.get("data", {}).get("currentUser")
+
     if not user_data:
-        raise RuntimeError("WarcraftLogs userData was not found in the response")
-        
+        raise RuntimeError(
+            "WarcraftLogs currentUser was not found in the response"
+        )
+
     return user_data
 
 
