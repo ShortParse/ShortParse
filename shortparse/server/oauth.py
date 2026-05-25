@@ -13,6 +13,10 @@ from shortparse.settings import (
     WCL_REDIRECT_URI,
 )
 
+from shortparse.logging import get_logger
+
+logger = get_logger(__name__)
+
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 WCL_AUTHORIZE_URL = "https://www.warcraftlogs.com/oauth/authorize"
@@ -222,6 +226,7 @@ def get_guilds(
         guilds = client.get_user_guilds()
         return {"guilds": guilds}
     except Exception as e:
+        logger.exception("Failed to fetch guilds from Warcraft Logs API")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to fetch guilds from Warcraft Logs API: {str(e)}",
@@ -257,6 +262,7 @@ def get_guild_reports(
         reports = client.get_guild_reports(guild_id, limit=limit)
         return {"reports": reports}
     except Exception as e:
+        logger.exception("Failed to fetch guild reports from Warcraft Logs API")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to fetch guild reports from Warcraft Logs API: {str(e)}",

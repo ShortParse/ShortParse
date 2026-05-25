@@ -296,7 +296,7 @@ class WarcraftLogsClient:
           userData {
             currentUser {
               characters {
-                guilds {
+                guild {
                   id
                   name
                   faction {
@@ -334,19 +334,18 @@ class WarcraftLogsClient:
         for char in characters:
             if not char:
                 continue
-            char_guilds = char.get("guilds") or []
-            for g in char_guilds:
-                if not g or not g.get("id"):
-                    continue
-                guild_id = g["id"]
-                if guild_id not in guilds_map:
-                    guilds_map[guild_id] = {
-                        "id": guild_id,
-                        "name": g.get("name"),
-                        "faction": g.get("faction"),
-                        "server": g.get("server"),
-                        "region": g.get("region"),
-                    }
+            g = char.get("guild")
+            if not g or not g.get("id"):
+                continue
+            guild_id = g["id"]
+            if guild_id not in guilds_map:
+                guilds_map[guild_id] = {
+                    "id": guild_id,
+                    "name": g.get("name"),
+                    "faction": g.get("faction"),
+                    "server": g.get("server"),
+                    "region": g.get("region"),
+                }
 
         return list(guilds_map.values())
 
