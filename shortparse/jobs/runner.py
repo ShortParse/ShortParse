@@ -243,6 +243,38 @@ def run_analysis_job(
                     "name": raid_name,
                 }
 
+                # Gather all pulls for this same boss and difficulty in this report
+                encounter_id = fight.get("encounterID")
+                difficulty = fight.get("difficulty")
+                
+                boss_pulls = []
+                if encounter_id is not None:
+                    matching_fights = [
+                        f for f in report["fights"]
+                        if f.get("encounterID") == encounter_id
+                        and f.get("difficulty") == difficulty
+                    ]
+                    matching_fights.sort(key=lambda x: x.get("startTime", 0))
+                    
+                    for idx, f in enumerate(matching_fights, start=1):
+                        f_duration = int((f.get("endTime", 0) - f.get("startTime", 0)) / 1000)
+                        boss_pulls.append({
+                            "pull_number": idx,
+                            "fight_id": f.get("id"),
+                            "kill": f.get("kill", False),
+                            "boss_percentage": f.get("bossPercentage"),
+                            "fight_percentage": f.get("fightPercentage"),
+                            "duration_seconds": f_duration,
+                            "last_phase": f.get("lastPhase", 1),
+                            "last_phase_index": f.get("lastPhaseAsAbsoluteIndex", 0),
+                            "start_time": f.get("startTime"),
+                            "end_time": f.get("endTime")
+                        })
+                
+                analysis["progression"] = {
+                    "pulls": boss_pulls
+                }
+
                 analyses.append(analysis)
 
                 completed_progress = int(
