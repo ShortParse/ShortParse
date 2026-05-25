@@ -15,6 +15,7 @@ class User(Base):
     email = Column(String, nullable=True)
     is_premium = Column(Boolean, default=False)
     premium_tier = Column(String, nullable=True)
+    discord_webhook_url = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

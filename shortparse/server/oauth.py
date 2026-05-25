@@ -189,6 +189,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         "username": user.username,
         "is_premium": user.is_premium,
         "premium_tier": user.premium_tier,
+        "discord_webhook_url": user.discord_webhook_url,
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }
 
@@ -197,6 +198,109 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 def logout(request: Request):
     request.session.clear()
     return {"status": "success", "message": "Successfully logged out."}
+
+
+from pydantic import BaseModel
+
+class SettingsUpdateRequest(BaseModel):
+    discord_webhook_url: str | None = None
+
+
+@router.post("/settings")
+def update_user_settings(
+    request: Request,
+    payload: SettingsUpdateRequest,
+    db: Session = Depends(get_db),
+):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Authenticated user not found.")
+
+    webhook_url = payload.discord_webhook_url
+    if webhook_url:
+        webhook_url = webhook_url.strip()
+        if not (webhook_url.startswith("https://discord.com/api/webhooks/") or webhook_url.startswith("https://discordapp.com/api/webhooks/")):
+            raise HTTPException(status_code=400, detail="Invalid Discord Webhook URL format.")
+    else:
+        webhook_url = None
+
+    user.discord_webhook_url = webhook_url
+    db.commit()
+
+    return {
+        "status": "success",
+        "message": "Settings updated successfully.",
+        "discord_webhook_url": user.discord_webhook_url,
+    }
+
+
+@router.post("/settings/test-discord")
+def test_discord_webhook(
+    request: Request,
+    payload: SettingsUpdateRequest,
+    db: Session = Depends(get_db),
+):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+
+    webhook_url = payload.discord_webhook_url
+    if webhook_url:
+        webhook_url = webhook_url.strip()
+    else:
+        user = db.query(User).filter(User.id == user_id).first()
+        if user:
+            webhook_url = user.discord_webhook_url
+
+    if not webhook_url:
+        raise HTTPException(status_code=400, detail="No Discord Webhook URL provided or configured.")
+
+    if not (webhook_url.startswith("https://discord.com/api/webhooks/") or webhook_url.startswith("https://discordapp.com/api/webhooks/")):
+        raise HTTPException(status_code=400, detail="Invalid Discord Webhook URL format.")
+
+    test_embed = {
+        "username": "ShortParse",
+        "avatar_url": "https://raw.githubusercontent.com/ShortParse/ShortParse-Web/main/images/apple-touch-icon.png",
+        "embeds": [
+            {
+                "title": "🛡️ ShortParse Webhook Connection Test",
+                "description": "This message confirms that your ShortParse Discord Webhook integration is **online and working perfectly!**",
+                "color": 3718392,
+                "fields": [
+                    {
+                        "name": "Connection Status",
+                        "value": "🟢 Active & Ready",
+                        "inline": True
+                    },
+                    {
+                        "name": "Integration Type",
+                        "value": "Raid summary embeds",
+                        "inline": True
+                    }
+                ],
+                "footer": {
+                    "text": "ShortParse - Automated Warcraft Logs Reviews"
+                },
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        ]
+    }
+
+    try:
+        response = requests.post(webhook_url, json=test_embed, timeout=10)
+        if response.status_code not in (200, 204):
+            raise RuntimeError(f"Discord API returned status {response.status_code}: {response.text}")
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to post test message to Discord: {str(e)}",
+        )
+
+    return {"status": "success", "message": "Test message sent successfully!"}
 
 
 @router.get("/guilds")
