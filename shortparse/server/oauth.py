@@ -93,6 +93,11 @@ def warcraftlogs_callback(
         )
 
     access_token = token_data["access_token"]
+
+    # DEBUG REMOVE ME
+    print(access_token)
+    # DEBUG REMOVE ME
+
     refresh_token = token_data.get("refresh_token")
     expires_in = token_data.get("expires_in", 3600)
     expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
@@ -100,7 +105,7 @@ def warcraftlogs_callback(
     # Warcraft Logs does not expose a reliable user profile query here.
     # Do not block OAuth login on user profile lookup.
     wcl_id = make_wcl_fallback_user_id(access_token)
-    wcl_username = "Warcraft Logs User"
+    wcl_username = f"WCL User {wcl_id[:8]}"
 
     linked_account = db.query(LinkedAccount).filter(
         LinkedAccount.provider == "warcraftlogs",
