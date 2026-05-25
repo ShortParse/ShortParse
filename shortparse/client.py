@@ -291,6 +291,23 @@ class WarcraftLogsClient:
         return all_events
 
     def get_user_guilds(self) -> list[dict]:
+        # Temporary schema introspection to debug fields on the WCL 'User' type
+        try:
+            intro_query = """
+            query {
+              __type(name: "User") {
+                fields {
+                  name
+                }
+              }
+            }
+            """
+            intro_data = self.graphql(intro_query)
+            fields = [f["name"] for f in intro_data.get("__type", {}).get("fields", []) or []]
+            print(f"[INTROSPECTION] Warcraft Logs 'User' fields: {fields}")
+        except Exception as e:
+            print(f"[INTROSPECTION ERROR] Failed to introspect WCL User type: {e}")
+
         query = """
         query {
           userData {
