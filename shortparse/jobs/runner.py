@@ -52,24 +52,41 @@ def run_analysis_job(
 
         # If this job belongs to a registered user, use their personal Warcraft Logs OAuth token
         user_access_token = None
+        use_user_endpoint = False
+
         user_id = job.get("user_id")
         if user_id:
             from shortparse.database import SessionLocal
-            from shortparse.db_models import LinkedAccount
+            from shortparse.server.auth_helpers import get_valid_wcl_account
+
             db = SessionLocal()
             try:
-                account = db.query(LinkedAccount).filter(
-                    LinkedAccount.user_id == user_id,
-                    LinkedAccount.provider == "warcraftlogs"
-                ).first()
+                account = get_valid_wcl_account(db, user_id)
                 if account:
                     user_access_token = account.access_token
+                    use_user_endpoint = True
+                    append_job_log(
+                        job_id,
+                        "Using linked Warcraft Logs account for private report access.",
+                        progress=12,
+                        current_step="Using Warcraft Logs OAuth",
+                    )
             except Exception as e:
-                logger.error("Failed to query logged-in user OAuth access token in background job: %s", e)
+                logger.error("Failed to load user Warcraft Logs OAuth token: %s", e)
+                append_job_log(
+                    job_id,
+                    "Could not use your linked Warcraft Logs account. Private reports may fail.",
+                    level="warning",
+                    progress=12,
+                    current_step="Warcraft Logs OAuth unavailable",
+                )
             finally:
                 db.close()
 
-        client = WarcraftLogsClient(access_token=user_access_token)
+        client = WarcraftLogsClient(
+            access_token=user_access_token,
+            use_user_endpoint=use_user_endpoint,
+        )
 
         append_job_log(
             job_id,

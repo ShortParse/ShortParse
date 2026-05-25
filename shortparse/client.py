@@ -1,8 +1,7 @@
+import random
 import requests
 import threading
-
-_log_lock = threading.Lock()
-_last_rate_limit_logged = 0.0
+import time
 
 from shortparse.auth import get_access_token
 from shortparse.cache import (
@@ -14,23 +13,35 @@ from shortparse.cache import (
     save_cached_report_fights,
 )
 
-GRAPHQL_URL = "https://www.warcraftlogs.com/api/v2/client"
+_log_lock = threading.Lock()
+_last_rate_limit_logged = 0.0
+
+CLIENT_GRAPHQL_URL = "https://www.warcraftlogs.com/api/v2/client"
+USER_GRAPHQL_URL = "https://www.warcraftlogs.com/api/v2/user"
 
 
 class WarcraftLogsClient:
-    def __init__(self, access_token: str | None = None):
+    def __init__(
+        self,
+        access_token: str | None = None,
+        use_user_endpoint: bool = False,
+    ):
         self.access_token = access_token or get_access_token()
+        self.use_user_endpoint = use_user_endpoint
+        self.graphql_url = USER_GRAPHQL_URL if use_user_endpoint else CLIENT_GRAPHQL_URL
+
+        # Safety: do not cache private/user-token report data yet.
+        self.cache_enabled = not use_user_endpoint
 
     def graphql(self, query: str, variables: dict | None = None) -> dict:
-        import time
-        import random
+        global _last_rate_limit_logged
 
         max_retries = 5
         backoff_factor = 2.0
 
         for attempt in range(max_retries):
             response = requests.post(
-                GRAPHQL_URL,
+                self.graphql_url,
                 json={
                     "query": query,
                     "variables": variables or {},
@@ -44,6 +55,7 @@ class WarcraftLogsClient:
 
             if response.status_code == 429:
                 retry_after = response.headers.get("Retry-After")
+
                 if retry_after:
                     try:
                         sleep_time = float(retry_after)
@@ -58,8 +70,10 @@ class WarcraftLogsClient:
                         _last_rate_limit_logged = now
                         print(
                             f"[RATE LIMIT 429] Hit 429 for WCL API. "
-                            f"Retrying in {sleep_time:.2f}s... (Attempt {attempt + 1}/{max_retries})"
+                            f"Retrying in {sleep_time:.2f}s... "
+                            f"(Attempt {attempt + 1}/{max_retries})"
                         )
+
                 time.sleep(sleep_time)
                 continue
 
@@ -69,6 +83,7 @@ class WarcraftLogsClient:
             if "errors" in payload:
                 errors = payload["errors"]
                 is_rate_limit = False
+
                 for err in errors:
                     msg = err.get("message", "").lower()
                     if (
@@ -82,14 +97,17 @@ class WarcraftLogsClient:
 
                 if is_rate_limit:
                     sleep_time = backoff_factor ** attempt + random.uniform(0.1, 1.0)
+
                     with _log_lock:
                         now = time.time()
                         if now - _last_rate_limit_logged > 5.0:
                             _last_rate_limit_logged = now
                             print(
                                 f"[RATE LIMIT GRAPHQL] GraphQL rate limit error. "
-                                f"Retrying in {sleep_time:.2f}s... (Attempt {attempt + 1}/{max_retries})"
+                                f"Retrying in {sleep_time:.2f}s... "
+                                f"(Attempt {attempt + 1}/{max_retries})"
                             )
+
                     time.sleep(sleep_time)
                     continue
 
@@ -100,11 +118,12 @@ class WarcraftLogsClient:
         raise RuntimeError("Exhausted WCL API retries due to rate limit 429")
 
     def get_report_fights(self, report_code: str) -> dict:
-        cached = get_cached_report_fights(report_code)
+        if self.cache_enabled:
+            cached = get_cached_report_fights(report_code)
 
-        if cached is not None:
-            print(f"[CACHE HIT] report fights: {report_code}")
-            return cached
+            if cached is not None:
+                print(f"[CACHE HIT] report fights: {report_code}")
+                return cached
 
         print(f"[API PULL] report fights: {report_code}")
 
@@ -141,16 +160,18 @@ class WarcraftLogsClient:
         data = self.graphql(query, {"code": report_code})
         report = data["reportData"]["report"]
 
-        save_cached_report_fights(report_code, report)
+        if self.cache_enabled:
+            save_cached_report_fights(report_code, report)
 
         return report
 
     def get_fight_player_data(self, report_code: str, fight_id: int) -> dict:
-        cached = get_cached_fight_player_data(report_code, fight_id)
+        if self.cache_enabled:
+            cached = get_cached_fight_player_data(report_code, fight_id)
 
-        if cached is not None:
-            print(f"[CACHE HIT] player data: {report_code} fight {fight_id}")
-            return cached
+            if cached is not None:
+                print(f"[CACHE HIT] player data: {report_code} fight {fight_id}")
+                return cached
 
         print(f"[API PULL] player data: {report_code} fight {fight_id}")
 
@@ -158,7 +179,6 @@ class WarcraftLogsClient:
         query($code: String!, $fightIDs: [Int]) {
           reportData {
             report(code: $code) {
-
               playerDetails(
                 fightIDs: $fightIDs,
                 includeCombatantInfo: true
@@ -198,7 +218,8 @@ class WarcraftLogsClient:
 
         report_data = data["reportData"]["report"]
 
-        save_cached_fight_player_data(report_code, fight_id, report_data)
+        if self.cache_enabled:
+            save_cached_fight_player_data(report_code, fight_id, report_data)
 
         return report_data
 
@@ -209,11 +230,12 @@ class WarcraftLogsClient:
         start_time: int,
         end_time: int,
     ) -> list[dict]:
-        cached = get_cached_fight_events(report_code, fight_id)
+        if self.cache_enabled:
+            cached = get_cached_fight_events(report_code, fight_id)
 
-        if cached is not None:
-            print(f"[CACHE HIT] events: {report_code} fight {fight_id}")
-            return cached
+            if cached is not None:
+                print(f"[CACHE HIT] events: {report_code} fight {fight_id}")
+                return cached
 
         print(f"[API PULL] events: {report_code} fight {fight_id}")
 
@@ -254,7 +276,6 @@ class WarcraftLogsClient:
             )
 
             payload = data["reportData"]["report"]["events"]
-
             all_events.extend(payload.get("data", []))
 
             next_page = payload.get("nextPageTimestamp")
@@ -264,6 +285,7 @@ class WarcraftLogsClient:
 
             next_timestamp = next_page
 
-        save_cached_fight_events(report_code, fight_id, all_events)
+        if self.cache_enabled:
+            save_cached_fight_events(report_code, fight_id, all_events)
 
         return all_events
