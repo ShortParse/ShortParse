@@ -28,6 +28,70 @@ def calculate_deaths(
         if timestamp >= ignore_after_timestamp:
             continue
 
+        # Gather lookback events for the visual death recap (final 8 seconds)
+        lookback_start = timestamp - 8000
+        recap_events = []
+        
+        from shortparse.data.cooldowns import RAID_COOLDOWNS
+        
+        for e in events:
+            e_type = e.get("type")
+            e_timestamp = e.get("timestamp", 0)
+            
+            if not (lookback_start <= e_timestamp <= timestamp):
+                continue
+                
+            ability_name = "Unknown Spell"
+            if isinstance(e.get("ability"), dict):
+                ability_name = e.get("ability", {}).get("name", "Unknown Spell")
+            elif e.get("abilityName"):
+                ability_name = e.get("abilityName")
+                
+            # 1. Damage events targeting this player
+            if e_type == "damage" and e.get("targetID") == actor_id:
+                recap_events.append({
+                    "type": "damage",
+                    "timestamp": e_timestamp,
+                    "seconds_offset": round((e_timestamp - timestamp) / 1000, 2),
+                    "amount": int(e.get("amount") or 0),
+                    "overkill": int(e.get("overkill") or 0),
+                    "ability_id": e.get("abilityGameID"),
+                    "ability_name": ability_name,
+                    "source_name": e.get("sourceName") or "Boss/NPC"
+                })
+                
+            # 2. Heal events targeting this player
+            elif e_type == "heal" and e.get("targetID") == actor_id:
+                recap_events.append({
+                    "type": "heal",
+                    "timestamp": e_timestamp,
+                    "seconds_offset": round((e_timestamp - timestamp) / 1000, 2),
+                    "amount": int(e.get("amount") or 0),
+                    "overheal": int(e.get("overheal") or 0),
+                    "ability_id": e.get("abilityGameID"),
+                    "ability_name": ability_name,
+                    "source_name": e.get("sourceName") or "Healer"
+                })
+                
+            # 3. Defensive buffs applied/removed on this player
+            elif e_type in ("applybuff", "removebuff") and e.get("targetID") == actor_id:
+                spell_id = e.get("abilityGameID")
+                if spell_id in RAID_COOLDOWNS:
+                    cooldown = RAID_COOLDOWNS[spell_id]
+                    category = cooldown.get("category", "")
+                    if category in ("personal_defensive", "tank_defensive", "external_defensive", "raid_defensive"):
+                        recap_events.append({
+                            "type": e_type,
+                            "timestamp": e_timestamp,
+                            "seconds_offset": round((e_timestamp - timestamp) / 1000, 2),
+                            "ability_id": spell_id,
+                            "ability_name": cooldown.get("name", "Defensive"),
+                            "source_name": e.get("sourceName") or "Raid Member"
+                        })
+                        
+        # Sort chronologically by timestamp
+        recap_events.sort(key=lambda x: x["timestamp"])
+
         death_events.append(
             {
                 "timestamp": timestamp,
@@ -38,6 +102,7 @@ def calculate_deaths(
                 "source_id": event.get("sourceID"),
                 "target_id": event.get("targetID"),
                 "ability_id": event.get("abilityGameID"),
+                "recap": recap_events
             }
         )
 
