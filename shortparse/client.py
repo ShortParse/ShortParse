@@ -291,27 +291,25 @@ class WarcraftLogsClient:
         return all_events
 
     def get_user_guilds(self) -> list[dict]:
-        # Temporary schema introspection to debug fields on the WCL 'User' type
-        try:
-            intro_query = """
-            query {
-              __type(name: "User") {
-                fields {
-                  name
-                }
-              }
-            }
-            """
-            intro_data = self.graphql(intro_query)
-            fields = [f["name"] for f in intro_data.get("__type", {}).get("fields", []) or []]
-            print(f"[INTROSPECTION] Warcraft Logs 'User' fields: {fields}")
-        except Exception as e:
-            print(f"[INTROSPECTION ERROR] Failed to introspect WCL User type: {e}")
-
         query = """
         query {
           userData {
             currentUser {
+              guilds {
+                id
+                name
+                faction {
+                  id
+                  name
+                }
+                server {
+                  name
+                  slug
+                  region {
+                    compactName
+                  }
+                }
+              }
               characters {
                 guilds {
                   id
@@ -345,9 +343,32 @@ class WarcraftLogsClient:
         if not current_user:
             return []
 
-        characters = current_user.get("characters") or []
-
         guilds_map = {}
+
+        # 1. Process direct user guilds
+        direct_guilds = current_user.get("guilds") or []
+        for g in direct_guilds:
+            if not g or not g.get("id"):
+                continue
+            guild_id = g["id"]
+            if guild_id not in guilds_map:
+                server_data = g.get("server") or {}
+                region_data = server_data.get("region") or {}
+                guilds_map[guild_id] = {
+                    "id": guild_id,
+                    "name": g.get("name"),
+                    "faction": g.get("faction"),
+                    "server": {
+                        "name": server_data.get("name"),
+                        "slug": server_data.get("slug"),
+                    },
+                    "region": {
+                        "compact": region_data.get("compactName"),
+                    },
+                }
+
+        # 2. Process guilds through claimed characters (backup / historical)
+        characters = current_user.get("characters") or []
         for char in characters:
             if not char:
                 continue
