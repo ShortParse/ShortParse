@@ -29,4 +29,18 @@ COOLDOWNS = {
         "notes": "Raid-wide haste increase.",
         "cooldown_seconds": 300,
     },
+    108920: {
+        "name": "Alter Time",
+        "class": "MAGE",
+        "category": "personal_defensive",
+        "notes": "Remembers health/position, returns after 10s or re-cast.",
+        "cooldown_seconds": 60,
+    },
+    55342: {
+        "name": "Mirror Image",
+        "class": "MAGE",
+        "category": "personal_defensive",
+        "notes": "Summons 3 images, reducing damage taken by 20%.",
+        "cooldown_seconds": 120,
+    },
 }

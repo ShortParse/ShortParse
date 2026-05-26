@@ -29,4 +29,11 @@ COOLDOWNS = {
         "notes": "Provides leech and charm/fear/sleep immunity.",
         "cooldown_seconds": 120,
     },
+    61999: {
+        "name": "Raise Ally",
+        "class": "DEATH_KNIGHT",
+        "category": "raid_utility",
+        "notes": "Battle resurrection cooldown.",
+        "cooldown_seconds": 600,
+    },
 }

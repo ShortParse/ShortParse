@@ -22,4 +22,11 @@ COOLDOWNS = {
         "notes": "Reduces AOE damage taken.",
         "cooldown_seconds": 15,
     },
+    1856: {
+        "name": "Vanish",
+        "class": "ROGUE",
+        "category": "personal_defensive",
+        "notes": "Enters stealth instantly, dropping all combat threat.",
+        "cooldown_seconds": 120,
+    },
 }

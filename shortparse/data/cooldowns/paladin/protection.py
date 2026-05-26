@@ -17,4 +17,12 @@ COOLDOWNS = {
         "notes": "Reduces damage taken and prevents death.",
         "cooldown_seconds": 120,
     },
+    204018: {
+        "name": "Blessing of Spellwarding",
+        "class": "PALADIN",
+        "specs": ['Protection'],
+        "category": "external_defensive",
+        "notes": "Immunity to magical damage and magical effects.",
+        "cooldown_seconds": 180,
+    },
 }

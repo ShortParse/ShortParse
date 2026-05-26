@@ -22,4 +22,11 @@ COOLDOWNS = {
         "notes": "Places two gateways allowing raid transit.",
         "cooldown_seconds": 90,
     },
+    20707: {
+        "name": "Soulstone",
+        "class": "WARLOCK",
+        "category": "raid_utility",
+        "notes": "Battle resurrection or pre-cast wipe protection.",
+        "cooldown_seconds": 600,
+    },
 }

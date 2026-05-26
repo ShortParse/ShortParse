@@ -29,4 +29,18 @@ COOLDOWNS = {
         "notes": "Raid-wide movement speed boost.",
         "cooldown_seconds": 120,
     },
+    20484: {
+        "name": "Rebirth",
+        "class": "DRUID",
+        "category": "raid_utility",
+        "notes": "Battle resurrection cooldown.",
+        "cooldown_seconds": 600,
+    },
+    29166: {
+        "name": "Innervate",
+        "class": "DRUID",
+        "category": "raid_utility",
+        "notes": "Allows healer to cast without mana cost.",
+        "cooldown_seconds": 180,
+    },
 }

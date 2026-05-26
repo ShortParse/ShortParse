@@ -22,4 +22,11 @@ COOLDOWNS = {
         "notes": "Immunity to physical damage and bleed effects.",
         "cooldown_seconds": 300,
     },
+    633: {
+        "name": "Lay on Hands",
+        "class": "PALADIN",
+        "category": "external_defensive",
+        "notes": "Heals an ally for the Paladin's maximum health.",
+        "cooldown_seconds": 600,
+    },
 }

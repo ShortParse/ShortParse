@@ -29,4 +29,11 @@ COOLDOWNS = {
         "notes": "Raid-wide haste increase.",
         "cooldown_seconds": 300,
     },
+    374968: {
+        "name": "Time Spiral",
+        "class": "EVOKER",
+        "category": "raid_movement",
+        "notes": "Allows party members to cast their class movement spell without CD.",
+        "cooldown_seconds": 120,
+    },
 }

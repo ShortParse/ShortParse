@@ -22,4 +22,11 @@ COOLDOWNS = {
         "notes": "Reduces damage taken from large hits.",
         "cooldown_seconds": 120,
     },
+    116844: {
+        "name": "Ring of Peace",
+        "class": "MONK",
+        "category": "raid_utility",
+        "notes": "Forms a ring pushing out enemies.",
+        "cooldown_seconds": 45,
+    },
 }

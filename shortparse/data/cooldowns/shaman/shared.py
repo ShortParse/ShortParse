@@ -36,4 +36,18 @@ COOLDOWNS = {
         "notes": "Raid-wide movement speed totem.",
         "cooldown_seconds": 120,
     },
+    108281: {
+        "name": "Ancestral Guidance",
+        "class": "SHAMAN",
+        "category": "raid_utility",
+        "notes": "Converts 25% of damage/healing to heal 3 injured allies.",
+        "cooldown_seconds": 120,
+    },
+    8143: {
+        "name": "Tremor Totem",
+        "class": "SHAMAN",
+        "category": "raid_utility",
+        "notes": "Pulsates to shake party members out of Fear/Charm/Sleep.",
+        "cooldown_seconds": 60,
+    },
 }

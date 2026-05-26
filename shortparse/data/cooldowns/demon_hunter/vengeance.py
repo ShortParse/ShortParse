@@ -17,4 +17,20 @@ COOLDOWNS = {
         "notes": "Reduces target damage done to the player.",
         "cooldown_seconds": 60,
     },
+    202137: {
+        "name": "Sigil of Silence",
+        "class": "DEMON_HUNTER",
+        "specs": ['Vengeance'],
+        "category": "raid_utility",
+        "notes": "Silences all enemies in the sigil's area.",
+        "cooldown_seconds": 60,
+    },
+    202138: {
+        "name": "Sigil of Chains",
+        "class": "DEMON_HUNTER",
+        "specs": ['Vengeance'],
+        "category": "raid_utility",
+        "notes": "Pulls all enemies to the center of the sigil and snares.",
+        "cooldown_seconds": 90,
+    },
 }
