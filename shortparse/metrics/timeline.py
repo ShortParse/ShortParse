@@ -236,6 +236,9 @@ def build_timeline(
                 continue
 
             mechanic = avoidable_mechanics[spell_id]
+            if not mechanic.get("avoidable", True) or not mechanic.get("counts_as_failure", True):
+                continue
+
             mechanic_name = mechanic["name"]
 
             amount = int(event.get("amount") or 0)

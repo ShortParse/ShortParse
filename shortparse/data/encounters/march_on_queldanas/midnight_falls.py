@@ -323,10 +323,10 @@ DARK_MELTDOWN: Mechanic = {
 DARK_CONSTELLATION: Mechanic = {
     "name": "Dark Constellation",
     "severity": "Major",
-    "avoidable": True,
+    "avoidable": False,
     "category": "movement",
     "failure_type": "avoidable_damage",
-    "counts_as_failure": True,
+    "counts_as_failure": False,
     "max_reasonable_hits": 2,
     "score_per_hit": 40,
     "applies_to": ALL_ROLES,

@@ -134,8 +134,9 @@ def calculate_deaths(
             is_avoidable = False
             if spell_id in avoidable_mechanics:
                 mech = avoidable_mechanics[spell_id]
-                if mechanic_applies_to_player(mech, player_role):
-                    is_avoidable = True
+                if mech.get("avoidable", True) and mech.get("counts_as_failure", True):
+                    if mechanic_applies_to_player(mech, player_role):
+                        is_avoidable = True
                 
             # 1. Damage events targeting this player
             if e_type == "damage" and e.get("targetID") == actor_id:
