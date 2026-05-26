@@ -67,7 +67,12 @@ def build_player_metrics(
 
         deaths = calculate_deaths(
             actor_id,
+            player["class"],
+            player["spec"],
+            player["role"],
+            encounter_id,
             player_events_target,
+            player_events_source,
             fight_start_time,
             fight_end_time,
             master_data=master_data,
