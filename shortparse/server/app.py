@@ -451,3 +451,131 @@ def analyze_report(request: AnalyzeRequest) -> dict:
         },
         "analyses": analyses,
     }
+
+
+import sys
+import importlib
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+
+@app.get("/api/encounters")
+def get_encounters():
+    base_dir = Path(__file__).resolve().parent.parent / "data" / "encounters"
+    raids_dirs = ["the_voidspire", "the_dreamrift", "march_on_queldanas"]
+    
+    result = []
+    
+    for raid_id in raids_dirs:
+        raid_path = base_dir / raid_id
+        if not raid_path.is_dir():
+            continue
+            
+        raid_name = raid_id.replace("_", " ").title()
+        if raid_id == "the_voidspire":
+            raid_name = "The Voidspire"
+        elif raid_id == "the_dreamrift":
+            raid_name = "The Dreamrift"
+        elif raid_id == "march_on_queldanas":
+            raid_name = "March on Quel'Danas"
+            
+        bosses = []
+        
+        for filename in sorted(raid_path.iterdir()):
+            if not filename.name.endswith(".py") or filename.name == "__init__.py":
+                continue
+                
+            module_name = filename.name[:-3]
+            full_module_path = f"shortparse.data.encounters.{raid_id}.{module_name}"
+            
+            try:
+                if full_module_path in sys.modules:
+                    module = importlib.reload(sys.modules[full_module_path])
+                else:
+                    module = importlib.import_module(full_module_path)
+                    
+                encounter_name = getattr(module, "ENCOUNTER_NAME", module_name.replace("_", " ").title())
+                encounter_id = getattr(module, "ENCOUNTER_ID", None)
+                avoidable_damage = getattr(module, "AVOIDABLE_DAMAGE", {})
+                
+                # Find all mechanics defined in the module
+                mechanics = []
+                for key, val in module.__dict__.items():
+                    if key.isupper() and isinstance(val, dict) and "name" in val and "severity" in val:
+                        spell_ids = []
+                        for spell_id, mech in avoidable_damage.items():
+                            if mech is val or mech.get("name") == val.get("name"):
+                                if spell_id not in spell_ids:
+                                    spell_ids.append(spell_id)
+                        
+                        if not spell_ids and "spell_ids" in val:
+                            spell_ids = val["spell_ids"]
+                            
+                        applies_to_val = val.get("applies_to", [])
+                        
+                        mechanic_data = {
+                            "variable_name": key,
+                            "name": val.get("name", ""),
+                            "severity": val.get("severity", "Warning"),
+                            "avoidable": val.get("avoidable", True),
+                            "category": val.get("category", "avoidable_damage"),
+                            "failure_type": val.get("failure_type", "avoidable_damage"),
+                            "counts_as_failure": val.get("counts_as_failure", True),
+                            "max_reasonable_hits": val.get("max_reasonable_hits", 1),
+                            "score_per_hit": val.get("score_per_hit", 0),
+                            "applies_to": applies_to_val,
+                            "spell_ids": spell_ids,
+                            "note": val.get("note", ""),
+                            "recommendation": val.get("recommendation", ""),
+                            "wcl_type": val.get("wcl_type", "damage_taken"),
+                            "minimum_soakers": val.get("minimum_soakers")
+                        }
+                        mechanics.append(mechanic_data)
+                
+                mechanics.sort(key=lambda m: m["name"])
+                
+                bosses.append({
+                    "id": encounter_id,
+                    "filename": filename.name,
+                    "name": encounter_name,
+                    "mechanics": mechanics
+                })
+            except Exception as e:
+                logger.error(f"Error loading boss module {full_module_path}: {e}")
+                
+        result.append({
+            "id": raid_id,
+            "name": raid_name,
+            "bosses": bosses
+        })
+        
+    return result
+
+@app.get("/builder", response_class=HTMLResponse)
+def serve_builder(request: Request):
+    possible_paths = [
+        Path(__file__).resolve().parent.parent.parent.parent / "ShortParse-Web" / "index.html",
+        Path(__file__).resolve().parent.parent / "ShortParse-Web" / "index.html",
+        Path("/storage/ShortParse-Web/index.html"),
+        Path("/app/index.html"),
+    ]
+    
+    for path in possible_paths:
+        if path.exists():
+            with open(path, "r", encoding="utf-8") as file:
+                content = file.read()
+            return HTMLResponse(content=content)
+            
+    raise HTTPException(status_code=404, detail="index.html not found")
+
+# Mount static files from ShortParse-Web if directory exists
+web_dir = Path(__file__).resolve().parent.parent.parent.parent / "ShortParse-Web"
+if not web_dir.exists():
+    web_dir = Path(__file__).resolve().parent.parent / "ShortParse-Web"
+
+if web_dir.exists():
+    if (web_dir / "css").exists():
+        app.mount("/css", StaticFiles(directory=web_dir / "css"), name="css")
+    if (web_dir / "js").exists():
+        app.mount("/js", StaticFiles(directory=web_dir / "js"), name="js")
+    if (web_dir / "images").exists():
+        app.mount("/images", StaticFiles(directory=web_dir / "images"), name="images")
