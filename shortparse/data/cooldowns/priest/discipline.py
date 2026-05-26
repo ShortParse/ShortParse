@@ -1,18 +1,20 @@
 # shortparse/data/cooldowns/priest/discipline.py
 
 COOLDOWNS = {
-    62618: {
-        "name": "Power Word: Barrier",
-        "class": "PRIEST",
-        "category": "raid_defensive",
-        "notes": "Major raid damage reduction barrier.",
-        "cooldown_seconds": 180,
-    },
     33206: {
         "name": "Pain Suppression",
         "class": "PRIEST",
+        "specs": ['Discipline'],
         "category": "external_defensive",
-        "notes": "External defensive cooldown.",
+        "notes": "Reduces target damage taken by 40%.",
+        "cooldown_seconds": 180,
+    },
+    62618: {
+        "name": "Power Word: Barrier",
+        "class": "PRIEST",
+        "specs": ['Discipline'],
+        "category": "raid_defensive",
+        "notes": "Raid dome reducing damage taken by 25%.",
         "cooldown_seconds": 180,
     },
 }

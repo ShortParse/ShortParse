@@ -1,11 +1,11 @@
 # shortparse/data/cooldowns/priest/shared.py
 
 COOLDOWNS = {
-    15286: {
-        "name": "Vampiric Embrace",
+    19236: {
+        "name": "Desperate Prayer",
         "class": "PRIEST",
-        "category": "raid_healing",
-        "notes": "Shadow raid healing utility.",
-        "cooldown_seconds": 120,
+        "category": "personal_defensive",
+        "notes": "Increases max health and heals instantly.",
+        "cooldown_seconds": 90,
     },
 }

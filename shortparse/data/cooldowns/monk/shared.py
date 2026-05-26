@@ -1,18 +1,25 @@
 # shortparse/data/cooldowns/monk/shared.py
 
 COOLDOWNS = {
-    122278: {
-        "name": "Dampen Harm",
+    115203: {
+        "name": "Fortifying Brew",
         "class": "MONK",
         "category": "personal_defensive",
-        "notes": "Personal defensive.",
-        "cooldown_seconds": 120,
+        "notes": "Increases health and reduces damage taken.",
+        "cooldown_seconds": 360,
     },
     122783: {
         "name": "Diffuse Magic",
         "class": "MONK",
         "category": "personal_defensive",
-        "notes": "Personal magic defensive.",
+        "notes": "Cleanses magic debuffs and reduces magic damage.",
         "cooldown_seconds": 90,
+    },
+    122278: {
+        "name": "Dampen Harm",
+        "class": "MONK",
+        "category": "personal_defensive",
+        "notes": "Reduces damage taken from large hits.",
+        "cooldown_seconds": 120,
     },
 }

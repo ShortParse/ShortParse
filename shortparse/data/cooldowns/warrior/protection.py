@@ -4,15 +4,17 @@ COOLDOWNS = {
     871: {
         "name": "Shield Wall",
         "class": "WARRIOR",
+        "specs": ['Protection'],
         "category": "tank_defensive",
-        "notes": "Protection Warrior major defensive.",
+        "notes": "Large damage reduction tank defensive.",
         "cooldown_seconds": 240,
     },
     12975: {
         "name": "Last Stand",
         "class": "WARRIOR",
+        "specs": ['Protection'],
         "category": "tank_defensive",
-        "notes": "Protection Warrior major health cooldown.",
+        "notes": "Increases health instantly.",
         "cooldown_seconds": 180,
     },
 }

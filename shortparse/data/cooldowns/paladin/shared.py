@@ -1,18 +1,25 @@
 # shortparse/data/cooldowns/paladin/shared.py
 
 COOLDOWNS = {
-    633: {
-        "name": "Lay on Hands",
+    642: {
+        "name": "Divine Shield",
         "class": "PALADIN",
-        "category": "emergency_healing",
-        "notes": "Emergency single-target heal.",
-        "cooldown_seconds": 600,
+        "category": "personal_immunity",
+        "notes": "Provides complete damage and spell immunity.",
+        "cooldown_seconds": 300,
     },
-    6940: {
+    102242: {
         "name": "Blessing of Sacrifice",
         "class": "PALADIN",
         "category": "external_defensive",
-        "notes": "External damage transfer cooldown.",
+        "notes": "Transfers damage from an ally to the Paladin.",
         "cooldown_seconds": 120,
+    },
+    1022: {
+        "name": "Blessing of Protection",
+        "class": "PALADIN",
+        "category": "external_defensive",
+        "notes": "Immunity to physical damage and bleed effects.",
+        "cooldown_seconds": 300,
     },
 }

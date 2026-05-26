@@ -1,18 +1,12 @@
 # shortparse/data/cooldowns/evoker/preservation.py
 
 COOLDOWNS = {
-    363534: {
+    361737: {
         "name": "Rewind",
         "class": "EVOKER",
-        "category": "raid_healing",
-        "notes": "Major raid healing recovery cooldown.",
+        "specs": ['Preservation'],
+        "category": "raid_defensive",
+        "notes": "Heals back 50% of damage taken in last 5s.",
         "cooldown_seconds": 240,
-    },
-    370537: {
-        "name": "Stasis",
-        "class": "EVOKER",
-        "category": "healing_utility",
-        "notes": "Preservation stored healing setup.",
-        "cooldown_seconds": 90,
     },
 }

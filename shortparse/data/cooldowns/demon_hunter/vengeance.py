@@ -1,25 +1,20 @@
 # shortparse/data/cooldowns/demon_hunter/vengeance.py
 
 COOLDOWNS = {
-    263648: {
-        "name": "Soul Barrier",
-        "class": "DEMONHUNTER",
-        "category": "personal_defensive",
-        "notes": "Vengeance defensive absorb.",
-        "cooldown_seconds": 20,
-    },
-    212084: {
-        "name": "Fel Devastation",
-        "class": "DEMONHUNTER",
-        "category": "tank_defensive",
-        "notes": "Vengeance defensive/healing cooldown.",
-        "cooldown_seconds": 40,
-    },
     187827: {
         "name": "Metamorphosis",
-        "class": "DEMONHUNTER",
+        "class": "DEMON_HUNTER",
+        "specs": ['Vengeance'],
         "category": "tank_defensive",
-        "notes": "Vengeance major tank defensive.",
-        "cooldown_seconds": 120,
+        "notes": "Increases health and armor.",
+        "cooldown_seconds": 240,
+    },
+    204020: {
+        "name": "Fiery Brand",
+        "class": "DEMON_HUNTER",
+        "specs": ['Vengeance'],
+        "category": "tank_defensive",
+        "notes": "Reduces target damage done to the player.",
+        "cooldown_seconds": 60,
     },
 }

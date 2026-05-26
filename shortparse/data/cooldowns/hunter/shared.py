@@ -4,15 +4,22 @@ COOLDOWNS = {
     186265: {
         "name": "Aspect of the Turtle",
         "class": "HUNTER",
-        "category": "personal_defensive",
-        "notes": "Personal immunity-style defensive.",
+        "category": "personal_immunity",
+        "notes": "Deflects attacks and reduces damage taken.",
         "cooldown_seconds": 180,
     },
     109304: {
         "name": "Exhilaration",
         "class": "HUNTER",
-        "category": "personal_healing",
-        "notes": "Personal self-heal.",
+        "category": "personal_defensive",
+        "notes": "Heals the hunter and pet instantly.",
         "cooldown_seconds": 120,
+    },
+    264735: {
+        "name": "Survival of the Fittest",
+        "class": "HUNTER",
+        "category": "personal_defensive",
+        "notes": "Command Pet defensive cooldown.",
+        "cooldown_seconds": 180,
     },
 }

@@ -4,15 +4,17 @@ COOLDOWNS = {
     740: {
         "name": "Tranquility",
         "class": "DRUID",
-        "category": "raid_healing",
-        "notes": "Major raid healing cooldown.",
+        "specs": ['Restoration'],
+        "category": "raid_defensive",
+        "notes": "Raid-wide channeled healing cooldown.",
         "cooldown_seconds": 180,
     },
     102342: {
         "name": "Ironbark",
         "class": "DRUID",
+        "specs": ['Restoration'],
         "category": "external_defensive",
-        "notes": "External defensive for one player.",
+        "notes": "External damage reduction on a party member.",
         "cooldown_seconds": 90,
     },
 }
