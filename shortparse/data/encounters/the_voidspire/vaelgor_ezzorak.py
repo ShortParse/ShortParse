@@ -18,13 +18,13 @@ ENCOUNTER_NAME = "Vaelgor & Ezzorak"
 
 TAIL_LASH: Mechanic = {
     "name": "Tail Lash",
-    "severity": "Major",
+    "severity": "Warning",
     "avoidable": True,
     "category": "rear_cone",
     "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 2,
-    "score_per_hit": 100,
+    "score_per_hit": 30,
     "applies_to": ALL_ROLES,
     "note": (
         "Vaelgor knocks away players within a 35 yard rear cone."
@@ -37,13 +37,13 @@ TAIL_LASH: Mechanic = {
 
 IMPALE: Mechanic = {
     "name": "Impale",
-    "severity": "Major",
+    "severity": "Warning",
     "avoidable": True,
     "category": "rear_cone",
     "failure_type": "avoidable_damage",
     "counts_as_failure": True,
     "max_reasonable_hits": 2,
-    "score_per_hit": 100,
+    "score_per_hit": 30,
     "applies_to": ALL_ROLES,
     "note": (
         "Ezzorak slams targets within a 35 yard rear cone."
@@ -155,7 +155,7 @@ GLOOM: Mechanic = {
     "avoidable": False,
     "category": "minimum_soak",
     "failure_type": "minimum_soak",
-    "counts_as_failure": True,
+    "counts_as_failure": False,
     "minimum_soakers": 5,
     "max_reasonable_hits": 0,
     "score_per_hit": 100,

@@ -26,7 +26,7 @@ ALNDUST_UPHEAVAL: Mechanic = {
     "avoidable": False,
     "category": "soak",
     "failure_type": "missed_soak",
-    "counts_as_failure": True,
+    "counts_as_failure": False,
     "max_reasonable_hits": 1,
     "score_per_hit": 80,
     "applies_to": ALL_ROLES,
@@ -102,7 +102,7 @@ FEARSOME_CRY: Mechanic = {
 
 ESSENCE_BOLT: Mechanic = {
     "name": "Essence Bolt",
-    "severity": "Minor",
+    "severity": "Info",
     "avoidable": True,
     "category": "interrupt",
     "failure_type": "missed_interrupt",
@@ -182,7 +182,7 @@ RENDING_TEAR: Mechanic = {
 
 ALNDUST_ESSENCE: Mechanic = {
     "name": "Alndust Essence",
-    "severity": "Minor",
+    "severity": "Info",
     "avoidable": True,
     "category": "ground_effect",
     "failure_type": "avoidable_damage",

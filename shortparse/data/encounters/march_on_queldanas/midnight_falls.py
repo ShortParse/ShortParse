@@ -352,30 +352,10 @@ LIGHT_SIPHON: Mechanic = {
     "applies_to": ALL_ROLES,
     "spell_ids": [1282458],
     "note": (
-        "Light Siphon soak was not drained."
+        "Light Siphon soak circle was not fully drained, triggering a Stellar Implosion."
     ),
     "recommendation": (
-        "Stand inside Light Siphon circles until removed."
-    ),
-    "wcl_type": "damage_taken",
-}
-
-STELLAR_IMPLOSION: Mechanic = {
-    "name": "Stellar Implosion",
-    "severity": "Critical",
-    "avoidable": True,
-    "category": "failed_soak",
-    "failure_type": "expired_soak",
-    "counts_as_failure": True,
-    "max_reasonable_hits": 0,
-    "score_per_hit": 120,
-    "applies_to": ALL_ROLES,
-    "spell_ids": [1282458],
-    "note": (
-        "A Light Siphon expired."
-    ),
-    "recommendation": (
-        "Fully drain Light Siphon circles."
+        "Stand inside Light Siphon circles until completely removed."
     ),
     "wcl_type": "damage_taken",
 }
@@ -386,7 +366,7 @@ DARK_ARCHANGEL: Mechanic = {
     "avoidable": False,
     "category": "shield_requirement",
     "failure_type": "missing_barrier",
-    "counts_as_failure": True,
+    "counts_as_failure": False,
     "max_reasonable_hits": 1,
     "score_per_hit": 100,
     "applies_to": ALL_ROLES,

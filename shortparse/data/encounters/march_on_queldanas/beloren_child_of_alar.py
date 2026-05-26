@@ -26,7 +26,7 @@ LIGHT_DIVE: Mechanic = {
     "avoidable": False,
     "category": "soak",
     "failure_type": "missed_soak",
-    "counts_as_failure": True,
+    "counts_as_failure": False,
     "max_reasonable_hits": 1,
     "score_per_hit": 70,
     "applies_to": ALL_ROLES,
@@ -46,7 +46,7 @@ VOID_DIVE: Mechanic = {
     "avoidable": False,
     "category": "soak",
     "failure_type": "missed_soak",
-    "counts_as_failure": True,
+    "counts_as_failure": False,
     "max_reasonable_hits": 1,
     "score_per_hit": 70,
     "applies_to": ALL_ROLES,
@@ -162,7 +162,7 @@ VOIDLIGHT_RUPTURE: Mechanic = {
 
 LIGHT_PATCH: Mechanic = {
     "name": "Light Patch",
-    "severity": "Minor",
+    "severity": "Info",
     "avoidable": True,
     "category": "ground_effect",
     "failure_type": "avoidable_damage",
@@ -182,7 +182,7 @@ LIGHT_PATCH: Mechanic = {
 
 VOID_PATCH: Mechanic = {
     "name": "Void Patch",
-    "severity": "Minor",
+    "severity": "Info",
     "avoidable": True,
     "category": "ground_effect",
     "failure_type": "avoidable_damage",
