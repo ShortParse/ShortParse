@@ -13,6 +13,19 @@ Goal:
 
 ---
 
+## 💡 Pro Tip: Use the Visual Encounter Config Builder
+
+For the absolute best developer experience, you can use the interactive, browser-based **Visual Encounter Config Builder** served at the clean URL `/builder` (e.g. `https://www.shortparse.com/builder` or `http://localhost:8000/builder` in dev).
+
+This premium web tool allows you to:
+1. Select any Raid Zone, Boss, and existing Mechanic to load its values automatically.
+2. Edit or create new configs using a responsive fillable form with pre-populated dropdowns matching this matrix.
+3. Intelligently auto-suggest severity scores based on your choice (e.g. Critical = 80, Major = 45).
+4. See live Python `Mechanic` definitions and `mechanic_aliases` spell mapping dictionary entries update side-by-side in real-time.
+5. Click **"Copy to Discord"** to instantly format the entire code block inside a fenced markdown container ready to paste.
+
+---
+
 # Typed Mechanic Definitions
 
 ShortParse encounter files should import and use the shared `Mechanic` type:
