@@ -58,6 +58,7 @@ def build_player_metrics(
             actor_id,
             player_events_source,
             fight_duration_seconds,
+            fight_start_time,
         )
 
         consumables = calculate_consumables(
