@@ -9,4 +9,12 @@ COOLDOWNS = {
         "notes": "Reduces all damage taken by 75% and heals.",
         "cooldown_seconds": 120,
     },
+    15286: {
+        "name": "Vampiric Embrace",
+        "class": "PRIEST",
+        "specs": ['Shadow'],
+        "category": "raid_utility",
+        "notes": "Converts single-target shadow damage to raid healing.",
+        "cooldown_seconds": 120,
+    },
 }

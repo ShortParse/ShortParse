@@ -22,4 +22,11 @@ COOLDOWNS = {
         "notes": "Applies shields to the entire party.",
         "cooldown_seconds": 120,
     },
+    80353: {
+        "name": "Time Warp",
+        "class": "MAGE",
+        "category": "raid_utility",
+        "notes": "Raid-wide haste increase.",
+        "cooldown_seconds": 300,
+    },
 }

@@ -9,4 +9,12 @@ COOLDOWNS = {
         "notes": "Heals back 50% of damage taken in last 5s.",
         "cooldown_seconds": 240,
     },
+    359816: {
+        "name": "Dream Flight",
+        "class": "EVOKER",
+        "specs": ['Preservation'],
+        "category": "raid_defensive",
+        "notes": "Large line-heal and hot raid healing cooldown.",
+        "cooldown_seconds": 120,
+    },
 }

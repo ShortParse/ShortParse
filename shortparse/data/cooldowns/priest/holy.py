@@ -17,4 +17,12 @@ COOLDOWNS = {
         "notes": "Channeled raid-wide healing and healing-buff.",
         "cooldown_seconds": 180,
     },
+    64901: {
+        "name": "Symbol of Hope",
+        "class": "PRIEST",
+        "specs": ['Holy'],
+        "category": "raid_utility",
+        "notes": "Raid-wide mana return and cooldown reduction.",
+        "cooldown_seconds": 180,
+    },
 }

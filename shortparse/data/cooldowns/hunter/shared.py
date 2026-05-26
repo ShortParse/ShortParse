@@ -22,4 +22,11 @@ COOLDOWNS = {
         "notes": "Command Pet defensive cooldown.",
         "cooldown_seconds": 180,
     },
+    264667: {
+        "name": "Primal Rage",
+        "class": "HUNTER",
+        "category": "raid_utility",
+        "notes": "Raid-wide haste increase (Pet-based).",
+        "cooldown_seconds": 300,
+    },
 }

@@ -22,4 +22,11 @@ COOLDOWNS = {
         "notes": "Reduces AOE damage taken for the party.",
         "cooldown_seconds": 120,
     },
+    390386: {
+        "name": "Fury of the Aspects",
+        "class": "EVOKER",
+        "category": "raid_utility",
+        "notes": "Raid-wide haste increase.",
+        "cooldown_seconds": 300,
+    },
 }

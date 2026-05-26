@@ -15,4 +15,11 @@ COOLDOWNS = {
         "notes": "Sacrifices health for a large shield.",
         "cooldown_seconds": 60,
     },
+    111771: {
+        "name": "Demonic Gateway",
+        "class": "WARLOCK",
+        "category": "raid_movement",
+        "notes": "Places two gateways allowing raid transit.",
+        "cooldown_seconds": 90,
+    },
 }

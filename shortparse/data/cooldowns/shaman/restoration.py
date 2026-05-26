@@ -17,4 +17,12 @@ COOLDOWNS = {
         "notes": "Raid-wide healing totem.",
         "cooldown_seconds": 180,
     },
+    16190: {
+        "name": "Mana Tide Totem",
+        "class": "SHAMAN",
+        "specs": ['Restoration'],
+        "category": "raid_utility",
+        "notes": "Raid-wide mana regeneration totem.",
+        "cooldown_seconds": 180,
+    },
 }
