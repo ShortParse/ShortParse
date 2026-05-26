@@ -8,6 +8,9 @@ COOLDOWNS = {
         "category": "raid_defensive",
         "notes": "Reduces damage and redistributes health.",
         "cooldown_seconds": 180,
+
+        "weight": "high",
+
     },
     108280: {
         "name": "Healing Tide Totem",
@@ -16,6 +19,9 @@ COOLDOWNS = {
         "category": "raid_defensive",
         "notes": "Raid-wide healing totem.",
         "cooldown_seconds": 180,
+
+        "weight": "high",
+
     },
     16190: {
         "name": "Mana Tide Totem",
@@ -24,5 +30,8 @@ COOLDOWNS = {
         "category": "raid_utility",
         "notes": "Raid-wide mana regeneration totem.",
         "cooldown_seconds": 180,
+
+        "weight": "high",
+
     },
 }

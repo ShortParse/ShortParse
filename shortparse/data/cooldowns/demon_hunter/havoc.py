@@ -8,6 +8,9 @@ COOLDOWNS = {
         "category": "personal_defensive",
         "notes": "Increases dodge chance and reduces damage taken.",
         "cooldown_seconds": 60,
+
+        "weight": "medium",
+
     },
     196555: {
         "name": "Netherwalk",
@@ -16,5 +19,8 @@ COOLDOWNS = {
         "category": "personal_immunity",
         "notes": "Provides complete damage immunity.",
         "cooldown_seconds": 180,
+
+        "weight": "medium",
+
     },
 }

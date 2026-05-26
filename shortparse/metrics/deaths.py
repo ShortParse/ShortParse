@@ -47,6 +47,9 @@ def calculate_deaths(
     personal_defensives = []
     for spell_id, cd in class_cooldowns.items():
         cat = cd.get("category", "")
+        weight = cd.get("weight", "medium")
+        if weight == "low":
+            continue
         if cat in ("personal_defensive", "personal_immunity", "tank_defensive"):
             personal_defensives.append({
                 "spell_id": spell_id,

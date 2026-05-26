@@ -8,6 +8,9 @@ COOLDOWNS = {
         "category": "external_defensive",
         "notes": "Increases target healing and prevents death.",
         "cooldown_seconds": 180,
+
+        "weight": "high",
+
     },
     64843: {
         "name": "Divine Hymn",
@@ -16,6 +19,9 @@ COOLDOWNS = {
         "category": "raid_defensive",
         "notes": "Channeled raid-wide healing and healing-buff.",
         "cooldown_seconds": 180,
+
+        "weight": "high",
+
     },
     64901: {
         "name": "Symbol of Hope",
@@ -24,5 +30,8 @@ COOLDOWNS = {
         "category": "raid_utility",
         "notes": "Raid-wide mana return and cooldown reduction.",
         "cooldown_seconds": 180,
+
+        "weight": "high",
+
     },
 }

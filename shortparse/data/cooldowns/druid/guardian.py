@@ -8,5 +8,8 @@ COOLDOWNS = {
         "category": "personal_defensive",
         "notes": "Large damage reduction cooldown.",
         "cooldown_seconds": 180,
+
+        "weight": "high",
+
     },
 }

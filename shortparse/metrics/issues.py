@@ -133,6 +133,9 @@ def build_player_issues(
         if category not in TRACKED_COOLDOWN_ISSUE_CATEGORIES:
             continue
 
+        if cooldown_data.get("weight") == "low":
+            continue
+
         if possible_casts <= 1:
             continue
 

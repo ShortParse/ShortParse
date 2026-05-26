@@ -8,5 +8,8 @@ COOLDOWNS = {
         "category": "raid_defensive",
         "notes": "Empowers chosen aura, providing massive raid reduction.",
         "cooldown_seconds": 180,
+
+        "weight": "high",
+
     },
 }

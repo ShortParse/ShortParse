@@ -7,6 +7,9 @@ COOLDOWNS = {
         "category": "personal_defensive",
         "notes": "Short defensive usable while stunned/cast.",
         "cooldown_seconds": 60,
+
+        "weight": "medium",
+
     },
     108238: {
         "name": "Renewal",
@@ -14,6 +17,9 @@ COOLDOWNS = {
         "category": "personal_defensive",
         "notes": "Heals the player for 30% max health instantly.",
         "cooldown_seconds": 90,
+
+        "weight": "low",
+
     },
     106898: {
         "name": "Stampeding Roar",
@@ -21,6 +27,9 @@ COOLDOWNS = {
         "category": "raid_movement",
         "notes": "Raid-wide movement speed boost.",
         "cooldown_seconds": 120,
+
+        "weight": "medium",
+
     },
     77761: {
         "name": "Stampeding Roar",
@@ -28,6 +37,9 @@ COOLDOWNS = {
         "category": "raid_movement",
         "notes": "Raid-wide movement speed boost.",
         "cooldown_seconds": 120,
+
+        "weight": "medium",
+
     },
     20484: {
         "name": "Rebirth",
@@ -35,6 +47,9 @@ COOLDOWNS = {
         "category": "raid_utility",
         "notes": "Battle resurrection cooldown.",
         "cooldown_seconds": 600,
+
+        "weight": "high",
+
     },
     29166: {
         "name": "Innervate",
@@ -42,5 +57,8 @@ COOLDOWNS = {
         "category": "raid_utility",
         "notes": "Allows healer to cast without mana cost.",
         "cooldown_seconds": 180,
+
+        "weight": "medium",
+
     },
 }

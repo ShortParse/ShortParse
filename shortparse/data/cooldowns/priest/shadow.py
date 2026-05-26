@@ -8,6 +8,9 @@ COOLDOWNS = {
         "category": "personal_defensive",
         "notes": "Reduces all damage taken by 75% and heals.",
         "cooldown_seconds": 120,
+
+        "weight": "medium",
+
     },
     15286: {
         "name": "Vampiric Embrace",
@@ -16,5 +19,8 @@ COOLDOWNS = {
         "category": "raid_utility",
         "notes": "Converts single-target shadow damage to raid healing.",
         "cooldown_seconds": 120,
+
+        "weight": "high",
+
     },
 }

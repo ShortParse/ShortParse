@@ -8,6 +8,9 @@ COOLDOWNS = {
         "category": "tank_defensive",
         "notes": "Massive damage reduction cooldown.",
         "cooldown_seconds": 300,
+
+        "weight": "high",
+
     },
     31850: {
         "name": "Ardent Defender",
@@ -16,6 +19,9 @@ COOLDOWNS = {
         "category": "tank_defensive",
         "notes": "Reduces damage taken and prevents death.",
         "cooldown_seconds": 120,
+
+        "weight": "high",
+
     },
     204018: {
         "name": "Blessing of Spellwarding",
@@ -24,5 +30,8 @@ COOLDOWNS = {
         "category": "external_defensive",
         "notes": "Immunity to magical damage and magical effects.",
         "cooldown_seconds": 180,
+
+        "weight": "high",
+
     },
 }

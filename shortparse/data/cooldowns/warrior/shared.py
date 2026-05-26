@@ -7,6 +7,9 @@ COOLDOWNS = {
         "category": "personal_defensive",
         "notes": "Reflects magic spells and reduces magic damage.",
         "cooldown_seconds": 25,
+
+        "weight": "low",
+
     },
     97462: {
         "name": "Rallying Cry",
@@ -14,6 +17,9 @@ COOLDOWNS = {
         "category": "raid_defensive",
         "notes": "Increases max health for the entire party.",
         "cooldown_seconds": 180,
+
+        "weight": "high",
+
     },
     3411: {
         "name": "Intervene",
@@ -21,5 +27,8 @@ COOLDOWNS = {
         "category": "external_defensive",
         "notes": "Intercepts next physical/melee attack on targeted ally.",
         "cooldown_seconds": 30,
+
+        "weight": "low",
+
     },
 }

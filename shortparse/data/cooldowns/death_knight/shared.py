@@ -7,6 +7,9 @@ COOLDOWNS = {
         "category": "personal_defensive",
         "notes": "Reduces damage taken and makes immune to stun.",
         "cooldown_seconds": 180,
+
+        "weight": "medium",
+
     },
     48707: {
         "name": "Anti-Magic Shell",
@@ -14,6 +17,9 @@ COOLDOWNS = {
         "category": "personal_defensive",
         "notes": "Absorbs magic damage and prevents magic debuffs.",
         "cooldown_seconds": 60,
+
+        "weight": "medium",
+
     },
     51052: {
         "name": "Anti-Magic Zone",
@@ -21,6 +27,9 @@ COOLDOWNS = {
         "category": "raid_defensive",
         "notes": "Places a large zone reducing magic damage taken.",
         "cooldown_seconds": 120,
+
+        "weight": "high",
+
     },
     49039: {
         "name": "Lichborne",
@@ -28,6 +37,9 @@ COOLDOWNS = {
         "category": "personal_defensive",
         "notes": "Provides leech and charm/fear/sleep immunity.",
         "cooldown_seconds": 120,
+
+        "weight": "low",
+
     },
     61999: {
         "name": "Raise Ally",
@@ -35,5 +47,8 @@ COOLDOWNS = {
         "category": "raid_utility",
         "notes": "Battle resurrection cooldown.",
         "cooldown_seconds": 600,
+
+        "weight": "high",
+
     },
 }

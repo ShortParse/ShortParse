@@ -7,5 +7,8 @@ COOLDOWNS = {
         "category": "raid_defensive",
         "notes": "Raid-wide chance to avoid damage.",
         "cooldown_seconds": 180,
+
+        "weight": "high",
+
     },
 }

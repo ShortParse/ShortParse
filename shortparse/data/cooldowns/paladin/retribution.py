@@ -8,5 +8,8 @@ COOLDOWNS = {
         "category": "personal_defensive",
         "notes": "Barrier that explodes upon expiration.",
         "cooldown_seconds": 90,
+
+        "weight": "medium",
+
     },
 }

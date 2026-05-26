@@ -8,5 +8,8 @@ COOLDOWNS = {
         "category": "personal_defensive",
         "notes": "Increases parry chance by 100% and reduces damage taken by 30%.",
         "cooldown_seconds": 180,
+
+        "weight": "medium",
+
     },
 }

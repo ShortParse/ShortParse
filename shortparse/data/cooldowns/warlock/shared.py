@@ -7,6 +7,9 @@ COOLDOWNS = {
         "category": "personal_defensive",
         "notes": "Reduces damage taken and prevents lockouts/interrupts.",
         "cooldown_seconds": 180,
+
+        "weight": "medium",
+
     },
     108416: {
         "name": "Dark Pact",
@@ -14,6 +17,9 @@ COOLDOWNS = {
         "category": "personal_defensive",
         "notes": "Sacrifices health for a large shield.",
         "cooldown_seconds": 60,
+
+        "weight": "medium",
+
     },
     111771: {
         "name": "Demonic Gateway",
@@ -21,6 +27,9 @@ COOLDOWNS = {
         "category": "raid_movement",
         "notes": "Places two gateways allowing raid transit.",
         "cooldown_seconds": 90,
+
+        "weight": "high",
+
     },
     20707: {
         "name": "Soulstone",
@@ -28,5 +37,8 @@ COOLDOWNS = {
         "category": "raid_utility",
         "notes": "Battle resurrection or pre-cast wipe protection.",
         "cooldown_seconds": 600,
+
+        "weight": "high",
+
     },
 }

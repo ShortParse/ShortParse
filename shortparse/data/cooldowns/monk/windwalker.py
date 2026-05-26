@@ -8,5 +8,8 @@ COOLDOWNS = {
         "category": "personal_defensive",
         "notes": "Absorbs damage up to 50% max health, reflecting it to target.",
         "cooldown_seconds": 90,
+
+        "weight": "low",
+
     },
 }

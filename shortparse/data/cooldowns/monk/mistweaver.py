@@ -8,6 +8,9 @@ COOLDOWNS = {
         "category": "external_defensive",
         "notes": "Absorbs massive damage on a target.",
         "cooldown_seconds": 120,
+
+        "weight": "high",
+
     },
     115310: {
         "name": "Revival",
@@ -16,5 +19,8 @@ COOLDOWNS = {
         "category": "raid_defensive",
         "notes": "Raid-wide instant heal and magic cleanse.",
         "cooldown_seconds": 180,
+
+        "weight": "high",
+
     },
 }

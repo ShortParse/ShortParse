@@ -7,6 +7,9 @@ COOLDOWNS = {
         "category": "personal_defensive",
         "notes": "Primary personal damage reduction.",
         "cooldown_seconds": 90,
+
+        "weight": "medium",
+
     },
     2062: {
         "name": "Earth Elemental",
@@ -14,6 +17,9 @@ COOLDOWNS = {
         "category": "personal_defensive",
         "notes": "Summons Earth Elemental, increasing max health.",
         "cooldown_seconds": 300,
+
+        "weight": "medium",
+
     },
     2825: {
         "name": "Bloodlust",
@@ -21,6 +27,9 @@ COOLDOWNS = {
         "category": "raid_utility",
         "notes": "Raid-wide haste increase (Horde).",
         "cooldown_seconds": 300,
+
+        "weight": "high",
+
     },
     32182: {
         "name": "Heroism",
@@ -28,6 +37,9 @@ COOLDOWNS = {
         "category": "raid_utility",
         "notes": "Raid-wide haste increase (Alliance).",
         "cooldown_seconds": 300,
+
+        "weight": "high",
+
     },
     192077: {
         "name": "Wind Rush Totem",
@@ -35,6 +47,9 @@ COOLDOWNS = {
         "category": "raid_movement",
         "notes": "Raid-wide movement speed totem.",
         "cooldown_seconds": 120,
+
+        "weight": "medium",
+
     },
     108281: {
         "name": "Ancestral Guidance",
@@ -42,6 +57,9 @@ COOLDOWNS = {
         "category": "raid_utility",
         "notes": "Converts 25% of damage/healing to heal 3 injured allies.",
         "cooldown_seconds": 120,
+
+        "weight": "high",
+
     },
     8143: {
         "name": "Tremor Totem",
@@ -49,5 +67,8 @@ COOLDOWNS = {
         "category": "raid_utility",
         "notes": "Pulsates to shake party members out of Fear/Charm/Sleep.",
         "cooldown_seconds": 60,
+
+        "weight": "low",
+
     },
 }

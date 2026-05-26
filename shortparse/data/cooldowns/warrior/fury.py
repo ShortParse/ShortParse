@@ -8,5 +8,8 @@ COOLDOWNS = {
         "category": "personal_defensive",
         "notes": "Reduces damage taken by 30% and Bloodthirst heals for more.",
         "cooldown_seconds": 120,
+
+        "weight": "medium",
+
     },
 }

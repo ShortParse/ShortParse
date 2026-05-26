@@ -34,6 +34,7 @@ def build_empty_cooldown_entry(
         "spell_id": spell_id,
         "name": cooldown["name"],
         "category": cooldown["category"],
+        "weight": cooldown.get("weight", "medium"),
         "cooldown_seconds": cooldown_seconds,
         "casts": 0,
         "possible_casts": calculate_possible_casts(
