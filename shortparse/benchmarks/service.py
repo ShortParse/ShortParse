@@ -29,7 +29,7 @@ FILTER_TIERS = [
     BenchmarkFilterTier("Strict", 2, 10, 2, 1),
     BenchmarkFilterTier("Relaxed", 5, 30, 3, 1),
     BenchmarkFilterTier("Broad", 8, 60, 4, 1),
-    BenchmarkFilterTier("Emergency", None, None, None, None),
+    BenchmarkFilterTier("Emergency", None, None, None, 1), # Hard limit healer tolerance to +/- 1 even in emergency fallback
 ]
 
 
