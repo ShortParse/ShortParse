@@ -26,9 +26,9 @@ class BenchmarkFilterTier:
 
 
 FILTER_TIERS = [
-    BenchmarkFilterTier("Strict", 5, 30, 2, 1),
-    BenchmarkFilterTier("Relaxed", 8, 60, 4, 2),
-    BenchmarkFilterTier("Broad", 12, None, None, 2),
+    BenchmarkFilterTier("Strict", 2, 10, 2, 1),
+    BenchmarkFilterTier("Relaxed", 5, 30, 3, 1),
+    BenchmarkFilterTier("Broad", 8, 60, 4, 1),
     BenchmarkFilterTier("Emergency", None, None, None, None),
 ]
 
@@ -410,12 +410,13 @@ class BenchmarkService:
         if request.metric == "hps" and request.healer_count is not None:
             import concurrent.futures
 
-            # Broadest tolerance filter in FILTER_TIERS is Broad (item_level_tolerance is 12)
-            # Find candidate rankings within item level tolerance of 12
+            # Broadest tolerance filter in FILTER_TIERS is dynamically resolved
+            # Find candidate rankings within maximum defined item level tolerance
+            max_ilvl_tol = max(tier.item_level_tolerance for tier in FILTER_TIERS if tier.item_level_tolerance is not None)
             candidates = []
             for ranking in rankings:
                 item_level = ranking.get("bracketData")
-                if item_level is not None and abs(item_level - request.item_level) <= 12:
+                if item_level is not None and abs(item_level - request.item_level) <= max_ilvl_tol:
                     candidates.append(ranking)
 
             # Find all unique uncached healer counts for these candidates
