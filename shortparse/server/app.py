@@ -458,6 +458,7 @@ import importlib
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
+@app.get("/encounters")
 @app.get("/api/encounters")
 def get_encounters():
     base_dir = Path(__file__).resolve().parent.parent / "data" / "encounters"
