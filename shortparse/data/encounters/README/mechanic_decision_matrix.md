@@ -27,6 +27,14 @@ The failure is that the player took avoidable damage.
 
 ---
 
+## 💡 Pro Tip: Use the Visual Encounter Config Builder
+
+Before manually formatting code or mapping lists, you can use the interactive **Visual Encounter Config Builder** served at `/builder` (e.g. `https://www.shortparse.com/builder`).
+
+This visual tool pre-populates all valid dropdown choices defined in this decision matrix, auto-suggests standard severity scores, generates syntactically valid Typed Python `Mechanic` definitions dynamically, and packages everything into an easy "Copy to Discord" markdown block!
+
+---
+
 # Fast Rule
 
 If you are not sure what to use, answer this question first:
