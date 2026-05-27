@@ -107,6 +107,7 @@ def build_fight_analysis(
         fight=fight,
         events=events,
         roster=roster,
+        fight_data=fight_data,
     )
 
     progress("fight analysis complete.")
