@@ -16,6 +16,7 @@ from shortparse.settings import (
     PATREON_CLIENT_SECRET,
     PATREON_REDIRECT_URI,
     PATREON_CAMPAIGN_ID,
+    PATREON_PRIORITY_QUEUE_ENABLED,
 )
 
 from shortparse.logging import get_logger
@@ -226,6 +227,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         "premium_tier": user.premium_tier,
         "discord_webhook_url": user.discord_webhook_url,
         "is_patreon_linked": patron_account is not None,
+        "priority_queue_enabled": PATREON_PRIORITY_QUEUE_ENABLED,
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }
 

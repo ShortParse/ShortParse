@@ -85,6 +85,14 @@ PATREON_CAMPAIGN_ID = os.getenv(
     "15999490",
 )
 
+PATREON_PRIORITY_QUEUE_ENABLED = (
+    os.getenv(
+        "PATREON_PRIORITY_QUEUE_ENABLED",
+        "false",
+    ).lower()
+    == "true"
+)
+
 JWT_SECRET_KEY = os.getenv(
     "JWT_SECRET_KEY",
     "shortparse_secure_jwt_secret_key_placeholder",
