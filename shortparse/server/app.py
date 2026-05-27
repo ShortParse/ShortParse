@@ -285,7 +285,16 @@ def post_job_to_discord(
         raise HTTPException(status_code=401, detail="Not authenticated.")
 
     user = db.query(User).filter(User.id == user_id).first()
-    if not user or not user.discord_webhook_url:
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+
+    if not user.is_premium:
+        raise HTTPException(
+            status_code=403,
+            detail="Discord Webhook integration is a Premium feature. Support us on Patreon to unlock!",
+        )
+
+    if not user.discord_webhook_url:
         raise HTTPException(
             status_code=400,
             detail="You must configure a Discord Webhook URL in your Settings first.",

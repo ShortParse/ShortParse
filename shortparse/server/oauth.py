@@ -259,6 +259,11 @@ def update_user_settings(
     webhook_url = payload.discord_webhook_url
     if webhook_url:
         webhook_url = webhook_url.strip()
+        if not user.is_premium:
+            raise HTTPException(
+                status_code=403,
+                detail="Discord Webhook integration is a Premium feature. Support us on Patreon to unlock!",
+            )
         if not (webhook_url.startswith("https://discord.com/api/webhooks/") or webhook_url.startswith("https://discordapp.com/api/webhooks/")):
             raise HTTPException(status_code=400, detail="Invalid Discord Webhook URL format.")
     else:
@@ -284,13 +289,21 @@ def test_discord_webhook(
     if not user_id:
         raise HTTPException(status_code=401, detail="Not authenticated.")
 
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Authenticated user not found.")
+
+    if not user.is_premium:
+        raise HTTPException(
+            status_code=403,
+            detail="Discord Webhook integration is a Premium feature. Support us on Patreon to unlock!",
+        )
+
     webhook_url = payload.discord_webhook_url
     if webhook_url:
         webhook_url = webhook_url.strip()
     else:
-        user = db.query(User).filter(User.id == user_id).first()
-        if user:
-            webhook_url = user.discord_webhook_url
+        webhook_url = user.discord_webhook_url
 
     if not webhook_url:
         raise HTTPException(status_code=400, detail="No Discord Webhook URL provided or configured.")
