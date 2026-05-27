@@ -1,5 +1,6 @@
 import os
 import requests
+from urllib.parse import urlparse
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
@@ -22,6 +23,29 @@ from shortparse.logging import get_logger
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+def get_dynamic_redirect_uri(request: Request, provider: str, default_uri: str) -> str:
+    """
+    Dynamically constructs the OAuth redirect URI based on the incoming request's scheme and host.
+    This ensures that subdomains (e.g., www vs. dev) and SSL termination work seamlessly.
+    """
+    try:
+        parsed = urlparse(default_uri)
+        path = parsed.path if parsed.path else f"/api/auth/{provider}/callback"
+        
+        # Determine protocol (respect reverse proxy headers)
+        proto = request.headers.get("x-forwarded-proto") or request.url.scheme
+        
+        # Determine host (respect reverse proxy headers)
+        host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
+        
+        if host:
+            return f"{proto}://{host}{path}"
+    except Exception as e:
+        logger.warning("Error generating dynamic redirect URI for %s: %s. Falling back to default.", provider, e)
+    
+    return default_uri
 
 WCL_AUTHORIZE_URL = "https://www.warcraftlogs.com/oauth/authorize"
 WCL_TOKEN_URL = "https://www.warcraftlogs.com/oauth/token"
@@ -67,17 +91,18 @@ def get_wcl_user_info(access_token: str) -> dict:
 
 
 @router.get("/warcraftlogs/login")
-def warcraftlogs_login():
+def warcraftlogs_login(request: Request):
     if not WCL_CLIENT_ID or not WCL_CLIENT_SECRET:
         raise HTTPException(
             status_code=500,
             detail="Warcraft Logs OAuth client credentials are not configured in settings.",
         )
 
+    redirect_uri = get_dynamic_redirect_uri(request, "warcraftlogs", WCL_REDIRECT_URI)
     authorize_url = (
         f"{WCL_AUTHORIZE_URL}"
         f"?client_id={WCL_CLIENT_ID}"
-        f"&redirect_uri={WCL_REDIRECT_URI}"
+        f"&redirect_uri={redirect_uri}"
         f"&response_type=code"
         f"&scope=view-user-profile view-private-reports"
     )
@@ -98,13 +123,14 @@ def warcraftlogs_callback(
     if not code:
         raise HTTPException(status_code=400, detail="Missing OAuth authorization code.")
 
+    redirect_uri = get_dynamic_redirect_uri(request, "warcraftlogs", WCL_REDIRECT_URI)
     try:
         token_response = requests.post(
             WCL_TOKEN_URL,
             data={
                 "grant_type": "authorization_code",
                 "code": code,
-                "redirect_uri": WCL_REDIRECT_URI,
+                "redirect_uri": redirect_uri,
                 "client_id": WCL_CLIENT_ID,
                 "client_secret": WCL_CLIENT_SECRET,
             },
@@ -439,11 +465,12 @@ def patreon_login(request: Request):
             detail="Patreon OAuth client credentials are not configured in settings.",
         )
 
+    redirect_uri = get_dynamic_redirect_uri(request, "patreon", PATREON_REDIRECT_URI)
     authorize_url = (
         f"{PATREON_AUTHORIZE_URL}"
         f"?response_type=code"
         f"&client_id={PATREON_CLIENT_ID}"
-        f"&redirect_uri={PATREON_REDIRECT_URI}"
+        f"&redirect_uri={redirect_uri}"
         f"&scope=identity identity.memberships"
     )
 
@@ -470,13 +497,14 @@ def patreon_callback(
     if not code:
         raise HTTPException(status_code=400, detail="Missing OAuth authorization code.")
 
+    redirect_uri = get_dynamic_redirect_uri(request, "patreon", PATREON_REDIRECT_URI)
     try:
         token_response = requests.post(
             PATREON_TOKEN_URL,
             data={
                 "grant_type": "authorization_code",
                 "code": code,
-                "redirect_uri": PATREON_REDIRECT_URI,
+                "redirect_uri": redirect_uri,
                 "client_id": PATREON_CLIENT_ID,
                 "client_secret": PATREON_CLIENT_SECRET,
             },
