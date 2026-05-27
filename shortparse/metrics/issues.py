@@ -44,16 +44,6 @@ ISSUE_RULES = {
         "severity": "Warning",
         "score": 15,
     },
-
-    "benchmark_grade_f": {
-        "severity": "Major",
-        "score": 75,
-    },
-
-    "benchmark_grade_d": {
-        "severity": "Warning",
-        "score": 35,
-    },
 }
 
 
@@ -218,34 +208,7 @@ def build_player_issues(
             )
         )
 
-    if benchmark_comparison:
-        grade = benchmark_comparison.grade
-
-        if grade == "F":
-            issues.append(
-                make_issue(
-                    "benchmark_grade_f",
-                    player_name,
-                    "Benchmark",
-                    (
-                        "Performance grade F "
-                        "vs benchmark average."
-                    ),
-                )
-            )
-
-        elif grade == "D":
-            issues.append(
-                make_issue(
-                    "benchmark_grade_d",
-                    player_name,
-                    "Benchmark",
-                    (
-                        "Performance grade D "
-                        "vs benchmark average."
-                    ),
-                )
-            )
+    # Benchmark grade issues are removed to avoid cluttering coaching feedback with non-actionable raw metrics.
 
     return issues
 
