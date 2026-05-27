@@ -6,12 +6,15 @@ from shortparse.db_models import Base, Job
 # Automatically create all SQLite tables on first store initialization
 Base.metadata.create_all(bind=engine)
 
-# Database self-healing: automatically add discord_webhook_url if it is missing
+# Database self-healing: automatically add discord_webhook_url or discord_auto_post if missing
 inspector = inspect(engine)
 columns = [col['name'] for col in inspector.get_columns('users')]
 if 'discord_webhook_url' not in columns:
     with engine.begin() as conn:
         conn.execute(text("ALTER TABLE users ADD COLUMN discord_webhook_url VARCHAR"))
+if 'discord_auto_post' not in columns:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE users ADD COLUMN discord_auto_post BOOLEAN DEFAULT 0"))
 
 
 def db_job_to_dict(db_job: Job | None) -> dict | None:

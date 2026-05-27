@@ -228,6 +228,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         "is_premium": user.is_premium,
         "premium_tier": user.premium_tier,
         "discord_webhook_url": user.discord_webhook_url,
+        "discord_auto_post": bool(user.discord_auto_post),
         "is_patreon_linked": patron_account is not None,
         "priority_queue_enabled": PATREON_PRIORITY_QUEUE_ENABLED,
         "created_at": user.created_at.isoformat() if user.created_at else None,
@@ -244,6 +245,7 @@ from pydantic import BaseModel
 
 class SettingsUpdateRequest(BaseModel):
     discord_webhook_url: str | None = None
+    discord_auto_post: bool | None = None
 
 
 @router.post("/settings")
@@ -274,12 +276,20 @@ def update_user_settings(
         webhook_url = None
 
     user.discord_webhook_url = webhook_url
+    if payload.discord_auto_post is not None:
+        if not user.is_premium and payload.discord_auto_post:
+            raise HTTPException(
+                status_code=403,
+                detail="Discord Auto-Post integration is a Premium feature. Support us on Patreon to unlock!",
+            )
+        user.discord_auto_post = payload.discord_auto_post
     db.commit()
 
     return {
         "status": "success",
         "message": "Settings updated successfully.",
         "discord_webhook_url": user.discord_webhook_url,
+        "discord_auto_post": bool(user.discord_auto_post),
     }
 
 
