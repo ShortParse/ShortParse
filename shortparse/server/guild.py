@@ -77,6 +77,7 @@ def aggregate_guild_history(jobs: list[Job]) -> dict:
     fights_history = []
     player_agg = {}
     progression_killers = {}
+    wipe_raw = {}
     total_avoidable_damage_all = 0
     total_fights = 0
 
@@ -196,6 +197,72 @@ def aggregate_guild_history(jobs: list[Job]) -> dict:
                         progression_killers[mech_name]["hits"] += hits
                         progression_killers[mech_name]["damage"] += damage
                         progression_killers[mech_name]["fights_count"] += 1
+
+                # E. Compile detailed Wipe Catalyst and Bottleneck metrics
+                if fight_name not in wipe_raw:
+                    wipe_raw[fight_name] = {
+                        "total_wipes": 0,
+                        "hp_list": [],
+                        "phase_distribution": {},
+                        "hp_distribution": {
+                            "100_80": 0,
+                            "80_50": 0,
+                            "50_20": 0,
+                            "20_0": 0
+                        },
+                        "catalyst_players": {},
+                        "catalyst_abilities": {},
+                        "death_timestamps": []
+                    }
+                
+                w_data = wipe_raw[fight_name]
+                w_data["total_wipes"] += 1
+                
+                # Boss HP tracking
+                boss_hp = fight.get("boss_percentage")
+                if boss_hp is not None:
+                    try:
+                        hp_val = float(boss_hp)
+                        w_data["hp_list"].append(hp_val)
+                        if hp_val >= 80:
+                            w_data["hp_distribution"]["100_80"] += 1
+                        elif hp_val >= 50:
+                            w_data["hp_distribution"]["80_50"] += 1
+                        elif hp_val >= 20:
+                            w_data["hp_distribution"]["50_20"] += 1
+                        else:
+                            w_data["hp_distribution"]["20_0"] += 1
+                    except Exception:
+                        pass
+                
+                # Phase tracking
+                phase = fight.get("phase")
+                if phase is not None:
+                    try:
+                        phase_num = int(phase)
+                        phase_name = f"Phase {phase_num + 1}"
+                    except Exception:
+                        phase_name = str(phase) if str(phase).startswith("Phase") else f"Phase {phase}"
+                    w_data["phase_distribution"][phase_name] = w_data["phase_distribution"].get(phase_name, 0) + 1
+                
+                # Find first death catalyst
+                timeline = analysis.get("timeline", [])
+                for event in timeline:
+                    if event.get("type") == "death":
+                        dead_player = event.get("target") or event.get("source") or "Unknown"
+                        ability = event.get("spell_name") or "Unknown"
+                        time_str = event.get("time") or "00:00"
+                        
+                        w_data["catalyst_players"][dead_player] = w_data["catalyst_players"].get(dead_player, 0) + 1
+                        w_data["catalyst_abilities"][ability] = w_data["catalyst_abilities"].get(ability, 0) + 1
+                        
+                        try:
+                            parts = time_str.split(":")
+                            if len(parts) == 2:
+                                w_data["death_timestamps"].append(int(parts[0]) * 60 + int(parts[1]))
+                        except Exception:
+                            pass
+                        break
 
     # 3. Format Consolidated Player Historical scorecards & Ledgers
     formatted_players = {}
@@ -322,6 +389,30 @@ def aggregate_guild_history(jobs: list[Job]) -> dict:
     # Sort histories
     fights_history.sort(key=lambda x: x["created_at"])
 
+    # Format completed wipe statistics per boss
+    wipe_analytics = {}
+    for boss_name, raw in wipe_raw.items():
+        avg_hp = round(sum(raw["hp_list"]) / len(raw["hp_list"]), 1) if raw["hp_list"] else 0.0
+        
+        sorted_players = [
+            {"player": name, "count": count}
+            for name, count in sorted(raw["catalyst_players"].items(), key=lambda x: x[1], reverse=True)
+        ]
+        sorted_abilities = [
+            {"ability": name, "count": count}
+            for name, count in sorted(raw["catalyst_abilities"].items(), key=lambda x: x[1], reverse=True)
+        ]
+        
+        wipe_analytics[boss_name] = {
+            "total_wipes": raw["total_wipes"],
+            "avg_boss_hp": avg_hp,
+            "phase_distribution": raw["phase_distribution"],
+            "hp_distribution": raw["hp_distribution"],
+            "catalyst_players": sorted_players,
+            "catalyst_abilities": sorted_abilities,
+            "death_timestamps": sorted(raw["death_timestamps"])
+        }
+
     return {
         "guild_averages": {
             "total_fights_analyzed": total_fights,
@@ -334,7 +425,8 @@ def aggregate_guild_history(jobs: list[Job]) -> dict:
             "active": active_buffs,
             "missing": missing_buffs,
             "suggestions": buff_synergy_details,
-        }
+        },
+        "wipe_analytics": wipe_analytics
     }
 
 
