@@ -3,6 +3,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import json
+import queue
+import threading
+import time
 from pathlib import Path
 
 from fastapi import BackgroundTasks
@@ -36,6 +39,38 @@ from starlette.middleware.sessions import SessionMiddleware
 from shortparse.server.oauth import router as oauth_router
 
 logger = get_logger(__name__)
+
+# Create a thread-safe Priority Queue
+JOB_QUEUE = queue.PriorityQueue()
+
+def queue_worker():
+    """
+    Background worker thread that processes jobs sequentially from the PriorityQueue.
+    Always executes higher priority jobs first, falling back to FIFO order.
+    """
+    logger.info("Starting background job queue worker thread...")
+    while True:
+        try:
+            # Block until a job is available
+            priority, timestamp, job = JOB_QUEUE.get()
+            logger.info(
+                "Worker pulled job %s from queue (Priority: %s)", 
+                job["job_id"], 
+                "High" if priority == 1 else "Standard"
+            )
+            
+            try:
+                # Update status to processing
+                job_data = get_job(job["job_id"])
+                if job_data:
+                    run_analysis_job(job_data)
+            except Exception as e:
+                logger.error("Error processing queued job %s: %s", job.get("job_id"), e)
+            finally:
+                JOB_QUEUE.task_done()
+        except Exception as e:
+            logger.error("Queue worker encountered an error: %s", e)
+            time.sleep(1)
 
 app = FastAPI(
     title="ShortParse API",
@@ -114,6 +149,10 @@ def startup_check() -> None:
         except Exception as e:
             logger.warning("Unable to reach Patreon API to validate credentials: %s", e)
 
+    # Start the background priority queue worker thread as a daemon
+    worker_thread = threading.Thread(target=queue_worker, daemon=True)
+    worker_thread.start()
+
 
 @app.get("/health")
 def health_check() -> dict:
@@ -137,7 +176,6 @@ def version() -> dict:
 def create_analysis_job(
     request: JobRequest,
     http_request: Request,
-    background_tasks: BackgroundTasks,
 ) -> dict:
     report_code = extract_report_code(request.report_url)
 
@@ -151,15 +189,27 @@ def create_analysis_job(
 
     save_job(job)
 
-    background_tasks.add_task(
-        run_analysis_job,
-        job,
-    )
+    # Determine Priority (1 = High/Premium, 2 = Standard)
+    priority = 2
+    
+    from shortparse.settings import PATREON_PRIORITY_QUEUE_ENABLED
+    if PATREON_PRIORITY_QUEUE_ENABLED and job["user_id"]:
+        from shortparse.database import SessionLocal
+        from shortparse.db_models import User
+        
+        with SessionLocal() as db:
+            user = db.query(User).filter(User.id == job["user_id"]).first()
+            if user and user.is_premium:
+                priority = 1
+
+    # Enqueue to our Priority Queue
+    JOB_QUEUE.put((priority, time.time(), job))
 
     logger.info(
-        "Created analysis job: job_id=%s report=%s",
+        "Enqueued analysis job: job_id=%s report=%s (Priority: %s)",
         job["job_id"],
         report_code,
+        "High" if priority == 1 else "Standard"
     )
 
     return job
