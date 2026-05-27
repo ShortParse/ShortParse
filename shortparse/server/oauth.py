@@ -498,14 +498,17 @@ def patreon_callback(
     # Query Patreon API v2 for identity and memberships
     identity_url = (
         f"{PATREON_API_URL}/identity"
-        f"?include=memberships.tier,memberships.campaign"
+        f"?include=memberships.currently_entitled_tiers,memberships.campaign"
         f"&fields[user]=full_name,thumb_url"
         f"&fields[member]=patron_status,currently_entitled_amount_cents"
         f"&fields[tier]=title,amount_cents"
     )
 
     try:
-        headers = {"Authorization": f"Bearer {access_token}"}
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "User-Agent": "ShortParse - Campaign Integration v2"
+        }
         user_response = requests.get(identity_url, headers=headers, timeout=15)
         user_response.raise_for_status()
         user_info = user_response.json()
@@ -537,17 +540,22 @@ def patreon_callback(
     for member in memberships:
         relationships = member.get("relationships", {})
         campaign_rel = relationships.get("campaign", {}).get("data", {})
-        tier_rel = relationships.get("tier", {}).get("data", {})
+        tiers_rel = relationships.get("currently_entitled_tiers", {}).get("data", [])
 
         campaign_id = campaign_rel.get("id")
-        tier_id = tier_rel.get("id") if tier_rel else None
 
         if campaign_id == PATREON_CAMPAIGN_ID:
             status = member.get("attributes", {}).get("patron_status")
             if status == "active_patron":
                 is_premium = True
-                if tier_id and tier_id in tiers_lookup:
-                    premium_tier = tiers_lookup[tier_id]
+                active_tier_names = []
+                for t in tiers_rel:
+                    t_id = t.get("id")
+                    if t_id in tiers_lookup:
+                        active_tier_names.append(tiers_lookup[t_id])
+
+                if active_tier_names:
+                    premium_tier = ", ".join(active_tier_names)
                 else:
                     premium_tier = "Premium Patron"
                 break
@@ -626,20 +634,26 @@ def patreon_sync(
 
     identity_url = (
         f"{PATREON_API_URL}/identity"
-        f"?include=memberships.tier,memberships.campaign"
+        f"?include=memberships.currently_entitled_tiers,memberships.campaign"
         f"&fields[user]=full_name,thumb_url"
         f"&fields[member]=patron_status,currently_entitled_amount_cents"
         f"&fields[tier]=title,amount_cents"
     )
 
     try:
-        headers = {"Authorization": f"Bearer {access_token}"}
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "User-Agent": "ShortParse - Campaign Integration v2"
+        }
         user_response = requests.get(identity_url, headers=headers, timeout=15)
 
         if user_response.status_code == 401:
             try:
                 access_token = refresh_patreon_token(db, account)
-                headers = {"Authorization": f"Bearer {access_token}"}
+                headers = {
+                    "Authorization": f"Bearer {access_token}",
+                    "User-Agent": "ShortParse - Campaign Integration v2"
+                }
                 user_response = requests.get(identity_url, headers=headers, timeout=15)
             except Exception:
                 pass
@@ -670,17 +684,22 @@ def patreon_sync(
     for member in memberships:
         relationships = member.get("relationships", {})
         campaign_rel = relationships.get("campaign", {}).get("data", {})
-        tier_rel = relationships.get("tier", {}).get("data", {})
+        tiers_rel = relationships.get("currently_entitled_tiers", {}).get("data", [])
 
         campaign_id = campaign_rel.get("id")
-        tier_id = tier_rel.get("id") if tier_rel else None
 
         if campaign_id == PATREON_CAMPAIGN_ID:
             status = member.get("attributes", {}).get("patron_status")
             if status == "active_patron":
                 is_premium = True
-                if tier_id and tier_id in tiers_lookup:
-                    premium_tier = tiers_lookup[tier_id]
+                active_tier_names = []
+                for t in tiers_rel:
+                    t_id = t.get("id")
+                    if t_id in tiers_lookup:
+                        active_tier_names.append(tiers_lookup[t_id])
+
+                if active_tier_names:
+                    premium_tier = ", ".join(active_tier_names)
                 else:
                     premium_tier = "Premium Patron"
                 break
