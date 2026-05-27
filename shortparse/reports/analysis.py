@@ -9,6 +9,7 @@ from shortparse.benchmarks.builder import build_benchmark_comparisons
 from shortparse.reports.scorecard import build_scorecard
 
 from shortparse.reports.coach.summary import build_raid_coach_summary
+from shortparse.metrics.calibrator import calculate_defensive_calibrator
 
 def build_fight_analysis(
     report_code: str,
@@ -100,6 +101,14 @@ def build_fight_analysis(
         scorecard=scorecard,
     )
 
+    progress("calculating defensive CD calibration...")
+
+    defensive_calibrator = calculate_defensive_calibrator(
+        fight=fight,
+        events=events,
+        roster=roster,
+    )
+
     progress("fight analysis complete.")
 
     return {
@@ -128,4 +137,5 @@ def build_fight_analysis(
         "issues": issues,
         "scorecard": scorecard,
         "raid_coach": raid_coach,
+        "defensive_calibrator": defensive_calibrator,
     }
