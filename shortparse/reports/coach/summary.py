@@ -20,6 +20,8 @@ def build_raid_coach_summary(
             "worst_player": data.get("worst_player"),
             "worst_hits": data.get("worst_hits", 0),
             "note": data.get("note", ""),
+            "recommendation": data.get("recommendation", ""),
+            "failure_type": data.get("failure_type", ""),
         })
 
     mechanic_rows.sort(
@@ -131,11 +133,13 @@ def build_top_priorities(
     priorities = []
 
     for row in mechanic_rows[:3]:
+        rec = row.get("recommendation") or row.get("note") or ""
+        rec_suffix = f" Tips: {rec}" if rec else ""
         priorities.append(
             (
                 f"Clean up {row['name']} — {row['hits']} hits across "
                 f"{row['players_hit']} player(s), with {row['worst_player'] or 'unknown'} "
-                f"having the most hits."
+                f"having the most hits.{rec_suffix}"
             )
         )
 
@@ -212,10 +216,12 @@ def build_next_pull_focus(
     focus = []
 
     for row in mechanic_rows[:2]:
+        rec = row.get("recommendation") or row.get("note") or ""
+        rec_suffix = f" ({rec})" if rec else ""
         focus.append(
             (
                 f"Reduce {row['name']} failures, especially from "
-                f"{row['worst_player'] or 'repeat offenders'}."
+                f"{row['worst_player'] or 'repeat offenders'}.{rec_suffix}"
             )
         )
 
