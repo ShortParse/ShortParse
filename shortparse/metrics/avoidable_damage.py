@@ -42,6 +42,13 @@ def calculate_avoidable_damage(
         if not mechanic:
             continue
 
+        if not mechanic.get("avoidable", True) or not mechanic.get("counts_as_failure", True):
+            continue
+
+        # For Belo'ren (Death Drop): Everyone takes damage, but if it is under 100k, they stood far enough away.
+        if spell_id == 1241333 and int(event.get("amount") or 0) < 100000:
+            continue
+
         if not mechanic_applies_to_player(
             mechanic,
             player_role,

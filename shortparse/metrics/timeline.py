@@ -231,7 +231,14 @@ def build_timeline(
         #
 
         if event_type == "damage" and spell_id in avoidable_mechanics:
+            # For Belo'ren (Death Drop): Everyone takes damage, but if it is under 100k, they stood far enough away.
+            if spell_id == 1241333 and int(event.get("amount") or 0) < 100000:
+                continue
+
             mechanic = avoidable_mechanics[spell_id]
+            if not mechanic.get("avoidable", True) or not mechanic.get("counts_as_failure", True):
+                continue
+
             mechanic_name = mechanic["name"]
 
             amount = int(event.get("amount") or 0)

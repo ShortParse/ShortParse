@@ -15,6 +15,13 @@ def analyze_avoidable_damage(
     if event.get("type") != "damage":
         return None
 
+    if not mechanic.get("avoidable", True) or not mechanic.get("counts_as_failure", True):
+        return None
+
+    # For Belo'ren (Death Drop): Everyone takes damage, but if it is under 100k, they stood far enough away.
+    if event.get("abilityGameID") == 1241333 and int(event.get("amount") or 0) < 100000:
+        return None
+
     actor_id = event.get("targetID")
     player = player_lookup.get(actor_id)
 

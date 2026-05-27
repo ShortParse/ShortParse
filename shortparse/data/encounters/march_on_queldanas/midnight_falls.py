@@ -320,6 +320,27 @@ DARK_MELTDOWN: Mechanic = {
     "wcl_type": "damage_taken",
 }
 
+DARK_CONSTELLATION: Mechanic = {
+    "name": "Dark Constellation",
+    "severity": "Major",
+    "avoidable": False,
+    "category": "movement",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": False,
+    "max_reasonable_hits": 2,
+    "score_per_hit": 40,
+    "applies_to": ALL_ROLES,
+    "spell_ids": [1282004],
+    "note": (
+        "Player stood in Dark Constellation patterns."
+    ),
+    "recommendation": (
+        "Move between constellation lines safely."
+    ),
+    "wcl_type": "damage_taken",
+}
+
+
 LIGHT_SIPHON: Mechanic = {
     "name": "Light Siphon",
     "severity": "Critical",
