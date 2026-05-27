@@ -37,6 +37,8 @@ def get_dynamic_redirect_uri(request: Request, provider: str, default_uri: str) 
         
         # Determine protocol (respect reverse proxy headers)
         proto = request.headers.get("x-forwarded-proto") or request.url.scheme
+        if parsed.scheme == "https":
+            proto = "https"
         
         # Determine host (respect reverse proxy headers)
         host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
