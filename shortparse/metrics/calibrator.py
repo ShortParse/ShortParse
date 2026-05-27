@@ -49,6 +49,11 @@ def calculate_defensive_calibrator(
         if ts is None:
             continue
 
+        # Filter out damage events that do not target friendly players (ignores player DPS on boss/adds)
+        target_id = event.get("targetID")
+        if target_id not in actor_lookup:
+            continue
+
         elapsed = int((ts - fight_start) / 1000)
         if 0 <= elapsed < len(raid_dtps):
             amount = int(event.get("amount") or 0)
