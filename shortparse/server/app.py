@@ -90,7 +90,7 @@ app.include_router(oauth_router)
 
 # Register Guild Suite routes
 from shortparse.server.guild import router as guild_router
-app.include_router(guild_router, prefix="/api")
+app.include_router(guild_router)
 
 
 class AnalyzeRequest(BaseModel):
