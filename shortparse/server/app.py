@@ -88,6 +88,10 @@ app.add_middleware(
 # Register authentication routes
 app.include_router(oauth_router)
 
+# Register Guild Suite routes
+from shortparse.server.guild import router as guild_router
+app.include_router(guild_router, prefix="/api")
+
 
 class AnalyzeRequest(BaseModel):
     report_url: str
