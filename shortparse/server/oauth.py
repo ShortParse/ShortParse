@@ -11,6 +11,10 @@ from shortparse.settings import (
     WCL_CLIENT_ID,
     WCL_CLIENT_SECRET,
     WCL_REDIRECT_URI,
+    PATREON_CLIENT_ID,
+    PATREON_CLIENT_SECRET,
+    PATREON_REDIRECT_URI,
+    PATREON_CAMPAIGN_ID,
 )
 
 from shortparse.logging import get_logger
@@ -184,12 +188,18 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
             detail="Authenticated session user not found in database.",
         )
 
+    patron_account = db.query(LinkedAccount).filter(
+        LinkedAccount.user_id == user.id,
+        LinkedAccount.provider == "patreon",
+    ).first()
+
     return {
         "id": str(user.id),
         "username": user.username,
         "is_premium": user.is_premium,
         "premium_tier": user.premium_tier,
         "discord_webhook_url": user.discord_webhook_url,
+        "is_patreon_linked": patron_account is not None,
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }
 
@@ -371,3 +381,335 @@ def get_guild_reports(
             status_code=500,
             detail=f"Failed to fetch guild reports from Warcraft Logs API: {str(e)}",
         )
+
+
+# ==============================================================================
+# Patreon OAuth 2.0 Integration (API v2)
+# ==============================================================================
+
+PATREON_AUTHORIZE_URL = "https://www.patreon.com/oauth2/authorize"
+PATREON_TOKEN_URL = "https://www.patreon.com/api/oauth2/token"
+PATREON_API_URL = "https://www.patreon.com/api/oauth2/v2"
+
+
+def refresh_patreon_token(db: Session, account: LinkedAccount) -> str:
+    """Helper to refresh expired Patreon tokens securely."""
+    if not PATREON_CLIENT_ID or not PATREON_CLIENT_SECRET:
+        raise RuntimeError("Patreon client credentials not configured.")
+
+    try:
+        response = requests.post(
+            PATREON_TOKEN_URL,
+            data={
+                "grant_type": "refresh_token",
+                "refresh_token": account.refresh_token,
+                "client_id": PATREON_CLIENT_ID,
+                "client_secret": PATREON_CLIENT_SECRET,
+            },
+            timeout=15,
+        )
+        response.raise_for_status()
+        token_data = response.json()
+    except Exception as e:
+        raise RuntimeError(f"Patreon token refresh failed: {str(e)}")
+
+    account.access_token = token_data["access_token"]
+    if "refresh_token" in token_data:
+        account.refresh_token = token_data["refresh_token"]
+    expires_in = token_data.get("expires_in", 2678400)
+    account.expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+    account.updated_at = datetime.utcnow()
+    db.commit()
+
+    return account.access_token
+
+
+@router.get("/patreon/login")
+def patreon_login(request: Request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="You must be logged in with Warcraft Logs before connecting Patreon.",
+        )
+
+    if not PATREON_CLIENT_ID or not PATREON_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=500,
+            detail="Patreon OAuth client credentials are not configured in settings.",
+        )
+
+    authorize_url = (
+        f"{PATREON_AUTHORIZE_URL}"
+        f"?response_type=code"
+        f"&client_id={PATREON_CLIENT_ID}"
+        f"&redirect_uri={PATREON_REDIRECT_URI}"
+        f"&scope=identity identity.memberships"
+    )
+
+    return RedirectResponse(url=authorize_url)
+
+
+@router.get("/patreon/callback")
+def patreon_callback(
+    request: Request,
+    code: str | None = None,
+    error: str | None = None,
+    db: Session = Depends(get_db),
+):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="User session expired or not authenticated.",
+        )
+
+    if error:
+        raise HTTPException(status_code=400, detail=f"OAuth authorization failed: {error}")
+
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing OAuth authorization code.")
+
+    try:
+        token_response = requests.post(
+            PATREON_TOKEN_URL,
+            data={
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": PATREON_REDIRECT_URI,
+                "client_id": PATREON_CLIENT_ID,
+                "client_secret": PATREON_CLIENT_SECRET,
+            },
+            timeout=15,
+        )
+        token_response.raise_for_status()
+        token_data = token_response.json()
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to exchange token with Patreon: {str(e)}",
+        )
+
+    access_token = token_data["access_token"]
+    refresh_token = token_data.get("refresh_token")
+    expires_in = token_data.get("expires_in", 2678400)
+    expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+
+    # Query Patreon API v2 for identity and memberships
+    identity_url = (
+        f"{PATREON_API_URL}/identity"
+        f"?include=memberships.currently_entitled_tiers,memberships.campaign"
+        f"&fields[user]=full_name,thumb_url"
+        f"&fields[member]=patron_status,currently_entitled_amount_cents"
+        f"&fields[tier]=title,amount_cents"
+    )
+
+    try:
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "User-Agent": "ShortParse - Campaign Integration v2"
+        }
+        user_response = requests.get(identity_url, headers=headers, timeout=15)
+        user_response.raise_for_status()
+        user_info = user_response.json()
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to fetch user details from Patreon API: {str(e)}",
+        )
+
+    patron_data = user_info.get("data", {})
+    patron_id = str(patron_data.get("id"))
+
+    # Determine premium status against Campaign ID
+    is_premium = False
+    premium_tier = None
+
+    included = user_info.get("included", [])
+    memberships = []
+    tiers_lookup = {}
+
+    for item in included:
+        item_type = item.get("type")
+        item_id = item.get("id")
+        if item_type == "tier":
+            tiers_lookup[item_id] = item.get("attributes", {}).get("title")
+        elif item_type == "member":
+            memberships.append(item)
+
+    for member in memberships:
+        relationships = member.get("relationships", {})
+        campaign_rel = relationships.get("campaign", {}).get("data", {})
+        tiers_rel = relationships.get("currently_entitled_tiers", {}).get("data", [])
+
+        campaign_id = campaign_rel.get("id")
+
+        if campaign_id == PATREON_CAMPAIGN_ID:
+            status = member.get("attributes", {}).get("patron_status")
+            if status == "active_patron":
+                is_premium = True
+                active_tier_names = []
+                for t in tiers_rel:
+                    t_id = t.get("id")
+                    if t_id in tiers_lookup:
+                        active_tier_names.append(tiers_lookup[t_id])
+
+                if active_tier_names:
+                    premium_tier = ", ".join(active_tier_names)
+                else:
+                    premium_tier = "Premium Patron"
+                break
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    user.is_premium = is_premium
+    user.premium_tier = premium_tier
+
+    linked_account = db.query(LinkedAccount).filter(
+        LinkedAccount.user_id == user.id,
+        LinkedAccount.provider == "patreon",
+    ).first()
+
+    if linked_account:
+        linked_account.provider_user_id = patron_id
+        linked_account.access_token = access_token
+        linked_account.refresh_token = refresh_token
+        linked_account.expires_at = expires_at
+        linked_account.updated_at = datetime.utcnow()
+    else:
+        linked_account = LinkedAccount(
+            user_id=user.id,
+            provider="patreon",
+            provider_user_id=patron_id,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires_at=expires_at,
+        )
+        db.add(linked_account)
+
+    db.commit()
+
+    frontend_url = os.getenv("FRONTEND_URL", "/")
+    return RedirectResponse(url=f"{frontend_url.rstrip('/')}/")
+
+
+@router.post("/patreon/sync")
+def patreon_sync(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+
+    account = db.query(LinkedAccount).filter(
+        LinkedAccount.user_id == user_id,
+        LinkedAccount.provider == "patreon",
+    ).first()
+
+    if not account:
+        raise HTTPException(
+            status_code=400,
+            detail="You do not have a linked Patreon account.",
+        )
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    access_token = account.access_token
+    if not account.expires_at or account.expires_at <= datetime.utcnow() + timedelta(days=1):
+        try:
+            access_token = refresh_patreon_token(db, account)
+        except Exception as e:
+            user.is_premium = False
+            user.premium_tier = None
+            db.commit()
+            raise HTTPException(
+                status_code=400,
+                detail=f"Patreon credentials expired and could not be refreshed: {str(e)}",
+            )
+
+    identity_url = (
+        f"{PATREON_API_URL}/identity"
+        f"?include=memberships.currently_entitled_tiers,memberships.campaign"
+        f"&fields[user]=full_name,thumb_url"
+        f"&fields[member]=patron_status,currently_entitled_amount_cents"
+        f"&fields[tier]=title,amount_cents"
+    )
+
+    try:
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "User-Agent": "ShortParse - Campaign Integration v2"
+        }
+        user_response = requests.get(identity_url, headers=headers, timeout=15)
+
+        if user_response.status_code == 401:
+            try:
+                access_token = refresh_patreon_token(db, account)
+                headers = {
+                    "Authorization": f"Bearer {access_token}",
+                    "User-Agent": "ShortParse - Campaign Integration v2"
+                }
+                user_response = requests.get(identity_url, headers=headers, timeout=15)
+            except Exception:
+                pass
+
+        user_response.raise_for_status()
+        user_info = user_response.json()
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to fetch user details from Patreon API: {str(e)}",
+        )
+
+    is_premium = False
+    premium_tier = None
+
+    included = user_info.get("included", [])
+    memberships = []
+    tiers_lookup = {}
+
+    for item in included:
+        item_type = item.get("type")
+        item_id = item.get("id")
+        if item_type == "tier":
+            tiers_lookup[item_id] = item.get("attributes", {}).get("title")
+        elif item_type == "member":
+            memberships.append(item)
+
+    for member in memberships:
+        relationships = member.get("relationships", {})
+        campaign_rel = relationships.get("campaign", {}).get("data", {})
+        tiers_rel = relationships.get("currently_entitled_tiers", {}).get("data", [])
+
+        campaign_id = campaign_rel.get("id")
+
+        if campaign_id == PATREON_CAMPAIGN_ID:
+            status = member.get("attributes", {}).get("patron_status")
+            if status == "active_patron":
+                is_premium = True
+                active_tier_names = []
+                for t in tiers_rel:
+                    t_id = t.get("id")
+                    if t_id in tiers_lookup:
+                        active_tier_names.append(tiers_lookup[t_id])
+
+                if active_tier_names:
+                    premium_tier = ", ".join(active_tier_names)
+                else:
+                    premium_tier = "Premium Patron"
+                break
+
+    user.is_premium = is_premium
+    user.premium_tier = premium_tier
+    db.commit()
+
+    return {
+        "status": "success",
+        "is_premium": user.is_premium,
+        "premium_tier": user.premium_tier,
+    }

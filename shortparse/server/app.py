@@ -85,6 +85,35 @@ def startup_check() -> None:
         else:
             logger.info("Redis cache backend not running. Falling back to disk cache.")
 
+    # Patreon integration credentials validation
+    from shortparse.settings import PATREON_CLIENT_ID, PATREON_CLIENT_SECRET, PATREON_REDIRECT_URI
+    import requests
+
+    if not PATREON_CLIENT_ID or not PATREON_CLIENT_SECRET:
+        logger.warning("Patreon integration credentials are missing or incomplete in settings")
+    else:
+        try:
+            response = requests.post(
+                "https://www.patreon.com/api/oauth2/token",
+                data={
+                    "grant_type": "authorization_code",
+                    "code": "startup_validate_test_code_dummy",
+                    "redirect_uri": PATREON_REDIRECT_URI,
+                    "client_id": PATREON_CLIENT_ID,
+                    "client_secret": PATREON_CLIENT_SECRET,
+                },
+                timeout=8,
+            )
+            # If Client credentials are bad, Patreon returns invalid_client (usually HTTP 401)
+            # If they are good, Patreon accepts the client but rejects the dummy code (usually HTTP 400 invalid_grant)
+            payload = response.json()
+            if payload.get("error") == "invalid_client":
+                logger.error("Patreon integration credentials validation FAILED: Invalid Client ID or Client Secret")
+            else:
+                logger.info("Patreon integration credentials validated successfully")
+        except Exception as e:
+            logger.warning("Unable to reach Patreon API to validate credentials: %s", e)
+
 
 @app.get("/health")
 def health_check() -> dict:
