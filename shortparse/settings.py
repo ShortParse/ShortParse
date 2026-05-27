@@ -61,6 +61,30 @@ WCL_REDIRECT_URI = os.getenv(
     "http://localhost:8000/api/auth/warcraftlogs/callback",
 )
 
+#
+# Patreon API & OAuth
+#
+
+PATREON_CLIENT_ID = os.getenv(
+    "PATREON_CLIENT_ID",
+    "",
+)
+
+PATREON_CLIENT_SECRET = os.getenv(
+    "PATREON_CLIENT_SECRET",
+    "",
+)
+
+PATREON_REDIRECT_URI = os.getenv(
+    "PATREON_REDIRECT_URI",
+    "http://localhost:8000/api/auth/patreon/callback",
+)
+
+PATREON_CAMPAIGN_ID = os.getenv(
+    "PATREON_CAMPAIGN_ID",
+    "15999490",
+)
+
 JWT_SECRET_KEY = os.getenv(
     "JWT_SECRET_KEY",
     "shortparse_secure_jwt_secret_key_placeholder",
