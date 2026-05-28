@@ -673,6 +673,7 @@ from pydantic import BaseModel
 class CoachChatRequest(BaseModel):
     job_id: str
     analysis_index: int = 0
+    pull_index: str = "all"
     message: str
 
 
@@ -738,7 +739,7 @@ def post_coach_chat(
     
     # 3. Query the Gemini AI Coach engine
     from shortparse.server.ai_coach import ask_gemini_coach
-    reply = ask_gemini_coach(payload.message, analysis, custom_key=user.gemini_api_key)
+    reply = ask_gemini_coach(payload.message, analysis, custom_key=user.gemini_api_key, pull_index=payload.pull_index)
     
     return {"reply": reply}
 

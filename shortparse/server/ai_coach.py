@@ -8,17 +8,40 @@ from shortparse.settings import GEMINI_API_KEY
 
 logger = logging.getLogger(__name__)
 
-def package_fight_context(analysis: dict) -> str:
+def package_fight_context(base_analysis: dict, pull_index: str = "all") -> str:
     """
     Packs fight analysis metrics into a dense, structured context payload for the LLM.
+    Supports either the aggregated boss overview ("all") or a specific individual pull.
     """
-    fight = analysis.get("fight", {})
-    scorecard = analysis.get("scorecard", [])
-    mechanics = analysis.get("mechanics", {}).get("raid_mechanics", {})
-    defensive_calibrator = analysis.get("defensive_calibrator", {})
+    active_analysis = base_analysis
+    is_individual = False
+    pull_num = 1
+    
+    if pull_index != "all":
+        try:
+            pidx = int(pull_index)
+            pulls = base_analysis.get("pulls_details", [])
+            if 0 <= pidx < len(pulls):
+                active_analysis = pulls[pidx]
+                is_individual = True
+                pull_num = pidx + 1
+        except (ValueError, TypeError):
+            pass
+
+    fight = active_analysis.get("fight", {})
+    scorecard = active_analysis.get("scorecard", [])
+    mechanics = active_analysis.get("mechanics", {}).get("raid_mechanics", {})
+    defensive_calibrator = active_analysis.get("defensive_calibrator", {})
     
     boss_name = fight.get("name", "Unknown Boss")
-    kill_status = "Kill" if fight.get("kill") else f"Wipe (Boss at {fight.get('boss_percentage') or '?'}% HP)"
+    
+    if is_individual:
+        kill_status = "Kill" if fight.get("kill") else f"Wipe (Boss at {fight.get('boss_percentage') or '?'}% HP)"
+    else:
+        pulls_count = len(base_analysis.get("pulls_details", [])) or 1
+        kills_count = base_analysis.get("fight", {}).get("kills_count", 1 if base_analysis.get("fight", {}).get("kill") else 0)
+        wipes_count = pulls_count - kills_count
+        kill_status = f"Aggregated Overview ({pulls_count} Pulls Total: {kills_count} Kills, {wipes_count} Wipes)"
     
     # Roster Performance
     roster_lines = []
@@ -29,7 +52,7 @@ def package_fight_context(analysis: dict) -> str:
         role = row.get("role", "DPS")
         
         # Pull performance metrics
-        metrics = analysis.get("player_metrics", {}).get(player, {}).get("performance", {})
+        metrics = active_analysis.get("player_metrics", {}).get(player, {}).get("performance", {})
         output = f"DPS: {metrics.get('dps', 0):,}" if role == "DPS" else f"HPS: {metrics.get('hps', 0):,}"
         avoidable = f"Avoidable Damage Taken: {metrics.get('avoidable_damage_taken', 0):,}"
         
@@ -50,8 +73,8 @@ def package_fight_context(analysis: dict) -> str:
     overlap_lines = [f"- {o.get('summary')} (Overhealing estimate: {o.get('overhealing_pct')}%)" for o in overlaps[:3]]
     dry_lines = [f"- {d.get('summary')}" for d in dry_spells[:3]]
 
-    # Boss Pulls Progression History
-    progression = analysis.get("progression", {})
+    # Boss Pulls Progression History (always draw from base_analysis for progression overview)
+    progression = base_analysis.get("progression", {})
     pulls = progression.get("pulls", [])
     pull_lines = []
     for p in pulls:
@@ -61,17 +84,30 @@ def package_fight_context(analysis: dict) -> str:
         )
     pulls_history_text = "\n".join(pull_lines) if pull_lines else "No progression history."
 
+    if is_individual:
+        context_instruction = f"""
+YOU ARE ANALYZING PULL {pull_num} ONLY (Individual Pull).
+Focus your observations and diagnostics exclusively on this specific pull. Do not generalize across other pulls or discuss other fights unless they are relevant as a contrast. Ground all comments solely on the performance, cooldown overlaps, and death events of Pull {pull_num} (be it a Wipe or a Kill).
+"""
+    else:
+        context_instruction = f"""
+YOU ARE ANALYZING AN AGGREGATED VIEW OF ALL PULLS ({len(base_analysis.get('pulls_details', [])) or 1} PULLS TOTAL).
+Your goal is to provide a high-level review of all pulls at a 30,000-foot view. Discuss overall roster patterns, consistent mechanic failures across multiple pulls, or persistent healing dry spells. Do not get bogged down in a single pull's details unless it represents a clear recurring pattern.
+"""
+
     context = f"""
 You are "ShortParse Raid Intelligence", an objective, highly analytical, and clinical World of Warcraft combat log analysis engine.
 You are programmed to provide data-driven observations to raid officers.
 Do NOT use human-like chitchat, friendly greetings, or emotional qualifiers (such as "Alright team", "heartbreaking", "great effort", "good job", "thankfully", or "sadly"). 
 Maintain an objective, cold, precise, and structured robotic tone.
 
-Here is the structured data for this boss pull:
+{context_instruction}
+
+Here is the structured data for this boss encounter:
 
 Boss Encounter: {boss_name}
-Result: {kill_status}
-Duration: {fight.get('duration_seconds', 0)} seconds
+Result Context: {kill_status}
+Active Pull Duration: {fight.get('duration_seconds', 0)} seconds
 
 Boss Pulls Progression History:
 {pulls_history_text}
@@ -93,7 +129,7 @@ INSTRUCTIONS:
 2. Maintain a purely clinical, precise, and objective robotic tone.
 3. Suggest concrete actions (e.g. "Reassign cooldown X to cover dry spell Y", "Instruct player Z to reduce hits from mechanic W").
 4. Keep your responses extremely concise and structured (max 2-3 short, dense paragraphs, or clear bullet points).
-5. Pay close attention to the Pull Result (Kill vs Wipe). If the fight was a Kill, do not talk about "why we wiped" or "preventing wipes"; instead, focus on optimizing performance, reducing avoidable damage, and cleaning up rotations for subsequent farm clears.
+5. Pay close attention to the Active Pull Result (Kill vs Wipe). If the active view is a Kill, do not talk about "why we wiped" or "preventing wipes"; instead, focus on optimizing performance, reducing avoidable damage, and cleaning up rotations for subsequent farm clears.
 """
     return context
 
@@ -157,7 +193,7 @@ def mock_coach_response(user_query: str, analysis: dict) -> str:
         return f"**ShortParse Raid Intelligence:** Analysis of **{boss_name}** log files completed.\n\n- Standout performer: {best_str}.\n- Status: Roster synergy limits detected. Query further to review specific mechanic execution sheets or healer cooldown overlaps."
 
 
-def ask_gemini_coach(user_query: str, analysis: dict, custom_key: str | None = None) -> str:
+def ask_gemini_coach(user_query: str, analysis: dict, custom_key: str | None = None, pull_index: str = "all") -> str:
     """
     Sends the packaged combat log context and the user query to the Gemini Free Tier API.
     If no GEMINI_API_KEY (and no custom_key) is configured, falls back gracefully to the mock rule engine.
@@ -172,7 +208,7 @@ def ask_gemini_coach(user_query: str, analysis: dict, custom_key: str | None = N
 
     for attempt in range(max_retries):
         try:
-            context = package_fight_context(analysis)
+            context = package_fight_context(analysis, pull_index=pull_index)
             
             # Google AI Studio Gemini API Endpoint
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
@@ -193,16 +229,40 @@ def ask_gemini_coach(user_query: str, analysis: dict, custom_key: str | None = N
                 "generationConfig": {
                     "temperature": 0.2,
                     "maxOutputTokens": 1024
-                }
+                },
+                "safetySettings": [
+                    {
+                        "category": "HARM_CATEGORY_HARASSMENT",
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_HATE_SPEECH",
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                        "threshold": "BLOCK_NONE"
+                    }
+                ]
             }
             
             response = requests.post(url, json=payload, headers=headers, timeout=12)
             
             if response.status_code == 200:
                 result = response.json()
+                logger.info("Full Gemini API Response JSON: %s", json.dumps(result))
+                
                 candidates = result.get("candidates", [])
                 if candidates:
-                    text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    candidate = candidates[0]
+                    finish_reason = candidate.get("finishReason")
+                    logger.info("Gemini Candidate finishReason: %s", finish_reason)
+                    
+                    text = candidate.get("content", {}).get("parts", [{}])[0].get("text", "")
                     logger.info("Raw Gemini Coach response payload: %r", text)
                     if text:
                         return text.strip()
