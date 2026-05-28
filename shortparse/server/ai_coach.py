@@ -1,6 +1,7 @@
 # shortparse/server/ai_coach.py
 
 import json
+import time
 import logging
 import requests
 from shortparse.settings import GEMINI_API_KEY
@@ -152,46 +153,66 @@ def ask_gemini_coach(user_query: str, analysis: dict, custom_key: str | None = N
         logger.warning("No Gemini API key available. Falling back to Mock Coach engine.")
         return mock_coach_response(user_query, analysis)
 
-    try:
-        context = package_fight_context(analysis)
-        
-        # Google AI Studio Gemini API Endpoint
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
-        
-        headers = {
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [
-                        {"text": context + f"\nUser Query: {user_query}\n\nAI Response:"}
-                    ]
-                }
-            ],
-            "generationConfig": {
-                "temperature": 0.2,
-                "maxOutputTokens": 1024
-            }
-        }
-        
-        response = requests.post(url, json=payload, headers=headers, timeout=12)
-        
-        if response.status_code == 200:
-            result = response.json()
-            candidates = result.get("candidates", [])
-            if candidates:
-                text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                if text:
-                    return text.strip()
-            logger.error("Gemini API response missing content: %s", response.text)
-        else:
-            logger.error("Gemini API error (Status %s): %s", response.status_code, response.text)
+    max_retries = 3
+    retry_delay = 1.0  # seconds
+
+    for attempt in range(max_retries):
+        try:
+            context = package_fight_context(analysis)
             
-    except Exception as e:
-        logger.error("Failed to query Gemini API: %s", e)
-        
+            # Google AI Studio Gemini API Endpoint
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+            
+            headers = {
+                "Content-Type": "application/json"
+            }
+            
+            payload = {
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [
+                            {"text": context + f"\nUser Query: {user_query}\n\nAI Response:"}
+                        ]
+                    }
+                ],
+                "generationConfig": {
+                    "temperature": 0.2,
+                    "maxOutputTokens": 1024
+                }
+            }
+            
+            response = requests.post(url, json=payload, headers=headers, timeout=12)
+            
+            if response.status_code == 200:
+                result = response.json()
+                candidates = result.get("candidates", [])
+                if candidates:
+                    text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    if text:
+                        return text.strip()
+                logger.error("Gemini API response missing content: %s", response.text)
+                break
+            
+            elif response.status_code in (429, 503):
+                logger.warning(
+                    "Gemini API returned status %s. Retrying attempt %s/%s after %ss delay...",
+                    response.status_code, attempt + 1, max_retries, retry_delay
+                )
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+                continue
+            
+            else:
+                logger.error("Gemini API error (Status %s): %s", response.status_code, response.text)
+                break
+                
+        except Exception as e:
+            logger.error("Failed to query Gemini API on attempt %s: %s", attempt + 1, e)
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+                retry_delay *= 2
+                continue
+
     # Ultimate fallback to mock
     return mock_coach_response(user_query, analysis)
