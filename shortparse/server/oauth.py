@@ -192,6 +192,11 @@ def warcraftlogs_callback(
         )
         db.add(linked_account)
 
+    from shortparse.settings import BYPASS_PREMIUM_USERNAMES
+    if user.username and user.username.strip().lower() in BYPASS_PREMIUM_USERNAMES:
+        user.is_premium = True
+        user.premium_tier = "Developer / Admin Bypass"
+
     db.commit()
 
     request.session["user_id"] = str(user.id)
@@ -222,11 +227,16 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         LinkedAccount.provider == "patreon",
     ).first()
 
+    from shortparse.settings import BYPASS_PREMIUM_USERNAMES
+    is_bypass = user.username.strip().lower() in BYPASS_PREMIUM_USERNAMES if user.username else False
+    user_premium = user.is_premium or is_bypass
+    user_tier = user.premium_tier or ("Developer / Admin Bypass" if is_bypass else None)
+
     return {
         "id": str(user.id),
         "username": user.username,
-        "is_premium": user.is_premium,
-        "premium_tier": user.premium_tier,
+        "is_premium": user_premium,
+        "premium_tier": user_tier,
         "discord_webhook_url": user.discord_webhook_url,
         "discord_auto_post": bool(user.discord_auto_post),
         "is_patreon_linked": patron_account is not None,

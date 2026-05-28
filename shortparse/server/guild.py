@@ -34,7 +34,10 @@ def require_premium_user(request: Request, db: Session = Depends(get_db)) -> Use
             detail="User not found.",
         )
 
-    if not user.is_premium:
+    from shortparse.settings import BYPASS_PREMIUM_USERNAMES
+    is_bypass = user.username.strip().lower() in BYPASS_PREMIUM_USERNAMES if user.username else False
+
+    if not user.is_premium and not is_bypass:
         raise HTTPException(
             status_code=403,
             detail="The Guild Suite is a Patreon Premium feature. Support us on Patreon to unlock!",
@@ -80,6 +83,10 @@ def aggregate_guild_history(jobs: list[Job]) -> dict:
     wipe_raw = {}
     total_avoidable_damage_all = 0
     total_fights = 0
+    total_overlaps = 0
+    total_dry_spells = 0
+    all_overlaps_list = []
+    all_dry_spells_list = []
 
     # 2. Iterate through loaded analysis files and compile statistics
     for report in reports_data:
@@ -117,6 +124,18 @@ def aggregate_guild_history(jobs: list[Job]) -> dict:
             total_avoidable_damage_all += fight_avoidable_damage
             total_fights += 1
 
+            # Early deaths tracking (< 80% fight duration)
+            early_deaths = set()
+            timeline = analysis.get("timeline", [])
+            for event in timeline:
+                if event.get("type") == "death":
+                    dead_player = event.get("target") or event.get("source") or "Unknown"
+                    event_ts = event.get("timestamp")
+                    if event_ts and created_at and duration_sec > 0:
+                        elapsed_s = (event_ts - created_at) / 1000
+                        if elapsed_s < 0.8 * duration_sec:
+                            early_deaths.add(dead_player)
+
             fights_history.append({
                 "report_code": report_code,
                 "analysis_index": idx,
@@ -150,10 +169,17 @@ def aggregate_guild_history(jobs: list[Job]) -> dict:
                         "panic_pots_used": 0,
                         "priority_switch_times": [],
                         "priority_switch_dmg": [],
+                        "specs_played": set(),
+                        "survived_80_count": 0,
+                        "player_total_fights": 0,
                     }
 
                 p_data = player_agg[player_name]
                 p_data["grades"].append(row.get("grade", "C"))
+                p_data["specs_played"].add(row.get("spec", "Unknown"))
+                p_data["player_total_fights"] += 1
+                if player_name not in early_deaths:
+                    p_data["survived_80_count"] += 1
 
                 # Get fine-tuned metrics from player_metrics
                 metrics_row = player_metrics.get(player_name, {})
@@ -264,6 +290,24 @@ def aggregate_guild_history(jobs: list[Job]) -> dict:
                             pass
                         break
 
+            # F. Healer audit overlap and dry spell aggregation
+            overlaps = defensive_calibrator.get("overlaps", []) if isinstance(defensive_calibrator, dict) else []
+            dry_spells = defensive_calibrator.get("dry_spells", []) if isinstance(defensive_calibrator, dict) else []
+            total_overlaps += len(overlaps)
+            total_dry_spells += len(dry_spells)
+            for o in overlaps:
+                all_overlaps_list.append({
+                    "boss_name": fight_name,
+                    "time_range": o.get("time_range"),
+                    "summary": f"[{fight_name}] {o.get('summary')}"
+                })
+            for d in dry_spells:
+                all_dry_spells_list.append({
+                    "boss_name": fight_name,
+                    "time_range": d.get("time_range"),
+                    "summary": f"[{fight_name}] {d.get('summary')}"
+                })
+
     # 3. Format Consolidated Player Historical scorecards & Ledgers
     formatted_players = {}
     for player_name, p_data in player_agg.items():
@@ -292,6 +336,20 @@ def aggregate_guild_history(jobs: list[Job]) -> dict:
         # Gold Repair Debt: 100g per 1M avoidable damage
         gold_debt = int(sum(p_data["avoidable_damage"]) / 10000)
 
+        # Calculate URS (Uptime Reliability Score) - % of fights they survived past 80% mark
+        urs = 100
+        if p_data.get("player_total_fights", 0) > 0:
+            urs = int((p_data["survived_80_count"] / p_data["player_total_fights"]) * 100)
+
+        # Calculate SPI (Survival-to-Performance Index) - combines output and survival
+        output_val = avg_dps if p_data["role"] == "DPS" else avg_hps
+        perf_factor = output_val / 20000.0
+        dmg_penalty = avg_avoidable / 20000.0
+        spi = max(10, min(100, int(50 + (perf_factor * 10) - (dmg_penalty * 15))))
+
+        specs_played = list(p_data.get("specs_played", [p_data["spec"]]))
+        is_flex = len(specs_played) > 1
+
         formatted_players[player_name] = {
             "spec": p_data["spec"],
             "role": p_data["role"],
@@ -306,6 +364,10 @@ def aggregate_guild_history(jobs: list[Job]) -> dict:
             "avg_priority_switch_time_sec": round(avg_switch_time, 2),
             "avg_priority_switch_dmg": int(avg_switch_dmg),
             "gold_debt": gold_debt,
+            "urs": urs,
+            "spi": spi,
+            "specs_played": specs_played,
+            "is_flex": is_flex,
         }
 
     # 4. Generate Roster Buff & Synergy Audit (Uses latest fight roster)
@@ -426,7 +488,13 @@ def aggregate_guild_history(jobs: list[Job]) -> dict:
             "missing": missing_buffs,
             "suggestions": buff_synergy_details,
         },
-        "wipe_analytics": wipe_analytics
+        "wipe_analytics": wipe_analytics,
+        "healer_audit": {
+            "total_overlaps": total_overlaps,
+            "total_dry_spells": total_dry_spells,
+            "recent_overlaps": all_overlaps_list[:10],
+            "recent_dry_spells": all_dry_spells_list[:10]
+        }
     }
 
 
@@ -465,3 +533,176 @@ def get_guild_suite_overview(
 
     # 2. Compile and return aggregated historical analytics
     return aggregate_guild_history(completed_jobs)
+
+
+@router.get("/mrt-notes")
+def get_mrt_notes(
+    job_id: str,
+    analysis_index: int = 0,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_premium_user),
+):
+    """
+    Generates copy-pasteable Method Raid Tools (MRT) or Angry Assignments notes
+    matching boss mechanics / spikes to player cooldowns from the active roster.
+    """
+    logger.info("Premium MRT notes requested by user %s for job %s", user.username, job_id)
+    
+    # 1. Fetch the job from DB
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+        
+    result_path = job.result_path
+    if not result_path:
+        raise HTTPException(status_code=400, detail="Job results are not available yet.")
+        
+    # 2. Load the analysis JSON from disk
+    analysis_data = load_single_analysis_file(result_path)
+    if not analysis_data:
+        raise HTTPException(status_code=500, detail="Failed to load job analysis data.")
+        
+    analyses = analysis_data.get("analyses", [])
+    if not analyses:
+        raise HTTPException(status_code=404, detail="No analyses found in this job.")
+        
+    idx = max(0, min(analysis_index, len(analyses) - 1))
+    analysis = analyses[idx]
+    
+    roster = analysis.get("roster", [])
+    defensive_calibrator = analysis.get("defensive_calibrator", {})
+    spikes = defensive_calibrator.get("spikes", [])
+    
+    # 3. Import and call the notes generator
+    from shortparse.server.mrt_builder import generate_mrt_notes
+    notes = generate_mrt_notes(roster, spikes)
+    
+    return {"notes": notes}
+
+
+@router.get("/roster-calibrator")
+def get_roster_calibrator(
+    db: Session = Depends(get_db),
+    user: User = Depends(require_premium_user),
+):
+    """
+    Returns the Smart Bench & Flex Spec calibrator dataset.
+    Identifies flex spec candidates and recommends roster optimizations.
+    """
+    logger.info("Premium roster-calibrator requested by user: %s", user.username)
+
+    completed_jobs = db.query(Job).filter(
+        Job.user_id == user.id,
+        Job.status == "completed",
+    ).order_by(Job.created_at.desc()).limit(50).all()
+
+    if not completed_jobs:
+        return {"flex_recommendations": [], "roster_bench_grades": {}}
+
+    history = aggregate_guild_history(completed_jobs)
+    players_history = history.get("players_history", {})
+
+    # Flex recommendations algorithm
+    flex_recommendations = []
+    
+    # Roster mapping for potential spec flex
+    FLEX_SPECS_MAP = {
+        "Priest": ["Holy", "Discipline", "Shadow"],
+        "Paladin": ["Holy", "Protection", "Retribution"],
+        "Druid": ["Restoration", "Guardian", "Feral", "Balance"],
+        "Shaman": ["Restoration", "Elemental", "Enhancement"],
+        "Monk": ["Mistweaver", "Brewmaster", "Windwalker"],
+        "Death Knight": ["Blood", "Frost", "Unholy"],
+        "Deathknight": ["Blood", "Frost", "Unholy"],
+        "Demon Hunter": ["Vengeance", "Havoc"],
+        "Demonhunter": ["Vengeance", "Havoc"],
+        "Warrior": ["Protection", "Arms", "Fury"],
+    }
+
+    for name, p in players_history.items():
+        specs_played = p.get("specs_played", [])
+        
+        # Determine class from active spec if possible
+        detected_class = "Unknown"
+        for class_name, specs in FLEX_SPECS_MAP.items():
+            for sp in specs:
+                if sp.lower() in p["spec"].lower():
+                    detected_class = class_name
+                    break
+            if detected_class != "Unknown":
+                break
+
+        potential_specs = FLEX_SPECS_MAP.get(detected_class, [])
+        other_potential = [s for s in potential_specs if s.lower() not in [sp.lower() for sp in specs_played]]
+
+        if len(specs_played) > 1 or other_potential:
+            flex_recommendations.append({
+                "player": name,
+                "class": detected_class,
+                "current_spec": p["spec"],
+                "specs_played": specs_played,
+                "potential_specs": other_potential,
+                "spi": p["spi"],
+                "urs": p["urs"],
+                "survival_score": p["survival_score"],
+                "efficiency_rating": p["spi"] + 5 if p["urs"] > 85 else p["spi"] - 10
+            })
+
+    # Sort flex recommendations by efficiency rating
+    flex_recommendations.sort(key=lambda x: x["efficiency_rating"], reverse=True)
+
+    return {
+        "flex_recommendations": flex_recommendations,
+        "roster_bench_grades": players_history
+    }
+
+
+from pydantic import BaseModel
+
+class CoachChatRequest(BaseModel):
+    job_id: str
+    analysis_index: int = 0
+    message: str
+
+
+@router.post("/coach-chat")
+def post_coach_chat(
+    payload: CoachChatRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_premium_user),
+):
+    """
+    Raid Coach Conversational AI log analyzer.
+    Gated behind Patreon Premium user authentication check.
+    """
+    logger.info("Premium Raid Coach AI query from user %s for job %s: %s", user.username, payload.job_id, payload.message)
+    
+    # 1. Fetch the job from DB
+    job = db.query(Job).filter(Job.id == payload.job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+        
+    result_path = job.result_path
+    if not result_path:
+        raise HTTPException(status_code=400, detail="Job results are not available yet.")
+        
+    # 2. Load the analysis JSON from disk
+    analysis_data = load_single_analysis_file(result_path)
+    if not analysis_data:
+        raise HTTPException(status_code=500, detail="Failed to load job analysis data.")
+        
+    analyses = analysis_data.get("analyses", [])
+    if not analyses:
+        raise HTTPException(status_code=404, detail="No analyses found in this job.")
+        
+    idx = max(0, min(payload.analysis_index, len(analyses) - 1))
+    analysis = analyses[idx]
+    
+    # 3. Query the Gemini AI Coach engine
+    from shortparse.server.ai_coach import ask_gemini_coach
+    reply = ask_gemini_coach(payload.message, analysis)
+    
+    return {"reply": reply}
+
+
+

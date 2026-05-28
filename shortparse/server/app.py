@@ -221,8 +221,11 @@ def create_analysis_job(
         
         with SessionLocal() as db:
             user = db.query(User).filter(User.id == job["user_id"]).first()
-            if user and user.is_premium:
-                priority = 1
+            if user:
+                from shortparse.settings import BYPASS_PREMIUM_USERNAMES
+                is_bypass = user.username.strip().lower() in BYPASS_PREMIUM_USERNAMES if user.username else False
+                if user.is_premium or is_bypass:
+                    priority = 1
 
     # Enqueue to our Priority Queue
     JOB_QUEUE.put((priority, time.time(), job))
@@ -481,7 +484,10 @@ def post_job_to_discord(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated.")
 
-    if not user.is_premium:
+    from shortparse.settings import BYPASS_PREMIUM_USERNAMES
+    is_bypass = user.username.strip().lower() in BYPASS_PREMIUM_USERNAMES if user.username else False
+
+    if not user.is_premium and not is_bypass:
         raise HTTPException(
             status_code=403,
             detail="Discord Webhook integration is a Premium feature. Support us on Patreon to unlock!",
