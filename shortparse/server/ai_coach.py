@@ -189,6 +189,7 @@ def ask_gemini_coach(user_query: str, analysis: dict, custom_key: str | None = N
                 candidates = result.get("candidates", [])
                 if candidates:
                     text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    logger.info("Raw Gemini Coach response payload: %r", text)
                     if text:
                         return text.strip()
                 logger.error("Gemini API response missing content: %s", response.text)

@@ -18,6 +18,7 @@ class User(Base):
     discord_webhook_url = Column(String, nullable=True)
     discord_auto_post = Column(Boolean, default=False)
     gemini_api_key = Column(String, nullable=True)
+    excluded_ledger_players = Column(JSON, default=list, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

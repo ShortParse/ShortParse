@@ -142,7 +142,7 @@ def startup_check() -> None:
         else:
             logger.info("Redis cache backend not running. Falling back to disk cache.")
 
-    # Dynamic SQLite migration to ensure users table has gemini_api_key column
+    # Dynamic SQLite migration to ensure users table has gemini_api_key and excluded_ledger_players columns
     from shortparse.database import engine
     from sqlalchemy import text
     try:
@@ -152,6 +152,9 @@ def startup_check() -> None:
             if "gemini_api_key" not in columns:
                 conn.execute(text("ALTER TABLE users ADD COLUMN gemini_api_key VARCHAR"))
                 logger.info("Migrated users table to include gemini_api_key column.")
+            if "excluded_ledger_players" not in columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN excluded_ledger_players TEXT"))
+                logger.info("Migrated users table to include excluded_ledger_players column.")
     except Exception as e:
         logger.warning("Auto-migration of users table failed: %s", e)
 

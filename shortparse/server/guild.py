@@ -61,7 +61,7 @@ def load_single_analysis_file(result_path: str) -> dict | None:
     return None
 
 
-def aggregate_guild_history(jobs: list[Job]) -> dict:
+def aggregate_guild_history(jobs: list[Job], exclude_list: list[str] | None = None) -> dict:
     """
     Parallelized file-reading aggregator service that processes multiple fight JSONs
     from raw disc storage into a single, cohesive historical dataset.
@@ -117,6 +117,8 @@ def aggregate_guild_history(jobs: list[Job]) -> dict:
             # B. Calculate total avoidable damage for this fight
             fight_avoidable_damage = 0
             for player_name, m_data in player_metrics.items():
+                if exclude_list and player_name in exclude_list:
+                    continue
                 performance = m_data.get("performance", {})
                 avoidable_dmg = performance.get("avoidable_damage_taken", 0)
                 fight_avoidable_damage += avoidable_dmg
@@ -130,6 +132,8 @@ def aggregate_guild_history(jobs: list[Job]) -> dict:
             for event in timeline:
                 if event.get("type") == "death":
                     dead_player = event.get("target") or event.get("source") or "Unknown"
+                    if exclude_list and dead_player in exclude_list:
+                        continue
                     event_ts = event.get("timestamp")
                     if event_ts and created_at and duration_sec > 0:
                         elapsed_s = (event_ts - created_at) / 1000
@@ -151,7 +155,7 @@ def aggregate_guild_history(jobs: list[Job]) -> dict:
             # C. Aggregate Player Historical Scorecards
             for row in scorecard:
                 player_name = row.get("player")
-                if not player_name:
+                if not player_name or (exclude_list and player_name in exclude_list):
                     continue
 
                 if player_name not in player_agg:
@@ -528,11 +532,14 @@ def get_guild_suite_overview(
                 "active": [],
                 "missing": [],
                 "suggestions": [],
-            }
+            },
+            "excluded_players": user.excluded_ledger_players or []
         }
 
     # 2. Compile and return aggregated historical analytics
-    return aggregate_guild_history(completed_jobs)
+    res = aggregate_guild_history(completed_jobs, exclude_list=user.excluded_ledger_players)
+    res["excluded_players"] = user.excluded_ledger_players or []
+    return res
 
 
 @router.get("/mrt-notes")
@@ -599,7 +606,7 @@ def get_roster_calibrator(
     if not completed_jobs:
         return {"flex_recommendations": [], "roster_bench_grades": {}}
 
-    history = aggregate_guild_history(completed_jobs)
+    history = aggregate_guild_history(completed_jobs, exclude_list=user.excluded_ledger_players)
     players_history = history.get("players_history", {})
 
     # Flex recommendations algorithm
@@ -730,6 +737,51 @@ def post_coach_chat(
     reply = ask_gemini_coach(payload.message, analysis, custom_key=user.gemini_api_key)
     
     return {"reply": reply}
+
+
+class ExcludePlayersRequest(BaseModel):
+    players: list[str]
+
+
+@router.post("/exclude-players")
+def post_exclude_players(
+    payload: ExcludePlayersRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_premium_user),
+):
+    """
+    Excludes specific players from the guild suite ledger and roster matrix.
+    """
+    logger.info("Excluding players from ledger for user %s: %s", user.username, payload.players)
+    current_excluded = user.excluded_ledger_players or []
+    new_excluded = list(set(current_excluded + payload.players))
+    user.excluded_ledger_players = new_excluded
+    db.commit()
+    return {"status": "success", "excluded": new_excluded}
+
+
+class RestorePlayersRequest(BaseModel):
+    players: list[str]
+
+
+@router.post("/restore-players")
+def post_restore_players(
+    payload: RestorePlayersRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_premium_user),
+):
+    """
+    Restores previously excluded players back to the ledger and roster matrix.
+    """
+    logger.info("Restoring players to ledger for user %s: %s", user.username, payload.players)
+    current_excluded = user.excluded_ledger_players or []
+    new_excluded = [p for p in current_excluded if p not in payload.players]
+    user.excluded_ledger_players = new_excluded
+    db.commit()
+    return {"status": "success", "excluded": new_excluded}
+
 
 
 
