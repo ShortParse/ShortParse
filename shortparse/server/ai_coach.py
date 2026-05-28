@@ -127,20 +127,21 @@ def mock_coach_response(user_query: str, analysis: dict) -> str:
         return f"**Raid Coach:** Welcome! I am reviewing the **{boss_name}** log files.\n\nOur standout performer was definitely {best_str} who played exceptionally clean. On the flip side, we had some rotation overlaps. Let me know if you want me to list specific mechanical failures or healer adjustments!"
 
 
-def ask_gemini_coach(user_query: str, analysis: dict) -> str:
+def ask_gemini_coach(user_query: str, analysis: dict, custom_key: str | None = None) -> str:
     """
     Sends the packaged combat log context and the user query to the Gemini Free Tier API.
-    If no GEMINI_API_KEY is configured, falls back gracefully to the mock rule engine.
+    If no GEMINI_API_KEY (and no custom_key) is configured, falls back gracefully to the mock rule engine.
     """
-    if not GEMINI_API_KEY:
-        logger.warning("GEMINI_API_KEY not found in environment settings. Falling back to Mock Coach engine.")
+    api_key = custom_key or GEMINI_API_KEY
+    if not api_key:
+        logger.warning("No Gemini API key available. Falling back to Mock Coach engine.")
         return mock_coach_response(user_query, analysis)
 
     try:
         context = package_fight_context(analysis)
         
         # Google AI Studio Gemini API Endpoint
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
         
         headers = {
             "Content-Type": "application/json"

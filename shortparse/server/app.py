@@ -142,6 +142,19 @@ def startup_check() -> None:
         else:
             logger.info("Redis cache backend not running. Falling back to disk cache.")
 
+    # Dynamic SQLite migration to ensure users table has gemini_api_key column
+    from shortparse.database import engine
+    from sqlalchemy import text
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text("PRAGMA table_info(users)")).fetchall()
+            columns = [row[1] for row in result]
+            if "gemini_api_key" not in columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN gemini_api_key VARCHAR"))
+                logger.info("Migrated users table to include gemini_api_key column.")
+    except Exception as e:
+        logger.warning("Auto-migration of users table failed: %s", e)
+
     # Patreon integration credentials validation
     from shortparse.settings import PATREON_CLIENT_ID, PATREON_CLIENT_SECRET, PATREON_REDIRECT_URI
     import requests
@@ -170,6 +183,32 @@ def startup_check() -> None:
                 logger.info("Patreon integration credentials validated successfully")
         except Exception as e:
             logger.warning("Unable to reach Patreon API to validate credentials: %s", e)
+
+    # Gemini AI Coach API Key validation
+    from shortparse.settings import GEMINI_API_KEY
+    if not GEMINI_API_KEY:
+        logger.warning("Gemini API Key is missing in settings (GEMINI_API_KEY). Using Mock Coach fallback engine.")
+    else:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+            response = requests.post(
+                url,
+                json={
+                    "contents": [{"parts": [{"text": "Say ok"}]}]
+                },
+                headers={"Content-Type": "application/json"},
+                timeout=8,
+            )
+            if response.status_code == 200:
+                logger.info("Gemini API key validated and communication successful")
+            else:
+                logger.error(
+                    "Gemini API key validation FAILED (status %s): %s",
+                    response.status_code,
+                    response.text
+                )
+        except Exception as e:
+            logger.warning("Unable to reach Gemini API to validate credentials: %s", e)
 
     # Start the background priority queue worker thread as a daemon
     worker_thread = threading.Thread(target=queue_worker, daemon=True)

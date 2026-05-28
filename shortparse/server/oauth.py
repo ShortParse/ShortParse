@@ -239,6 +239,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         "premium_tier": user_tier,
         "discord_webhook_url": user.discord_webhook_url,
         "discord_auto_post": bool(user.discord_auto_post),
+        "gemini_api_key": user.gemini_api_key,
         "is_patreon_linked": patron_account is not None,
         "priority_queue_enabled": PATREON_PRIORITY_QUEUE_ENABLED,
         "created_at": user.created_at.isoformat() if user.created_at else None,
@@ -256,6 +257,7 @@ from pydantic import BaseModel
 class SettingsUpdateRequest(BaseModel):
     discord_webhook_url: str | None = None
     discord_auto_post: bool | None = None
+    gemini_api_key: str | None = None
 
 
 @router.post("/settings")
@@ -293,6 +295,15 @@ def update_user_settings(
                 detail="Discord Auto-Post integration is a Premium feature. Support us on Patreon to unlock!",
             )
         user.discord_auto_post = payload.discord_auto_post
+
+    gemini_key = payload.gemini_api_key
+    if gemini_key is not None:
+        gemini_key = gemini_key.strip()
+        if not gemini_key:
+            user.gemini_api_key = None
+        else:
+            user.gemini_api_key = gemini_key
+
     db.commit()
 
     return {
@@ -300,6 +311,7 @@ def update_user_settings(
         "message": "Settings updated successfully.",
         "discord_webhook_url": user.discord_webhook_url,
         "discord_auto_post": bool(user.discord_auto_post),
+        "gemini_api_key": user.gemini_api_key,
     }
 
 

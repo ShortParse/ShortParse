@@ -668,14 +668,41 @@ class CoachChatRequest(BaseModel):
 @router.post("/coach-chat")
 def post_coach_chat(
     payload: CoachChatRequest,
+    request: Request,
     db: Session = Depends(get_db),
-    user: User = Depends(require_premium_user),
 ):
     """
     Raid Coach Conversational AI log analyzer.
-    Gated behind Patreon Premium user authentication check.
+    Gated behind Patreon Premium user authentication check OR user's own Gemini API key.
     """
-    logger.info("Premium Raid Coach AI query from user %s for job %s: %s", user.username, payload.job_id, payload.message)
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="You must be logged in with Warcraft Logs before accessing the AI Coach.",
+        )
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="User not found.",
+        )
+
+    from shortparse.settings import BYPASS_PREMIUM_USERNAMES
+    is_bypass = user.username.strip().lower() in BYPASS_PREMIUM_USERNAMES if user.username else False
+    is_premium = user.is_premium or is_bypass
+    
+    has_own_key = bool(user.gemini_api_key and user.gemini_api_key.strip())
+
+    if not is_premium and not has_own_key:
+        raise HTTPException(
+            status_code=403,
+            detail="The Raid Coach AI Chat is a Patreon Premium feature. Support us on Patreon or provide your own Gemini API Key in Settings to unlock!",
+            headers={"X-Premium-Gated": "true"}
+        )
+
+    logger.info("Raid Coach AI query from user %s for job %s: %s", user.username, payload.job_id, payload.message)
     
     # 1. Fetch the job from DB
     job = db.query(Job).filter(Job.id == payload.job_id).first()
@@ -700,7 +727,7 @@ def post_coach_chat(
     
     # 3. Query the Gemini AI Coach engine
     from shortparse.server.ai_coach import ask_gemini_coach
-    reply = ask_gemini_coach(payload.message, analysis)
+    reply = ask_gemini_coach(payload.message, analysis, custom_key=user.gemini_api_key)
     
     return {"reply": reply}
 

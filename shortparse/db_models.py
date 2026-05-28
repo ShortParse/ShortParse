@@ -17,6 +17,7 @@ class User(Base):
     premium_tier = Column(String, nullable=True)
     discord_webhook_url = Column(String, nullable=True)
     discord_auto_post = Column(Boolean, default=False)
+    gemini_api_key = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
