@@ -94,223 +94,227 @@ def aggregate_guild_history(jobs: list[Job], exclude_list: list[str] | None = No
         report_title = report.get("report", {}).get("title", "Raid Report")
         analyses = report.get("analyses", [])
 
-        for idx, analysis in enumerate(analyses):
-            fight = analysis.get("fight", {})
-            scorecard = analysis.get("scorecard", [])
-            player_metrics = analysis.get("player_metrics", {})
-            mechanics = analysis.get("mechanics", {}).get("raid_mechanics", {})
-            defensive_calibrator = analysis.get("defensive_calibrator", {})
+        for idx, boss_analysis in enumerate(analyses):
+            pulls_to_process = boss_analysis.get("pulls_details")
+            if not pulls_to_process:
+                pulls_to_process = [boss_analysis]
 
-            fight_name = fight.get("name", "Unknown")
-            is_kill = fight.get("kill", False)
-            duration_sec = fight.get("duration_seconds", 0)
-            created_at = fight.get("start_time", 0)
+            for pull_analysis in pulls_to_process:
+                fight = pull_analysis.get("fight", {})
+                scorecard = pull_analysis.get("scorecard", [])
+                player_metrics = pull_analysis.get("player_metrics", {})
+                mechanics = pull_analysis.get("mechanics", {}).get("raid_mechanics", {})
+                defensive_calibrator = pull_analysis.get("defensive_calibrator", {})
+                timeline = pull_analysis.get("timeline", [])
 
-            # A. Fight Grade Averages
-            grade_points = {"S": 5, "A": 4, "B": 3, "C": 2, "D": 1, "F": 0}
-            reverse_points = {5: "S", 4: "A", 3: "B", 2: "C", 1: "D", 0: "F"}
-            grades = [grade_points.get(row.get("grade"), 0) for row in scorecard if "grade" in row]
-            avg_grade = "C"
-            if grades:
-                avg_grade = reverse_points.get(round(sum(grades) / len(grades)), "C")
+                fight_name = fight.get("name", "Unknown")
+                is_kill = fight.get("kill", False)
+                duration_sec = fight.get("duration_seconds", 0)
+                created_at = fight.get("start_time", 0)
 
-            # B. Calculate total avoidable damage for this fight
-            fight_avoidable_damage = 0
-            for player_name, m_data in player_metrics.items():
-                if exclude_list and player_name in exclude_list:
-                    continue
-                performance = m_data.get("performance", {})
-                avoidable_dmg = performance.get("avoidable_damage_taken", 0)
-                fight_avoidable_damage += avoidable_dmg
+                # A. Fight Grade Averages
+                grade_points = {"S": 5, "A": 4, "B": 3, "C": 2, "D": 1, "F": 0}
+                reverse_points = {5: "S", 4: "A", 3: "B", 2: "C", 1: "D", 0: "F"}
+                grades = [grade_points.get(row.get("grade"), 0) for row in scorecard if "grade" in row]
+                avg_grade = "C"
+                if grades:
+                    avg_grade = reverse_points.get(round(sum(grades) / len(grades)), "C")
 
-            total_avoidable_damage_all += fight_avoidable_damage
-            total_fights += 1
-
-            # Early deaths tracking (< 80% fight duration)
-            early_deaths = set()
-            timeline = analysis.get("timeline", [])
-            for event in timeline:
-                if event.get("type") == "death":
-                    dead_player = event.get("target") or event.get("source") or "Unknown"
-                    if exclude_list and dead_player in exclude_list:
+                # B. Calculate total avoidable damage for this fight
+                fight_avoidable_damage = 0
+                for player_name, m_data in player_metrics.items():
+                    if exclude_list and player_name in exclude_list:
                         continue
-                    event_ts = event.get("timestamp")
-                    if event_ts and created_at and duration_sec > 0:
-                        elapsed_s = (event_ts - created_at) / 1000
-                        if elapsed_s < 0.8 * duration_sec:
-                            early_deaths.add(dead_player)
+                    performance = m_data.get("performance", {})
+                    avoidable_dmg = performance.get("avoidable_damage_taken", 0)
+                    fight_avoidable_damage += avoidable_dmg
 
-            fights_history.append({
-                "report_code": report_code,
-                "analysis_index": idx,
-                "report_title": report_title,
-                "boss_name": fight_name,
-                "is_kill": is_kill,
-                "avg_grade": avg_grade,
-                "duration_seconds": duration_sec,
-                "avoidable_damage": fight_avoidable_damage,
-                "created_at": created_at,
-            })
+                total_avoidable_damage_all += fight_avoidable_damage
+                total_fights += 1
 
-            # C. Aggregate Player Historical Scorecards
-            for row in scorecard:
-                player_name = row.get("player")
-                if not player_name or (exclude_list and player_name in exclude_list):
-                    continue
-
-                if player_name not in player_agg:
-                    player_agg[player_name] = {
-                        "spec": row.get("spec", "Unknown"),
-                        "role": row.get("role", "Unknown"),
-                        "grades": [],
-                        "avoidable_damage": [],
-                        "dps": [],
-                        "hps": [],
-                        "deaths": 0,
-                        "potions": 0,
-                        "healthstones": 0,
-                        "low_hp_deaths": 0,
-                        "panic_pots_used": 0,
-                        "priority_switch_times": [],
-                        "priority_switch_dmg": [],
-                        "specs_played": set(),
-                        "survived_80_count": 0,
-                        "player_total_fights": 0,
-                    }
-
-                p_data = player_agg[player_name]
-                p_data["grades"].append(row.get("grade", "C"))
-                p_data["specs_played"].add(row.get("spec", "Unknown"))
-                p_data["player_total_fights"] += 1
-                if player_name not in early_deaths:
-                    p_data["survived_80_count"] += 1
-
-                # Get fine-tuned metrics from player_metrics
-                metrics_row = player_metrics.get(player_name, {})
-                performance = metrics_row.get("performance", {})
-                activity = metrics_row.get("activity", {})
-                consumables = metrics_row.get("consumables", {})
-
-                p_data["avoidable_damage"].append(performance.get("avoidable_damage_taken", 0))
-                p_data["dps"].append(performance.get("dps", 0))
-                p_data["hps"].append(performance.get("hps", 0))
-                p_data["deaths"] += performance.get("deaths", 0)
-                p_data["potions"] += consumables.get("combat_potions", 0)
-                p_data["healthstones"] += consumables.get("healthstone_count", 0)
-
-                # Panic Defensives / Low HP deaths audit
-                if performance.get("deaths", 0) > 0:
-                    p_data["low_hp_deaths"] += 1
-                    # Check if they used panic defensives/healthstone on death fight
-                    if consumables.get("healthstone_count", 0) > 0:
-                        p_data["panic_pots_used"] += 1
-
-                # Priority Target Switch Audit
-                ad_damage = performance.get("priority_ad_damage", 0)
-                switch_time = performance.get("priority_ad_switch_time_sec", 0.0)
-                if ad_damage > 0 or switch_time > 0:
-                    p_data["priority_switch_times"].append(switch_time)
-                    p_data["priority_switch_dmg"].append(ad_damage)
-
-            # D. Compile "Progression Killer" spell hits on wipes
-            if not is_kill:
-                for mech_name, m_data in mechanics.items():
-                    hits = m_data.get("hits", 0)
-                    damage = m_data.get("damage", 0)
-                    if hits > 0:
-                        if mech_name not in progression_killers:
-                            progression_killers[mech_name] = {
-                                "hits": 0,
-                                "damage": 0,
-                                "fights_count": 0,
-                            }
-                        progression_killers[mech_name]["hits"] += hits
-                        progression_killers[mech_name]["damage"] += damage
-                        progression_killers[mech_name]["fights_count"] += 1
-
-                # E. Compile detailed Wipe Catalyst and Bottleneck metrics
-                if fight_name not in wipe_raw:
-                    wipe_raw[fight_name] = {
-                        "total_wipes": 0,
-                        "hp_list": [],
-                        "phase_distribution": {},
-                        "hp_distribution": {
-                            "100_80": 0,
-                            "80_50": 0,
-                            "50_20": 0,
-                            "20_0": 0
-                        },
-                        "catalyst_players": {},
-                        "catalyst_abilities": {},
-                        "death_timestamps": []
-                    }
-                
-                w_data = wipe_raw[fight_name]
-                w_data["total_wipes"] += 1
-                
-                # Boss HP tracking
-                boss_hp = fight.get("boss_percentage")
-                if boss_hp is not None:
-                    try:
-                        hp_val = float(boss_hp)
-                        w_data["hp_list"].append(hp_val)
-                        if hp_val >= 80:
-                            w_data["hp_distribution"]["100_80"] += 1
-                        elif hp_val >= 50:
-                            w_data["hp_distribution"]["80_50"] += 1
-                        elif hp_val >= 20:
-                            w_data["hp_distribution"]["50_20"] += 1
-                        else:
-                            w_data["hp_distribution"]["20_0"] += 1
-                    except Exception:
-                        pass
-                
-                # Phase tracking
-                phase = fight.get("phase")
-                if phase is not None:
-                    try:
-                        phase_num = int(phase)
-                        phase_name = f"Phase {phase_num + 1}"
-                    except Exception:
-                        phase_name = str(phase) if str(phase).startswith("Phase") else f"Phase {phase}"
-                    w_data["phase_distribution"][phase_name] = w_data["phase_distribution"].get(phase_name, 0) + 1
-                
-                # Find first death catalyst
-                timeline = analysis.get("timeline", [])
+                # Early deaths tracking (< 80% fight duration)
+                early_deaths = set()
                 for event in timeline:
                     if event.get("type") == "death":
                         dead_player = event.get("target") or event.get("source") or "Unknown"
-                        ability = event.get("spell_name") or "Unknown"
-                        time_str = event.get("time") or "00:00"
-                        
-                        w_data["catalyst_players"][dead_player] = w_data["catalyst_players"].get(dead_player, 0) + 1
-                        w_data["catalyst_abilities"][ability] = w_data["catalyst_abilities"].get(ability, 0) + 1
-                        
+                        if exclude_list and dead_player in exclude_list:
+                            continue
+                        event_ts = event.get("timestamp")
+                        if event_ts and created_at and duration_sec > 0:
+                            elapsed_s = (event_ts - created_at) / 1000
+                            if elapsed_s < 0.8 * duration_sec:
+                                early_deaths.add(dead_player)
+
+                fights_history.append({
+                    "report_code": report_code,
+                    "analysis_index": idx,
+                    "report_title": report_title,
+                    "boss_name": fight_name,
+                    "is_kill": is_kill,
+                    "avg_grade": avg_grade,
+                    "duration_seconds": duration_sec,
+                    "avoidable_damage": fight_avoidable_damage,
+                    "created_at": created_at,
+                })
+
+                # C. Aggregate Player Historical Scorecards
+                for row in scorecard:
+                    player_name = row.get("player")
+                    if not player_name or (exclude_list and player_name in exclude_list):
+                        continue
+
+                    if player_name not in player_agg:
+                        player_agg[player_name] = {
+                            "spec": row.get("spec", "Unknown"),
+                            "role": row.get("role", "Unknown"),
+                            "grades": [],
+                            "avoidable_damage": [],
+                            "dps": [],
+                            "hps": [],
+                            "deaths": 0,
+                            "potions": 0,
+                            "healthstones": 0,
+                            "low_hp_deaths": 0,
+                            "panic_pots_used": 0,
+                            "priority_switch_times": [],
+                            "priority_switch_dmg": [],
+                            "specs_played": set(),
+                            "survived_80_count": 0,
+                            "player_total_fights": 0,
+                        }
+
+                    p_data = player_agg[player_name]
+                    p_data["grades"].append(row.get("grade", "C"))
+                    p_data["specs_played"].add(row.get("spec", "Unknown"))
+                    p_data["player_total_fights"] += 1
+                    if player_name not in early_deaths:
+                        p_data["survived_80_count"] += 1
+
+                    # Get fine-tuned metrics from player_metrics
+                    metrics_row = player_metrics.get(player_name, {})
+                    performance = metrics_row.get("performance", {})
+                    activity = metrics_row.get("activity", {})
+                    consumables = metrics_row.get("consumables", {})
+
+                    p_data["avoidable_damage"].append(performance.get("avoidable_damage_taken", 0))
+                    p_data["dps"].append(performance.get("dps", 0))
+                    p_data["hps"].append(performance.get("hps", 0))
+                    p_data["deaths"] += performance.get("deaths", 0)
+                    p_data["potions"] += consumables.get("combat_potions", 0)
+                    p_data["healthstones"] += consumables.get("healthstone_count", 0)
+
+                    # Panic Defensives / Low HP deaths audit
+                    if performance.get("deaths", 0) > 0:
+                        p_data["low_hp_deaths"] += 1
+                        # Check if they used panic defensives/healthstone on death fight
+                        if consumables.get("healthstone_count", 0) > 0:
+                            p_data["panic_pots_used"] += 1
+
+                    # Priority Target Switch Audit
+                    ad_damage = performance.get("priority_ad_damage", 0)
+                    switch_time = performance.get("priority_ad_switch_time_sec", 0.0)
+                    if ad_damage > 0 or switch_time > 0:
+                        p_data["priority_switch_times"].append(switch_time)
+                        p_data["priority_switch_dmg"].append(ad_damage)
+
+                # D. Compile "Progression Killer" spell hits on wipes
+                if not is_kill:
+                    for mech_name, m_data in mechanics.items():
+                        hits = m_data.get("hits", 0)
+                        damage = m_data.get("damage", 0)
+                        if hits > 0:
+                            if mech_name not in progression_killers:
+                                progression_killers[mech_name] = {
+                                    "hits": 0,
+                                    "damage": 0,
+                                    "fights_count": 0,
+                                }
+                            progression_killers[mech_name]["hits"] += hits
+                            progression_killers[mech_name]["damage"] += damage
+                            progression_killers[mech_name]["fights_count"] += 1
+
+                    # E. Compile detailed Wipe Catalyst and Bottleneck metrics
+                    if fight_name not in wipe_raw:
+                        wipe_raw[fight_name] = {
+                            "total_wipes": 0,
+                            "hp_list": [],
+                            "phase_distribution": {},
+                            "hp_distribution": {
+                                "100_80": 0,
+                                "80_50": 0,
+                                "50_20": 0,
+                                "20_0": 0
+                            },
+                            "catalyst_players": {},
+                            "catalyst_abilities": {},
+                            "death_timestamps": []
+                        }
+                    
+                    w_data = wipe_raw[fight_name]
+                    w_data["total_wipes"] += 1
+                    
+                    # Boss HP tracking
+                    boss_hp = fight.get("boss_percentage")
+                    if boss_hp is not None:
                         try:
-                            parts = time_str.split(":")
-                            if len(parts) == 2:
-                                w_data["death_timestamps"].append(int(parts[0]) * 60 + int(parts[1]))
+                            hp_val = float(boss_hp)
+                            w_data["hp_list"].append(hp_val)
+                            if hp_val >= 80:
+                                w_data["hp_distribution"]["100_80"] += 1
+                            elif hp_val >= 50:
+                                w_data["hp_distribution"]["80_50"] += 1
+                            elif hp_val >= 20:
+                                w_data["hp_distribution"]["50_20"] += 1
+                            else:
+                                w_data["hp_distribution"]["20_0"] += 1
                         except Exception:
                             pass
-                        break
+                    
+                    # Phase tracking
+                    phase = fight.get("phase")
+                    if phase is not None:
+                        try:
+                            phase_num = int(phase)
+                            phase_name = f"Phase {phase_num + 1}"
+                        except Exception:
+                            phase_name = str(phase) if str(phase).startswith("Phase") else f"Phase {phase}"
+                        w_data["phase_distribution"][phase_name] = w_data["phase_distribution"].get(phase_name, 0) + 1
+                    
+                    # Find first death catalyst
+                    for event in timeline:
+                        if event.get("type") == "death":
+                            dead_player = event.get("target") or event.get("source") or "Unknown"
+                            ability = event.get("spell_name") or "Unknown"
+                            time_str = event.get("time") or "00:00"
+                            
+                            w_data["catalyst_players"][dead_player] = w_data["catalyst_players"].get(dead_player, 0) + 1
+                            w_data["catalyst_abilities"][ability] = w_data["catalyst_abilities"].get(ability, 0) + 1
+                            
+                            try:
+                                parts = time_str.split(":")
+                                if len(parts) == 2:
+                                    w_data["death_timestamps"].append(int(parts[0]) * 60 + int(parts[1]))
+                            except Exception:
+                                pass
+                            break
 
-            # F. Healer audit overlap and dry spell aggregation
-            overlaps = defensive_calibrator.get("overlaps", []) if isinstance(defensive_calibrator, dict) else []
-            dry_spells = defensive_calibrator.get("dry_spells", []) if isinstance(defensive_calibrator, dict) else []
-            total_overlaps += len(overlaps)
-            total_dry_spells += len(dry_spells)
-            for o in overlaps:
-                all_overlaps_list.append({
-                    "boss_name": fight_name,
-                    "time_range": o.get("time_range"),
-                    "summary": f"[{fight_name}] {o.get('summary')}"
-                })
-            for d in dry_spells:
-                all_dry_spells_list.append({
-                    "boss_name": fight_name,
-                    "time_range": d.get("time_range"),
-                    "summary": f"[{fight_name}] {d.get('summary')}"
-                })
+                # F. Healer audit overlap and dry spell aggregation
+                overlaps = defensive_calibrator.get("overlaps", []) if isinstance(defensive_calibrator, dict) else []
+                dry_spells = defensive_calibrator.get("dry_spells", []) if isinstance(defensive_calibrator, dict) else []
+                total_overlaps += len(overlaps)
+                total_dry_spells += len(dry_spells)
+                for o in overlaps:
+                    all_overlaps_list.append({
+                        "boss_name": fight_name,
+                        "time_range": o.get("time_range"),
+                        "summary": f"[{fight_name}] {o.get('summary')}"
+                    })
+                for d in dry_spells:
+                    all_dry_spells_list.append({
+                        "boss_name": fight_name,
+                        "time_range": d.get("time_range"),
+                        "summary": f"[{fight_name}] {d.get('summary')}"
+                    })
 
     # 3. Format Consolidated Player Historical scorecards & Ledgers
     formatted_players = {}

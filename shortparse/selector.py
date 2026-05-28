@@ -134,3 +134,29 @@ def select_best_boss_encounters(fights: list[dict]) -> dict[str, list[dict]]:
         )
 
     return dict(selected_by_raid)
+
+
+def group_all_boss_encounters(fights: list[dict]) -> dict[str, dict[tuple, list[dict]]]:
+    """
+    Groups all fights in the report by raid and boss encounter (encounterID, difficulty).
+    """
+    grouped_by_raid_and_boss = defaultdict(lambda: defaultdict(list))
+
+    for fight in fights:
+        if not is_supported_raid_boss(fight):
+            continue
+
+        raid_name = get_raid_name_for_fight(fight)
+        boss_key = (
+            fight.get("encounterID") or normalize_name(fight.get("name", "")),
+            fight.get("difficulty") or 0,
+        )
+
+        grouped_by_raid_and_boss[raid_name][boss_key].append(fight)
+
+    # Sort fights within each boss encounter chronologically
+    for raid_name, bosses in grouped_by_raid_and_boss.items():
+        for boss_key, boss_fights in bosses.items():
+            boss_fights.sort(key=lambda f: f.get("startTime", 0))
+
+    return dict(grouped_by_raid_and_boss)

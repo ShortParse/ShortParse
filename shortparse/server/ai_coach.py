@@ -50,6 +50,17 @@ def package_fight_context(analysis: dict) -> str:
     overlap_lines = [f"- {o.get('summary')} (Overhealing estimate: {o.get('overhealing_pct')}%)" for o in overlaps[:3]]
     dry_lines = [f"- {d.get('summary')}" for d in dry_spells[:3]]
 
+    # Boss Pulls Progression History
+    progression = analysis.get("progression", {})
+    pulls = progression.get("pulls", [])
+    pull_lines = []
+    for p in pulls:
+        result = "Kill" if p.get("kill") else f"Wipe ({p.get('boss_percentage') or '?'}% HP)"
+        pull_lines.append(
+            f"- Pull {p.get('pull_number')}: {result} | Duration: {p.get('duration_seconds')}s | Phase: {p.get('last_phase')}"
+        )
+    pulls_history_text = "\n".join(pull_lines) if pull_lines else "No progression history."
+
     context = f"""
 You are "ShortParse Raid Intelligence", an objective, highly analytical, and clinical World of Warcraft combat log analysis engine.
 You are programmed to provide data-driven observations to raid officers.
@@ -61,6 +72,9 @@ Here is the structured data for this boss pull:
 Boss Encounter: {boss_name}
 Result: {kill_status}
 Duration: {fight.get('duration_seconds', 0)} seconds
+
+Boss Pulls Progression History:
+{pulls_history_text}
 
 Roster Performance & Grades:
 {"\n".join(roster_lines)}
