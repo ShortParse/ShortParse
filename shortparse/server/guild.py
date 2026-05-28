@@ -549,7 +549,7 @@ def get_mrt_notes(
     logger.info("Premium MRT notes requested by user %s for job %s", user.username, job_id)
     
     # 1. Fetch the job from DB
-    job = db.query(Job).filter(Job.id == job_id).first()
+    job = db.query(Job).filter(Job.job_id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
         
@@ -705,7 +705,7 @@ def post_coach_chat(
     logger.info("Raid Coach AI query from user %s for job %s: %s", user.username, payload.job_id, payload.message)
     
     # 1. Fetch the job from DB
-    job = db.query(Job).filter(Job.id == payload.job_id).first()
+    job = db.query(Job).filter(Job.job_id == payload.job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
         
