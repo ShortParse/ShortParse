@@ -161,7 +161,7 @@ def ask_gemini_coach(user_query: str, analysis: dict, custom_key: str | None = N
             context = package_fight_context(analysis)
             
             # Google AI Studio Gemini API Endpoint
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
             
             headers = {
                 "Content-Type": "application/json"

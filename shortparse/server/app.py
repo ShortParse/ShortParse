@@ -193,7 +193,7 @@ def startup_check() -> None:
         logger.warning("Gemini API Key is missing in settings (GEMINI_API_KEY). Using Mock Coach fallback engine.")
     else:
         try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
             response = requests.post(
                 url,
                 json={
