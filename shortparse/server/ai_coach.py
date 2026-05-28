@@ -134,16 +134,32 @@ INSTRUCTIONS:
     return context
 
 
-def mock_coach_response(user_query: str, analysis: dict) -> str:
+def mock_coach_response(user_query: str, analysis: dict, pull_index: str = "all") -> str:
     """
     Rule-based mock AI Coach response to ensure premium functionality operates perfectly
-    even without a configured GEMINI_API_KEY.
+    even without a configured GEMINI_API_KEY or during API rate limits.
     """
     query = user_query.lower()
-    fight = analysis.get("fight", {})
+    
+    active_analysis = analysis
+    is_individual = False
+    pull_num = 1
+    
+    if pull_index != "all":
+        try:
+            pidx = int(pull_index)
+            pulls = analysis.get("pulls_details", [])
+            if 0 <= pidx < len(pulls):
+                active_analysis = pulls[pidx]
+                is_individual = True
+                pull_num = pidx + 1
+        except (ValueError, TypeError):
+            pass
+
+    fight = active_analysis.get("fight", {})
     boss_name = fight.get("name", "the boss")
-    scorecard = analysis.get("scorecard", [])
-    defensive_calibrator = analysis.get("defensive_calibrator", {})
+    scorecard = active_analysis.get("scorecard", [])
+    defensive_calibrator = active_analysis.get("defensive_calibrator", {})
     
     # Identify key players
     worst_players = [row.get("player") for row in scorecard if row.get("grade") in ("D", "F")]
@@ -154,43 +170,71 @@ def mock_coach_response(user_query: str, analysis: dict) -> str:
     
     is_kill = fight.get("kill", False)
 
-    if "wipe" in query or "why did we" in query or "pull" in query or "catalyst" in query:
-        if is_kill:
-            response = f"**Raid Intelligence Analysis:** Pull on **{boss_name}** resulted in a successful **Kill**. Optimization parameters are required for subsequent farm clears to minimize raid stress:\n\n"
-            if worst_players:
-                response += f"- **Vulnerability Exposure:** Avoidable damage was recorded. Players like **{', '.join(worst_players[:2])}** sustained repeated hits from avoidable encounter mechanics. Mitigating these inputs will optimize subsequent clears.\n\n"
-            if dry_spells:
-                response += f"- **Defensive Transition:** A defensive dry spell was logged at {dry_spells[0]['time_range']} causing {dry_spells[0]['damage_taken']:,} raid damage. Aligning active cooldowns during this interval will reduce damage spikes."
-            else:
-                response += "- **Defensive Status:** Defensive rotations were stable. Focus parameters should remain on individual output and positioning efficiency."
-        else:
-            response = f"**Raid Intelligence Analysis:** Pull on **{boss_name}** resulted in a **Wipe**. Primary failure vectors mapped to mechanic vulnerability and healing throughput limits:\n\n"
-            if worst_players:
-                response += f"- **Mechanic Failures:** Players like **{', '.join(worst_players[:2])}** sustained repeated avoidable damage hits. Reducing these errors will increase pull longevity.\n\n"
-            if dry_spells:
-                response += f"- **Healing Gap:** A defensive dry spell at {dry_spells[0]['time_range']} sustained {dry_spells[0]['damage_taken']:,} damage. Assign a defensive cooldown (*Rallying Cry* or *Aura Mastery*) to this timestamp."
-            else:
-                response += "- **Defensive Status:** Defensive rotations were stable. Survivability failure is attributed to individual position or execution drift."
-        return response
+    # Aggregated View Mocking
+    if not is_individual:
+        pulls_details = analysis.get("pulls_details", [])
+        pulls_count = len(pulls_details) or 1
+        kills_count = analysis.get("fight", {}).get("kills_count", 1 if analysis.get("fight", {}).get("kill") else 0)
+        wipes_count = pulls_count - kills_count
         
-    elif "heal" in query or "cooldown" in query or "overlap" in query or "dry" in query:
-        if overlaps or dry_spells:
-            response = "**Raid Intelligence Healing Audit:** Opportunity markers identified in defensive rotation:\n\n"
-            if overlaps:
-                response += f"1. **Overlap Alert:** Multiple major defensive cooldowns were active concurrently at {overlaps[0]['time_range']}. Restructure rotation to spread coverage.\n"
+        if "wipe" in query or "why did we" in query or "pull" in query or "catalyst" in query:
+            response = f"**Raid Intelligence Aggregated Diagnostics:** Analyzed **{pulls_count} pulls** on **{boss_name}** ({kills_count} Kills, {wipes_count} Wipes). High-level overview indicates a persistent pattern of avoidable errors across multiple wipes:\n\n"
+            if worst_players:
+                response += f"- **Recurrent Mechanic Errors:** Roster members like **{', '.join(worst_players[:2])}** consistently took high avoidable damage across multiple wipes. Reinforcing execution on mechanics will decrease overall wipe rates.\n\n"
             if dry_spells:
-                response += f"2. **Dry Spell Alert:** High incoming damage logged at {dry_spells[0]['time_range']} with 0 active defensives. Assign healing coverage to this window.\n"
+                response += f"- **Systemic Defensive Dry Spells:** We averaged high damage dry spells (e.g. at {dry_spells[0]['time_range']} if dry_spells else 'various windows') with no major raid cooldowns active. Pre-plan defensives for these recurring high-stress windows."
+            else:
+                response += "- **Defensive Overview:** Overall healer CD rotations were stable, but execution positioning remains the primary factor for mechanical errors."
             return response
-        return "**Raid Intelligence Healing Audit:** Perfect healer cooldown rotation logged. 0 overlaps and 0 dry spells detected."
-        
-    elif "who died" in query or "death" in query or "first" in query:
-        if worst_players:
-            return f"**Raid Intelligence Death Catalyst Audit:** Initial deaths on **{boss_name}** correlate directly with avoidable damage. **{worst_players[0]}** sustained repeated unmitigated hits prior to termination."
-        return f"**Raid Intelligence Death Catalyst Audit:** Zero early deaths logged on **{boss_name}**. Roster positioning remained stable until wipe parameters were met."
-        
+            
+        elif "heal" in query or "cooldown" in query or "overlap" in query or "dry" in query:
+            response = f"**Raid Intelligence Aggregated Healer Audit:** Aggregated logs across {pulls_count} pulls indicate healing rotation trends:\n\n"
+            if overlaps:
+                response += f"- **CD Overlaps:** Persistent overlaps of major defensive cooldowns recorded. Spreading these out will increase average raid life support.\n"
+            if dry_spells:
+                response += f"- **Dry Spell Trends:** Systemic dry spells logged around recurring boss phases. Rotate healing cooldowns strictly by timeline milestones.\n"
+            if not overlaps and not dry_spells:
+                response += "- **Healing Efficiency:** Rotation trends were stable without systemic overlaps."
+            return response
+            
+        else:
+            best_str = f"**{best_players[0]}**" if best_players else "top Specs"
+            return f"**ShortParse Raid Intelligence (Aggregated):** Overall 30,000-foot review of **{boss_name}** complete. Standout performer across all pulls was {best_str} with consistent high-tier grades."
+
+    # Individual Pull Mocking
     else:
-        best_str = f"**{best_players[0]}** (Grade {scorecard[0].get('grade')})" if best_players else "top output specs"
-        return f"**ShortParse Raid Intelligence:** Analysis of **{boss_name}** log files completed.\n\n- Standout performer: {best_str}.\n- Status: Roster synergy limits detected. Query further to review specific mechanic execution sheets or healer cooldown overlaps."
+        if "wipe" in query or "why did we" in query or "pull" in query or "catalyst" in query:
+            if is_kill:
+                response = f"**Raid Intelligence Diagnostics (Pull {pull_num} - Kill):** Pull resulted in a successful **Kill**. Focus is placed on farm clear optimizations:\n\n"
+                if worst_players:
+                    response += f"- **Avoidable Hit Audit:** Players like **{', '.join(worst_players[:2])}** took repeated avoidable mechanic hits. Mitigating these will ease healer stress.\n\n"
+                if dry_spells:
+                    response += f"- **Defensive Placement:** A dry spell was logged at {dry_spells[0]['time_range']}. Assigning a CD here will keep clearing safer."
+                else:
+                    response += "- **Survivability:** Overall execution was stable during this kill."
+            else:
+                response = f"**Raid Intelligence Diagnostics (Pull {pull_num} - Wipe):** Pull resulted in a **Wipe** (Boss at {fight.get('boss_percentage') or '?'}% HP). Primary failure factors for this specific pull:\n\n"
+                if worst_players:
+                    response += f"- **Fatal Mechanic Failures:** Key deaths occurred due to avoidable damage on players like **{', '.join(worst_players[:2])}**.\n\n"
+                if dry_spells:
+                    response += f"- **Healing Starvation:** A critical dry spell was logged at {dry_spells[0]['time_range']} taking {dry_spells[0]['damage_taken']:,} damage with 0 active raid CDs."
+                else:
+                    response += "- **Execution Drift:** Survivability failure is attributed to individual positioning faults during high-stress phases."
+            return response
+            
+        elif "heal" in query or "cooldown" in query or "overlap" in query or "dry" in query:
+            response = f"**Raid Intelligence Healer Audit (Pull {pull_num}):** Audit of CD assignments on this specific pull:\n\n"
+            if overlaps:
+                response += f"- **Wasteful Cooldown Overlaps:** Overlapping defensive cooldowns at {overlaps[0]['time_range']} led to massive overhealing.\n"
+            if dry_spells:
+                response += f"- **Dangerous Dry Spells:** Critical dry spell logged at {dry_spells[0]['time_range']} with no major defensives active.\n"
+            if not overlaps and not dry_spells:
+                response += "- **Healing Efficiency:** Rotation was executed perfectly without overlaps or dry spells during this pull."
+            return response
+            
+        else:
+            best_str = f"**{best_players[0]}**" if best_players else "top specs"
+            return f"**ShortParse Raid Intelligence (Pull {pull_num}):** Detailed audit of individual pull {pull_num} on **{boss_name}** complete. Performer of the pull was {best_str}."
 
 
 def ask_gemini_coach(user_query: str, analysis: dict, custom_key: str | None = None, pull_index: str = "all") -> str:
@@ -201,7 +245,7 @@ def ask_gemini_coach(user_query: str, analysis: dict, custom_key: str | None = N
     api_key = custom_key or GEMINI_API_KEY
     if not api_key:
         logger.warning("No Gemini API key available. Falling back to Mock Coach engine.")
-        return mock_coach_response(user_query, analysis)
+        return mock_coach_response(user_query, analysis, pull_index=pull_index)
 
     max_retries = 3
     retry_delay = 1.0  # seconds
@@ -290,4 +334,4 @@ def ask_gemini_coach(user_query: str, analysis: dict, custom_key: str | None = N
                 continue
 
     # Ultimate fallback to mock
-    return mock_coach_response(user_query, analysis)
+    return mock_coach_response(user_query, analysis, pull_index=pull_index)
