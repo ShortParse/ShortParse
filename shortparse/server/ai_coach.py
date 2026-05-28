@@ -272,7 +272,7 @@ def ask_gemini_coach(user_query: str, analysis: dict, custom_key: str | None = N
                 ],
                 "generationConfig": {
                     "temperature": 0.2,
-                    "maxOutputTokens": 1024
+                    "maxOutputTokens": 4096
                 },
                 "safetySettings": [
                     {
