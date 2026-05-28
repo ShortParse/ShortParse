@@ -2,9 +2,9 @@ from shortparse.settings import REPORTS_DIR
 
 from shortparse.client import WarcraftLogsClient
 from shortparse.report_parser import extract_report_code
-from shortparse.selector import select_best_boss_encounters
+from shortparse.selector import select_best_boss_encounters, group_all_boss_encounters
 
-from shortparse.reports.analysis import build_fight_analysis
+from shortparse.reports.analysis import build_fight_analysis, aggregate_pull_analyses
 from shortparse.reports.export import save_analysis_json
 
 from shortparse.jobs.store import (
@@ -106,38 +106,36 @@ def run_analysis_job(
 
         append_job_log(
             job_id,
-            "Selecting boss kills and best progression wipes...",
+            "Selecting all boss encounter pulls...",
             progress=26,
             current_step="Selecting encounters",
         )
 
-        selected = select_best_boss_encounters(
+        grouped_encounters = group_all_boss_encounters(
             report["fights"],
         )
 
-        total_fights = sum(
-            len(fights)
-            for fights in selected.values()
-        )
+        all_fights_flat = []
+        for raid_name, bosses in grouped_encounters.items():
+            for boss_key, boss_fights in bosses.items():
+                all_fights_flat.extend(boss_fights)
+
+        total_fights = len(all_fights_flat)
 
         append_job_log(
             job_id,
-            f"Selected {total_fights} boss encounter(s) for analysis.",
+            f"Selected {total_fights} boss pull(s) across {sum(len(bosses) for bosses in grouped_encounters.values())} encounter(s) for analysis.",
             progress=30,
             current_step="Encounters selected",
         )
 
-        # Pre-fetch player data and events concurrently for all selected encounters to merge API wait times
+        # Pre-fetch player data and events concurrently for all encounters to merge API wait times
         append_job_log(
             job_id,
             "Pre-downloading player details and fight events concurrently...",
             progress=32,
             current_step="Pre-fetching data",
         )
-
-        all_fights_flat = []
-        for fights in selected.values():
-            all_fights_flat.extend(fights)
 
         import concurrent.futures
 
@@ -168,156 +166,141 @@ def run_analysis_job(
 
         base_progress = 30
         fight_progress_range = 55
+        fights_processed_count = 0
 
-        for raid_name, fights in selected.items():
+        for raid_name, bosses in grouped_encounters.items():
             append_job_log(
                 job_id,
                 f"Raid detected: {raid_name}",
                 current_step=f"Processing {raid_name}",
             )
 
-            for fight in fights:
-                fight_number = len(analyses) + 1
-                boss_name = fight.get("name", "Unknown Boss")
-
-                current_progress = int(
-                    base_progress
-                    + (
-                        (fight_number - 1)
-                        / max(total_fights, 1)
+            for boss_key, boss_fights in bosses.items():
+                boss_name = boss_fights[0].get("name", "Unknown Boss")
+                
+                # Analyze each pull for this boss encounter
+                pull_analyses = []
+                for idx, fight in enumerate(boss_fights, start=1):
+                    fights_processed_count += 1
+                    
+                    current_progress = int(
+                        base_progress
+                        + (
+                            (fights_processed_count - 1)
+                            / max(total_fights, 1)
+                        )
+                        * fight_progress_range
                     )
-                    * fight_progress_range
-                )
 
-                result_type = "kill" if fight.get("kill") else "best wipe"
+                    result_type = "kill" if fight.get("kill") else "wipe"
+                    boss_percentage = fight.get("bossPercentage")
+                    boss_hp_text = (
+                        f"{boss_percentage}% boss HP remaining"
+                        if boss_percentage is not None
+                        else "boss HP unknown"
+                    )
 
-                boss_percentage = fight.get("bossPercentage")
-                boss_hp_text = (
-                    f"{boss_percentage}% boss HP remaining"
-                    if boss_percentage is not None
-                    else "boss HP unknown"
-                )
+                    append_job_log(
+                        job_id,
+                        (
+                            f"Analyzing {boss_name} "
+                            f"(Pull {idx}/{len(boss_fights)}) "
+                            f"- {result_type}, {boss_hp_text}."
+                        ),
+                        progress=current_progress,
+                        current_step=f"Analyzing {boss_name}",
+                    )
 
+                    fight_data, events = fight_resources[fight["id"]]
+
+                    append_job_log(
+                        job_id,
+                        f"{boss_name} (Pull {idx}): building scorecard, mechanics and timeline...",
+                        current_step=f"{boss_name} (Pull {idx}): building",
+                    )
+
+                    pull_analysis = build_fight_analysis(
+                        report_code,
+                        report["title"],
+                        fight,
+                        fight_data,
+                        events,
+                        progress_callback=lambda message, boss_name=boss_name, idx=idx: append_job_log(
+                            job_id,
+                            f"{boss_name} (Pull {idx}): {message}",
+                            current_step=f"{boss_name}: {message}",
+                        ),
+                    )
+
+                    pull_analysis["raid"] = {
+                        "name": raid_name,
+                    }
+                    
+                    pull_analyses.append(pull_analysis)
+
+                # Now aggregate all pull analyses for this boss encounter!
                 append_job_log(
                     job_id,
-                    (
-                        f"Analyzing {boss_name} "
-                        f"({fight_number}/{total_fights}) "
-                        f"- selected {result_type}, {boss_hp_text}."
-                    ),
-                    progress=current_progress,
-                    current_step=f"Analyzing {boss_name}",
+                    f"{boss_name}: aggregating {len(pull_analyses)} pull(s)...",
+                    current_step=f"{boss_name}: aggregating pulls",
                 )
-
-                append_job_log(
-                    job_id,
-                    f"{boss_name}: retrieving pre-fetched data...",
-                    current_step=f"{boss_name}: reading data",
-                )
-
-                fight_data, events = fight_resources[fight["id"]]
-
-                append_job_log(
-                    job_id,
-                    (
-                        f"{boss_name}: building mechanics, scorecards, "
-                        "cooldowns, benchmarks, and timeline..."
-                    ),
-                    current_step=f"{boss_name}: building analysis",
-                )
-
-                analysis = build_fight_analysis(
+                
+                # Build the boss progression list for metadata
+                boss_pulls = []
+                for idx, a in enumerate(pull_analyses, start=1):
+                    f_meta = a["fight"]
+                    boss_pulls.append({
+                        "pull_number": idx,
+                        "fight_id": f_meta.get("id"),
+                        "kill": f_meta.get("kill", False),
+                        "boss_percentage": f_meta.get("boss_percentage"),
+                        "fight_percentage": f_meta.get("fight_percentage"),
+                        "duration_seconds": f_meta.get("duration_seconds"),
+                        "last_phase": f_meta.get("phase") or 1,
+                        "last_phase_index": f_meta.get("phase") or 0,
+                        "start_time": f_meta.get("start_time"),
+                        "end_time": f_meta.get("end_time")
+                    })
+                
+                aggregated_analysis = aggregate_pull_analyses(
+                    pull_analyses,
                     report_code,
                     report["title"],
-                    fight,
-                    fight_data,
-                    events,
-                    progress_callback=lambda message, boss_name=boss_name: append_job_log(
-                        job_id,
-                        f"{boss_name}: {message}",
-                        current_step=f"{boss_name}: {message}",
-                    ),
                 )
-
-                analysis["raid"] = {
+                
+                aggregated_analysis["raid"] = {
                     "name": raid_name,
                 }
-
-                # Gather all pulls for this same boss and difficulty in this report
-                encounter_id = fight.get("encounterID")
-                difficulty = fight.get("difficulty")
                 
-                boss_pulls = []
-                if encounter_id is not None:
-                    matching_fights = [
-                        f for f in report["fights"]
-                        if f.get("encounterID") == encounter_id
-                        and f.get("difficulty") == difficulty
-                    ]
-                    matching_fights.sort(key=lambda x: x.get("startTime", 0))
-                    
-                    for idx, f in enumerate(matching_fights, start=1):
-                        f_duration = int((f.get("endTime", 0) - f.get("startTime", 0)) / 1000)
-                        boss_pulls.append({
-                            "pull_number": idx,
-                            "fight_id": f.get("id"),
-                            "kill": f.get("kill", False),
-                            "boss_percentage": f.get("bossPercentage"),
-                            "fight_percentage": f.get("fightPercentage"),
-                            "duration_seconds": f_duration,
-                            "last_phase": f.get("lastPhase", 1),
-                            "last_phase_index": f.get("lastPhaseAsAbsoluteIndex", 0),
-                            "start_time": f.get("startTime"),
-                            "end_time": f.get("endTime")
-                        })
-                
-                analysis["progression"] = {
+                aggregated_analysis["progression"] = {
                     "pulls": boss_pulls
                 }
-
-                analyses.append(analysis)
+                
+                analyses.append(aggregated_analysis)
 
                 completed_progress = int(
                     base_progress
                     + (
-                        fight_number
+                        fights_processed_count
                         / max(total_fights, 1)
                     )
                     * fight_progress_range
                 )
 
-                mechanic_count = len(
-                    analysis.get("mechanics", {})
-                    .get("raid_mechanics", {})
-                )
-
-                player_count = len(
-                    analysis.get("roster", [])
-                )
-
-                issue_count = len(
-                    analysis.get("issues", [])
-                )
-
                 append_job_log(
                     job_id,
-                    (
-                        f"{boss_name}: complete. "
-                        f"{player_count} players, "
-                        f"{mechanic_count} tracked mechanics, "
-                        f"{issue_count} issues found."
-                    ),
+                    f"{boss_name}: complete. Successfully aggregated {len(pull_analyses)} pull(s).",
                     level="success",
                     progress=completed_progress,
                     current_step=f"{boss_name}: complete",
                 )
 
                 logger.info(
-                    "Completed job fight analysis: job_id=%s report=%s fight_id=%s boss=%s",
+                    "Completed job encounter analysis: job_id=%s report=%s boss=%s pulls=%s",
                     job_id,
                     report_code,
-                    fight["id"],
-                    analysis["fight"]["name"],
+                    boss_name,
+                    len(pull_analyses),
                 )
 
         append_job_log(

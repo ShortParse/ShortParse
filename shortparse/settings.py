@@ -124,3 +124,12 @@ def has_warcraftlogs_credentials() -> bool:
         WCL_CLIENT_ID
         and WCL_CLIENT_SECRET
     )
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+
+BYPASS_PREMIUM_USERNAMES = [
+    u.strip().lower()
+    for u in os.getenv("BYPASS_PREMIUM_USERNAMES", "").split(",")
+    if u.strip()
+]
+

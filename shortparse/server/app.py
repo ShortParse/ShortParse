@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+import os
 import json
 import queue
 import threading
@@ -64,6 +65,23 @@ def queue_worker():
                 job_data = get_job(job["job_id"])
                 if job_data:
                     run_analysis_job(job_data)
+                    
+                    # Auto-post to Discord if enabled and premium
+                    completed_job = get_job(job["job_id"])
+                    if completed_job and completed_job.get("status") == "completed" and completed_job.get("user_id"):
+                        from shortparse.database import SessionLocal
+                        from shortparse.db_models import User
+                        
+                        with SessionLocal() as db:
+                            user = db.query(User).filter(User.id == completed_job["user_id"]).first()
+                            if user and user.is_premium and user.discord_webhook_url and user.discord_auto_post:
+                                logger.info("Auto-posting completed job %s to Discord for user %s", job["job_id"], user.username)
+                                dispatch_discord_summary_embed_helper(
+                                    webhook_url=user.discord_webhook_url,
+                                    job_id=completed_job["job_id"],
+                                    result_path=completed_job["result_path"],
+                                    origin=os.getenv("FRONTEND_URL", "https://dev.shortparse.com")
+                                )
             except Exception as e:
                 logger.error("Error processing queued job %s: %s", job.get("job_id"), e)
             finally:
@@ -87,6 +105,10 @@ app.add_middleware(
 
 # Register authentication routes
 app.include_router(oauth_router)
+
+# Register Guild Suite routes
+from shortparse.server.guild import router as guild_router
+app.include_router(guild_router)
 
 
 class AnalyzeRequest(BaseModel):
@@ -120,6 +142,22 @@ def startup_check() -> None:
         else:
             logger.info("Redis cache backend not running. Falling back to disk cache.")
 
+    # Dynamic SQLite migration to ensure users table has gemini_api_key and excluded_ledger_players columns
+    from shortparse.database import engine
+    from sqlalchemy import text
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text("PRAGMA table_info(users)")).fetchall()
+            columns = [row[1] for row in result]
+            if "gemini_api_key" not in columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN gemini_api_key VARCHAR"))
+                logger.info("Migrated users table to include gemini_api_key column.")
+            if "excluded_ledger_players" not in columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN excluded_ledger_players TEXT"))
+                logger.info("Migrated users table to include excluded_ledger_players column.")
+    except Exception as e:
+        logger.warning("Auto-migration of users table failed: %s", e)
+
     # Patreon integration credentials validation
     from shortparse.settings import PATREON_CLIENT_ID, PATREON_CLIENT_SECRET, PATREON_REDIRECT_URI
     import requests
@@ -148,6 +186,32 @@ def startup_check() -> None:
                 logger.info("Patreon integration credentials validated successfully")
         except Exception as e:
             logger.warning("Unable to reach Patreon API to validate credentials: %s", e)
+
+    # Gemini AI Coach API Key validation
+    from shortparse.settings import GEMINI_API_KEY
+    if not GEMINI_API_KEY:
+        logger.warning("Gemini API Key is missing in settings (GEMINI_API_KEY). Using Mock Coach fallback engine.")
+    else:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+            response = requests.post(
+                url,
+                json={
+                    "contents": [{"parts": [{"text": "Say ok"}]}]
+                },
+                headers={"Content-Type": "application/json"},
+                timeout=8,
+            )
+            if response.status_code == 200:
+                logger.info("Gemini API key validated and communication successful")
+            else:
+                logger.error(
+                    "Gemini API key validation FAILED (status %s): %s",
+                    response.status_code,
+                    response.text
+                )
+        except Exception as e:
+            logger.warning("Unable to reach Gemini API to validate credentials: %s", e)
 
     # Start the background priority queue worker thread as a daemon
     worker_thread = threading.Thread(target=queue_worker, daemon=True)
@@ -199,8 +263,11 @@ def create_analysis_job(
         
         with SessionLocal() as db:
             user = db.query(User).filter(User.id == job["user_id"]).first()
-            if user and user.is_premium:
-                priority = 1
+            if user:
+                from shortparse.settings import BYPASS_PREMIUM_USERNAMES
+                is_bypass = user.username.strip().lower() in BYPASS_PREMIUM_USERNAMES if user.username else False
+                if user.is_premium or is_bypass:
+                    priority = 1
 
     # Enqueue to our Priority Queue
     JOB_QUEUE.put((priority, time.time(), job))
@@ -319,6 +386,127 @@ from shortparse.db_models import User
 import requests
 from datetime import datetime
 
+def dispatch_discord_summary_embed_helper(
+    webhook_url: str,
+    job_id: str,
+    result_path: str,
+    origin: str = "https://shortparse.com",
+    analysis_index: int = 0,
+) -> bool:
+    try:
+        path = Path(result_path)
+        if not path.exists():
+            logger.error("Job result file not found at %s", result_path)
+            return False
+
+        with open(path, "r", encoding="utf-8") as file:
+            analysis_data = json.load(file)
+
+        analyses = analysis_data.get("analyses", [])
+        if not analyses:
+            logger.error("No analyses found in the report result at %s", result_path)
+            return False
+
+        idx = max(0, min(analysis_index, len(analyses) - 1))
+        analysis = analyses[idx]
+
+        fight = analysis.get("fight", {})
+        report_title = analysis_data.get("report", {}).get("title", "Raid Report")
+        scorecard = analysis.get("scorecard", [])
+        issues = analysis.get("issues", [])
+
+        difficulty_map = {
+            1: "LFR", 2: "Normal", 3: "Normal", 4: "Heroic", 5: "Mythic",
+            10: "Normal", 14: "Normal", 15: "Heroic", 16: "Mythic", 17: "LFR"
+        }
+        difficulty = difficulty_map.get(fight.get("difficulty"), "Normal")
+        result_label = "Kill" if fight.get("kill") else f"Wipe ({fight.get('boss_percentage') or '?'}% HP)"
+
+        # Formatted Duration
+        duration_sec = fight.get("duration_seconds") or 0
+        duration_min = int(duration_sec // 60)
+        duration_rem = int(duration_sec % 60)
+        duration_str = f"{duration_min}:{duration_rem:02d}"
+
+        # Calculate average grade
+        grade_points = {"S": 5, "A": 4, "B": 3, "C": 2, "D": 1, "F": 0}
+        reverse_points = {5: "S", 4: "A", 3: "B", 2: "C", 1: "D", 0: "F"}
+        
+        grades = [grade_points.get(row.get("grade"), 0) for row in scorecard if "grade" in row]
+        avg_grade = "—"
+        if grades:
+            avg_points = sum(grades) / len(grades)
+            avg_grade = reverse_points.get(round(avg_points), "C")
+
+        # Extract Top Performers
+        sorted_performers = sorted(scorecard, key=lambda x: grade_points.get(x.get("grade"), 0), reverse=True)
+        top_performers = sorted_performers[:3]
+        top_perf_str = ""
+        for row in top_performers:
+            top_perf_str += f"• **{row.get('player')}** — Grade **{row.get('grade')}**\n"
+        if not top_perf_str:
+            top_perf_str = "None recorded."
+
+        # Extract Area of Concern
+        worst_player_row = scorecard[0] if scorecard else None
+        worst_player_name = worst_player_row.get("player", "None") if worst_player_row else "None"
+        worst_player_grade = worst_player_row.get("grade", "-") if worst_player_row else "-"
+        worst_player_issue = worst_player_row.get("top_issue", "Rotational gaps detected") if worst_player_row else "—"
+
+        # Color code: green for Kill, red/orange for Wipe
+        embed_color = 3718392
+        if fight.get("kill"):
+            embed_color = 4906624
+        else:
+            embed_color = 16478597
+
+        report_link = f"{origin.rstrip('/')}/report/{job_id}/{idx}/scorecard"
+
+        discord_payload = {
+            "username": "ShortParse",
+            "avatar_url": "https://raw.githubusercontent.com/ShortParse/ShortParse-Web/main/images/apple-touch-icon.png",
+            "embeds": [
+                {
+                    "title": f"🛡️ ShortParse Raid Summary: {fight.get('name', 'Boss')} ({difficulty})",
+                    "description": f"**Report:** *{report_title}*\n**Result:** **{result_label}** • **{duration_str}** Duration",
+                    "color": embed_color,
+                    "fields": [
+                        {
+                            "name": "📊 Roster Stats",
+                            "value": f"**Players:** {len(scorecard)}\n**Raid Average Grade:** {avg_grade}\n**Total Issues Logged:** {len(issues)}",
+                            "inline": True
+                        },
+                        {
+                            "name": "🏆 Top Performers",
+                            "value": top_perf_str,
+                            "inline": True
+                        },
+                        {
+                            "name": "⚠️ Areas of Concern",
+                            "value": f"**Top Concern:** {worst_player_name} ({worst_player_grade})\n**Primary Fault:** {worst_player_issue}",
+                            "inline": False
+                        }
+                    ],
+                    "footer": {
+                        "text": "ShortParse - Automated Warcraft Logs Reviews"
+                    },
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "url": report_link
+                }
+            ]
+        }
+
+        response = requests.post(webhook_url, json=discord_payload, timeout=15)
+        if response.status_code not in (200, 204):
+            logger.error("Discord API returned status %s: %s", response.status_code, response.text)
+            return False
+
+        return True
+    except Exception as e:
+        logger.error("Failed to automatically post to Discord: %s", e)
+        return False
+
+
 class DiscordPostRequest(BaseModel):
     analysis_index: int = 0
 
@@ -338,7 +526,10 @@ def post_job_to_discord(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated.")
 
-    if not user.is_premium:
+    from shortparse.settings import BYPASS_PREMIUM_USERNAMES
+    is_bypass = user.username.strip().lower() in BYPASS_PREMIUM_USERNAMES if user.username else False
+
+    if not user.is_premium and not is_bypass:
         raise HTTPException(
             status_code=403,
             detail="Discord Webhook integration is a Premium feature. Support us on Patreon to unlock!",
@@ -358,116 +549,19 @@ def post_job_to_discord(
     if not result_path:
         raise HTTPException(status_code=400, detail="Job results are not available yet.")
 
-    path = Path(result_path)
-    if not path.exists():
-        raise HTTPException(status_code=404, detail="Job result file not found.")
-
-    with open(path, "r", encoding="utf-8") as file:
-        analysis_data = json.load(file)
-
-    analyses = analysis_data.get("analyses", [])
-    if not analyses:
-        raise HTTPException(status_code=400, detail="No analyses found in the report result.")
-
-    idx = max(0, min(payload.analysis_index, len(analyses) - 1))
-    analysis = analyses[idx]
-
-    fight = analysis.get("fight", {})
-    raid = analysis.get("raid", {})
-    report_title = analysis_data.get("report", {}).get("title", "Raid Report")
-    scorecard = analysis.get("scorecard", [])
-    issues = analysis.get("issues", [])
-
-    difficulty_map = {
-        1: "LFR", 2: "Normal", 3: "Normal", 4: "Heroic", 5: "Mythic",
-        10: "Normal", 14: "Normal", 15: "Heroic", 16: "Mythic", 17: "LFR"
-    }
-    difficulty = difficulty_map.get(fight.get("difficulty"), "Normal")
-    result_label = "Kill" if fight.get("kill") else f"Wipe ({fight.get('boss_percentage') or '?'}% HP)"
-
-    # Formatted Duration
-    duration_sec = fight.get("duration_seconds") or 0
-    duration_min = int(duration_sec // 60)
-    duration_rem = int(duration_sec % 60)
-    duration_str = f"{duration_min}:{duration_rem:02d}"
-
-    # Calculate average grade
-    grade_points = {"S": 5, "A": 4, "B": 3, "C": 2, "D": 1, "F": 0}
-    reverse_points = {5: "S", 4: "A", 3: "B", 2: "C", 1: "D", 0: "F"}
-    
-    grades = [grade_points.get(row.get("grade"), 0) for row in scorecard if "grade" in row]
-    avg_grade = "—"
-    if grades:
-        avg_points = sum(grades) / len(grades)
-        avg_grade = reverse_points.get(round(avg_points), "C")
-
-    # Extract Top Performers
-    sorted_performers = sorted(scorecard, key=lambda x: grade_points.get(x.get("grade"), 0), reverse=True)
-    top_performers = sorted_performers[:3]
-    top_perf_str = ""
-    for row in top_performers:
-        top_perf_str += f"• **{row.get('player')}** — Grade **{row.get('grade')}**\n"
-    if not top_perf_str:
-        top_perf_str = "None recorded."
-
-    # Extract Area of Concern
-    worst_player_row = scorecard[0] if scorecard else None
-    worst_player_name = worst_player_row.get("player", "None") if worst_player_row else "None"
-    worst_player_grade = worst_player_row.get("grade", "-") if worst_player_row else "-"
-    worst_player_issue = worst_player_row.get("top_issue", "Rotational gaps detected") if worst_player_row else "—"
-
-    # Color code: green for Kill, red/orange for Wipe
-    embed_color = 3718392
-    if fight.get("kill"):
-        embed_color = 4906624
-    else:
-        embed_color = 16478597
-
     origin = request.headers.get("origin") or "https://shortparse.com"
-    report_link = f"{origin}/report/{job_id}/{idx}/scorecard"
+    success = dispatch_discord_summary_embed_helper(
+        webhook_url=user.discord_webhook_url,
+        job_id=job_id,
+        result_path=result_path,
+        origin=origin,
+        analysis_index=payload.analysis_index,
+    )
 
-    discord_payload = {
-        "username": "ShortParse",
-        "avatar_url": "https://raw.githubusercontent.com/ShortParse/ShortParse-Web/main/images/apple-touch-icon.png",
-        "embeds": [
-            {
-                "title": f"🛡️ ShortParse Raid Summary: {fight.get('name', 'Boss')} ({difficulty})",
-                "description": f"**Report:** *{report_title}*\n**Result:** **{result_label}** • **{duration_str}** Duration",
-                "color": embed_color,
-                "fields": [
-                    {
-                        "name": "📊 Roster Stats",
-                        "value": f"**Players:** {len(scorecard)}\n**Raid Average Grade:** {avg_grade}\n**Total Issues Logged:** {len(issues)}",
-                        "inline": True
-                    },
-                    {
-                        "name": "🏆 Top Performers",
-                        "value": top_perf_str,
-                        "inline": True
-                    },
-                    {
-                        "name": "⚠️ Areas of Concern",
-                        "value": f"**Top Concern:** {worst_player_name} ({worst_player_grade})\n**Primary Fault:** {worst_player_issue}",
-                        "inline": False
-                    }
-                ],
-                "footer": {
-                    "text": "ShortParse - Automated Warcraft Logs Reviews"
-                },
-                "timestamp": datetime.utcnow().isoformat(),
-                "url": report_link
-            }
-        ]
-    }
-
-    try:
-        response = requests.post(user.discord_webhook_url, json=discord_payload, timeout=12)
-        if response.status_code not in (200, 204):
-            raise RuntimeError(f"Discord API returned status {response.status_code}: {response.text}")
-    except Exception as e:
+    if not success:
         raise HTTPException(
             status_code=400,
-            detail=f"Failed to post summary to Discord: {str(e)}",
+            detail="Failed to post summary to Discord.",
         )
 
     return {"status": "success", "message": "Raid summary posted to Discord!"}

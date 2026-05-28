@@ -37,6 +37,8 @@ def get_dynamic_redirect_uri(request: Request, provider: str, default_uri: str) 
         
         # Determine protocol (respect reverse proxy headers)
         proto = request.headers.get("x-forwarded-proto") or request.url.scheme
+        if parsed.scheme == "https":
+            proto = "https"
         
         # Determine host (respect reverse proxy headers)
         host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
@@ -190,6 +192,11 @@ def warcraftlogs_callback(
         )
         db.add(linked_account)
 
+    from shortparse.settings import BYPASS_PREMIUM_USERNAMES
+    if user.username and user.username.strip().lower() in BYPASS_PREMIUM_USERNAMES:
+        user.is_premium = True
+        user.premium_tier = "Developer / Admin Bypass"
+
     db.commit()
 
     request.session["user_id"] = str(user.id)
@@ -220,12 +227,19 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         LinkedAccount.provider == "patreon",
     ).first()
 
+    from shortparse.settings import BYPASS_PREMIUM_USERNAMES
+    is_bypass = user.username.strip().lower() in BYPASS_PREMIUM_USERNAMES if user.username else False
+    user_premium = user.is_premium or is_bypass
+    user_tier = user.premium_tier or ("Developer / Admin Bypass" if is_bypass else None)
+
     return {
         "id": str(user.id),
         "username": user.username,
-        "is_premium": user.is_premium,
-        "premium_tier": user.premium_tier,
+        "is_premium": user_premium,
+        "premium_tier": user_tier,
         "discord_webhook_url": user.discord_webhook_url,
+        "discord_auto_post": bool(user.discord_auto_post),
+        "gemini_api_key": user.gemini_api_key,
         "is_patreon_linked": patron_account is not None,
         "priority_queue_enabled": PATREON_PRIORITY_QUEUE_ENABLED,
         "created_at": user.created_at.isoformat() if user.created_at else None,
@@ -242,6 +256,8 @@ from pydantic import BaseModel
 
 class SettingsUpdateRequest(BaseModel):
     discord_webhook_url: str | None = None
+    discord_auto_post: bool | None = None
+    gemini_api_key: str | None = None
 
 
 @router.post("/settings")
@@ -272,12 +288,30 @@ def update_user_settings(
         webhook_url = None
 
     user.discord_webhook_url = webhook_url
+    if payload.discord_auto_post is not None:
+        if not user.is_premium and payload.discord_auto_post:
+            raise HTTPException(
+                status_code=403,
+                detail="Discord Auto-Post integration is a Premium feature. Support us on Patreon to unlock!",
+            )
+        user.discord_auto_post = payload.discord_auto_post
+
+    gemini_key = payload.gemini_api_key
+    if gemini_key is not None:
+        gemini_key = gemini_key.strip()
+        if not gemini_key:
+            user.gemini_api_key = None
+        else:
+            user.gemini_api_key = gemini_key
+
     db.commit()
 
     return {
         "status": "success",
         "message": "Settings updated successfully.",
         "discord_webhook_url": user.discord_webhook_url,
+        "discord_auto_post": bool(user.discord_auto_post),
+        "gemini_api_key": user.gemini_api_key,
     }
 
 
