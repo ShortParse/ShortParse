@@ -74,6 +74,7 @@ INSTRUCTIONS:
 2. Be encouraging but highly analytical.
 3. Suggest concrete actions (e.g. "Move player X's cooldown to cover the dry spell", "Tell player Y to focus on dodging Z").
 4. Keep your responses concise (max 3 short paragraphs).
+5. Pay close attention to the Pull Result (Kill vs Wipe). If the fight was a Kill, do not talk about "why we wiped" or "preventing wipes"; instead, focus on optimizing performance, reducing avoidable damage, and cleaning up rotations for subsequent farm clears.
 """
     return context
 
@@ -96,14 +97,25 @@ def mock_coach_response(user_query: str, analysis: dict) -> str:
     overlaps = defensive_calibrator.get("overlaps", [])
     dry_spells = defensive_calibrator.get("dry_spells", [])
     
+    is_kill = fight.get("kill", False)
+
     if "wipe" in query or "why did we" in query or "pull" in query or "catalyst" in query:
-        response = f"**Raid Coach Analysis:** On our pull of **{boss_name}**, the main points of failure were repeated avoidable mechanic hits and healing execution gaps.\n\n"
-        if worst_players:
-            response += f"Dodging needs to stabilize. Players like **{', '.join(worst_players[:2])}** were hit repeatedly by avoidable boss spells. Fixing these personal mistakes will prevent early deaths.\n\n"
-        if dry_spells:
-            response += f"Additionally, we had a major **Defensive Dry Spell** at {dry_spells[0]['time_range']} taking {dry_spells[0]['damage_taken']:,} raid damage. We need to assign a defensive cooldown like *Rallying Cry* or *Aura Mastery* here."
+        if is_kill:
+            response = f"**Raid Coach Analysis:** This pull on **{boss_name}** was actually a successful **Kill**! While you defeated the boss, there are key areas to optimize and clean up for smoother, lower-stress farm clears in the future:\n\n"
+            if worst_players:
+                response += f"Avoidable damage taken was a bit high. Players like **{', '.join(worst_players[:2])}** were hit repeatedly by avoidable boss spells. Dodging these mechanics more consistently will make subsequent farm kills much cleaner.\n\n"
+            if dry_spells:
+                response += f"Additionally, there was a **Defensive Dry Spell** at {dry_spells[0]['time_range']} taking {dry_spells[0]['damage_taken']:,} raid damage. Resolving these cooldown transitions will prevent panic scenarios during farm runs."
+            else:
+                response += "Our defensive rotations were relatively stable, so the focus should purely be on refining individual positioning and rotational efficiency."
         else:
-            response += "Our defensive rotations were relatively stable, so the focus should purely be on individual execution and survivability on the next pull."
+            response = f"**Raid Coach Analysis:** On our pull of **{boss_name}**, the main points of failure were repeated avoidable mechanic hits and healing execution gaps.\n\n"
+            if worst_players:
+                response += f"Dodging needs to stabilize. Players like **{', '.join(worst_players[:2])}** were hit repeatedly by avoidable boss spells. Fixing these personal mistakes will prevent early deaths.\n\n"
+            if dry_spells:
+                response += f"Additionally, we had a major **Defensive Dry Spell** at {dry_spells[0]['time_range']} taking {dry_spells[0]['damage_taken']:,} raid damage. We need to assign a defensive cooldown like *Rallying Cry* or *Aura Mastery* here."
+            else:
+                response += "Our defensive rotations were relatively stable, so the focus should purely be on individual execution and survivability on the next pull."
         return response
         
     elif "heal" in query or "cooldown" in query or "overlap" in query or "dry" in query:
