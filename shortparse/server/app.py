@@ -965,9 +965,15 @@ def admin_git_pull(request: Request, payload: GitPullRequest, db: Session = Depe
     if payload.repo == "backend":
         repo_path = base_dir
     elif payload.repo == "web":
-        repo_path = base_dir.parent / "ShortParse-Web"
+        # Resolve using same logic as static mounting in FastAPI
+        repo_path = Path(__file__).resolve().parent.parent.parent.parent / "ShortParse-Web"
+        if not repo_path.exists():
+            repo_path = Path(__file__).resolve().parent.parent / "ShortParse-Web"
+        
+        # Additional fallbacks (including standard Nginx web directories)
         if not repo_path.exists():
             possible_web_paths = [
+                Path("/var/www/ShortParse-Web"),
                 Path("/storage/ShortParse-Web"),
                 Path("/app/ShortParse-Web"),
                 base_dir / "ShortParse-Web"
