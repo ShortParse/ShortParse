@@ -973,6 +973,7 @@ def admin_git_pull(request: Request, payload: GitPullRequest, db: Session = Depe
         # Additional fallbacks (including standard Nginx web directories)
         if not repo_path.exists():
             possible_web_paths = [
+                Path("/var/www/html"),
                 Path("/var/www/ShortParse-Web"),
                 Path("/storage/ShortParse-Web"),
                 Path("/app/ShortParse-Web"),
