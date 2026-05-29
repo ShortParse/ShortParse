@@ -23,15 +23,4 @@ COOLDOWNS = {
         "weight": "high",
 
     },
-    1160: {
-        "name": "Demoralizing Shout",
-        "class": "WARRIOR",
-        "specs": ['Protection'],
-        "category": "tank_defensive",
-        "notes": "Reduces damage done by nearby enemies by 20%.",
-        "cooldown_seconds": 45,
-
-        "weight": "high",
-
-    },
 }

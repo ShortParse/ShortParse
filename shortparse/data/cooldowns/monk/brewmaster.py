@@ -1,17 +1,6 @@
 # shortparse/data/cooldowns/monk/brewmaster.py
 
 COOLDOWNS = {
-    322507: {
-        "name": "Celestial Brew",
-        "class": "MONK",
-        "specs": ['Brewmaster'],
-        "category": "tank_defensive",
-        "notes": "Absorbs damage based on Purified Stagger.",
-        "cooldown_seconds": 45,
-
-        "weight": "high",
-
-    },
     115176: {
         "name": "Zen Meditation",
         "class": "MONK",

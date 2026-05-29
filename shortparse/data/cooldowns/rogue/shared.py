@@ -21,16 +21,6 @@ COOLDOWNS = {
         "weight": "medium",
 
     },
-    1966: {
-        "name": "Feint",
-        "class": "ROGUE",
-        "category": "personal_defensive",
-        "notes": "Reduces AOE damage taken.",
-        "cooldown_seconds": 15,
-
-        "weight": "low",
-
-    },
     1856: {
         "name": "Vanish",
         "class": "ROGUE",
