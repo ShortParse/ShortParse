@@ -893,7 +893,8 @@ def get_admin_stats(request: Request, db: Session = Depends(get_db)):
 
     # 5. System Health Info
     from shortparse.cache import HAS_REDIS
-    from shortparse.settings import REDIS_HOST, REDIS_PORT, DB_PATH
+    from shortparse.settings import REDIS_HOST, REDIS_PORT
+    from shortparse.database import DB_PATH
     
     db_size_bytes = 0
     try:
