@@ -11,16 +11,6 @@ COOLDOWNS = {
         "weight": "low",
 
     },
-    73325: {
-        "name": "Leap of Faith",
-        "class": "PRIEST",
-        "category": "raid_utility",
-        "notes": "Pulls a party member instantly to the Priest's location.",
-        "cooldown_seconds": 90,
-
-        "weight": "low",
-
-    },
     108968: {
         "name": "Void Shift",
         "class": "PRIEST",

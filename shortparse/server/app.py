@@ -644,7 +644,13 @@ from fastapi.staticfiles import StaticFiles
 @app.get("/api/encounters")
 def get_encounters():
     base_dir = Path(__file__).resolve().parent.parent / "data" / "encounters"
-    raids_dirs = ["the_voidspire", "the_dreamrift", "march_on_queldanas"]
+    
+    # Discover raid directories dynamically
+    raids_dirs = []
+    if base_dir.exists():
+        for item in sorted(base_dir.iterdir()):
+            if item.is_dir() and not item.name.startswith("__") and not item.name.startswith("."):
+                raids_dirs.append(item.name)
     
     result = []
     
@@ -653,6 +659,7 @@ def get_encounters():
         if not raid_path.is_dir():
             continue
             
+        # Clean title casing and specific custom name formatting
         raid_name = raid_id.replace("_", " ").title()
         if raid_id == "the_voidspire":
             raid_name = "The Voidspire"
@@ -749,6 +756,740 @@ def serve_builder(request: Request):
             return HTMLResponse(content=content)
             
     raise HTTPException(status_code=404, detail="index.html not found")
+
+
+@app.get("/admin", response_class=HTMLResponse)
+def serve_admin(request: Request):
+    possible_paths = [
+        Path(__file__).resolve().parent.parent.parent.parent / "ShortParse-Web" / "index.html",
+        Path(__file__).resolve().parent.parent / "ShortParse-Web" / "index.html",
+        Path("/storage/ShortParse-Web/index.html"),
+        Path("/app/index.html"),
+    ]
+    
+    for path in possible_paths:
+        if path.exists():
+            with open(path, "r", encoding="utf-8") as file:
+                content = file.read()
+            return HTMLResponse(content=content)
+            
+    raise HTTPException(status_code=404, detail="index.html not found")
+
+
+@app.get("/admin/stats")
+def get_admin_stats(request: Request, db: Session = Depends(get_db)):
+    username = request.session.get("username")
+    if not username:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    from shortparse.settings import ADMIN_USERNAMES
+    normalized_username = username.strip().lower()
+    if normalized_username not in ADMIN_USERNAMES:
+        raise HTTPException(status_code=403, detail="Forbidden: Admin access required.")
+
+    from shortparse.db_models import Job, User, LinkedAccount
+    from sqlalchemy import func
+
+    # 1. User stats
+    total_users = db.query(User).count()
+    total_reports = db.query(Job).count()
+    
+    # Most active user (excluding anyone in ADMIN_USERNAMES)
+    most_active = (
+        db.query(User.username, func.count(Job.job_id).label("job_count"))
+        .join(Job, User.id == Job.user_id)
+        .group_by(User.id)
+        .all()
+    )
+    # Filter out admin usernames (case-insensitive)
+    most_active_filtered = [
+        item for item in most_active
+        if item[0] and item[0].strip().lower() not in ADMIN_USERNAMES
+    ]
+    if most_active_filtered:
+        most_active_filtered.sort(key=lambda x: x[1], reverse=True)
+        most_active_user = most_active_filtered[0][0]
+        most_active_user_jobs = most_active_filtered[0][1]
+    else:
+        most_active_user = "None"
+        most_active_user_jobs = 0
+
+    # Patreon members count (premium users that are not bypass admins)
+    premium_users = db.query(User).filter(User.is_premium == True).all()
+    patreon_members = sum(
+        1 for u in premium_users
+        if u.username and u.username.strip().lower() not in ADMIN_USERNAMES
+    )
+    
+    # Patreon adoption ratio
+    patreon_adoption_ratio = 0.0
+    if total_users > 0:
+        patreon_adoption_ratio = round((patreon_members / total_users) * 100, 2)
+
+    # 2. Cooldown stats
+    import shortparse.data.cooldowns as cd
+    from shortparse.data.cooldowns import RAID_COOLDOWNS
+    cd_dir = Path(cd.__file__).resolve().parent
+    classes = [d for d in cd_dir.iterdir() if d.is_dir() and not d.name.startswith("__")]
+    total_classes = len(classes)
+    
+    total_specs = 0
+    for d in classes:
+        for f in d.iterdir():
+            if f.suffix == ".py" and not f.name.startswith("__") and f.name != "shared.py":
+                total_specs += 1
+                
+    total_spells = len(RAID_COOLDOWNS)
+
+    # 3. Encounter stats
+    from shortparse.data.encounters.registry import ENCOUNTER_MODULES
+    total_raid_zones = len(ENCOUNTER_MODULES)
+    
+    total_bosses = 0
+    total_mechanics = 0
+    raid_zones_info = []
+    
+    for module in ENCOUNTER_MODULES:
+        boss_map = getattr(module, "AVOIDABLE_DAMAGE_BY_ENCOUNTER_ID", {})
+        boss_count = len(boss_map)
+        total_bosses += boss_count
+        
+        mechanics_in_raid = set()
+        for encounter_id, avoidable_damage in boss_map.items():
+            for spell_id, mechanic in avoidable_damage.items():
+                if isinstance(mechanic, dict) and "name" in mechanic:
+                    mechanics_in_raid.add(mechanic["name"])
+        total_mechanics += len(mechanics_in_raid)
+        
+        mod_name = module.__name__.split(".")[-1]
+        display_name = mod_name.replace("_", " ").title()
+        if mod_name == "march_on_queldanas":
+            display_name = "March on Quel'Danas"
+        elif mod_name == "the_dreamrift":
+            display_name = "The Dreamrift"
+        elif mod_name == "the_voidspire":
+            display_name = "The Voidspire"
+            
+        raid_zones_info.append({
+            "name": display_name,
+            "bosses": boss_count,
+            "mechanics": len(mechanics_in_raid)
+        })
+
+    # 4. Queue / System Activity Stats
+    queued_jobs = db.query(Job).filter(Job.status == "queued").count()
+    running_jobs = db.query(Job).filter(Job.status == "running").count()
+    completed_jobs = db.query(Job).filter(Job.status == "completed").count()
+    failed_jobs = db.query(Job).filter(Job.status == "failed").count()
+    
+    recent_jobs_query = db.query(Job).order_by(Job.created_at.desc()).limit(5).all()
+    recent_jobs = []
+    for job in recent_jobs_query:
+        username_label = "Anonymous"
+        if job.user_id:
+            u = db.query(User).filter(User.id == job.user_id).first()
+            if u:
+                username_label = u.username
+        recent_jobs.append({
+            "job_id": job.job_id,
+            "report_code": job.report_code,
+            "status": job.status,
+            "username": username_label,
+            "created_at": job.created_at.isoformat() if job.created_at else None
+        })
+
+    # 5. System Health Info
+    from shortparse.cache import HAS_REDIS
+    from shortparse.settings import REDIS_HOST, REDIS_PORT
+    from shortparse.database import DB_PATH
+    
+    db_size_bytes = 0
+    try:
+        if DB_PATH.exists():
+            db_size_bytes = DB_PATH.stat().st_size
+    except Exception:
+        pass
+        
+    db_size_mb = round(db_size_bytes / (1024 * 1024), 2)
+    
+    redis_status = "Connected" if HAS_REDIS else "Disconnected (Disk Cache Fallback)"
+    redis_info = f"{REDIS_HOST}:{REDIS_PORT}" if HAS_REDIS else "None"
+
+    return {
+        "user_stats": {
+            "total_users": total_users,
+            "total_reports": total_reports,
+            "most_active_user": most_active_user,
+            "most_active_user_jobs": most_active_user_jobs,
+            "patreon_members": patreon_members,
+            "patreon_adoption_ratio": patreon_adoption_ratio
+        },
+        "cooldown_stats": {
+            "total_classes": total_classes,
+            "total_specs": total_specs,
+            "total_spells": total_spells
+        },
+        "encounter_stats": {
+            "total_raid_zones": total_raid_zones,
+            "total_bosses": total_bosses,
+            "total_mechanics": total_mechanics,
+            "raid_zones": raid_zones_info
+        },
+        "queue_stats": {
+            "queued": queued_jobs,
+            "running": running_jobs,
+            "completed": completed_jobs,
+            "failed": failed_jobs,
+            "recent_jobs": recent_jobs
+        },
+        "system_health": {
+            "redis_status": redis_status,
+            "redis_info": redis_info,
+            "db_size_mb": db_size_mb
+        }
+    }
+
+
+class GitPullRequest(BaseModel):
+    repo: str  # "web" or "backend"
+
+
+@app.post("/admin/actions/git-pull")
+def admin_git_pull(request: Request, payload: GitPullRequest, db: Session = Depends(get_db)):
+    username = request.session.get("username")
+    if not username:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    from shortparse.settings import ADMIN_USERNAMES
+    if username.strip().lower() not in ADMIN_USERNAMES:
+        raise HTTPException(status_code=403, detail="Forbidden: Admin access required.")
+        
+    import subprocess
+    from pathlib import Path
+    
+    # Determine repository path
+    base_dir = Path(__file__).resolve().parent.parent.parent
+    if payload.repo == "backend":
+        repo_path = base_dir
+    elif payload.repo == "web":
+        repo_path = Path("/var/www/html")
+        if not repo_path.exists() or not (repo_path / ".git").exists():
+            return {
+                "status": "skipped",
+                "message": "Website repository not found or not initialized as a git repository on this VM. This is expected in a multi-VM environment (like Dev) where the frontend is hosted on a separate virtual machine. This action is fully operational on single-system environments (like the Live server)."
+            }
+    else:
+        raise HTTPException(status_code=400, detail="Invalid repository identifier.")
+        
+    try:
+        # 1. Determine local branch
+        branch_res = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=str(repo_path),
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True
+        )
+        branch = branch_res.stdout.strip() or "dev"
+        
+        # 2. Run git pull origin <branch>
+        pull_res = subprocess.run(
+            ["git", "pull", "origin", branch],
+            cwd=str(repo_path),
+            capture_output=True,
+            text=True,
+            timeout=20,
+            check=True
+        )
+        
+        return {
+            "status": "success",
+            "branch": branch,
+            "output": pull_res.stdout.strip()
+        }
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() or e.stdout.strip() or str(e)
+        logger.error(f"Git pull failed in {repo_path}: {error_msg}")
+        raise HTTPException(status_code=500, detail=f"Git pull failed: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error during git pull in {repo_path}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/admin/actions/restart-api")
+def admin_restart_api(request: Request, db: Session = Depends(get_db)):
+    username = request.session.get("username")
+    if not username:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    from shortparse.settings import ADMIN_USERNAMES
+    if username.strip().lower() not in ADMIN_USERNAMES:
+        raise HTTPException(status_code=403, detail="Forbidden: Admin access required.")
+        
+    import subprocess
+    import threading
+    import time
+    
+    def trigger_restart():
+        time.sleep(1)
+        try:
+            logger.info("Executing systemctl restart shortparse.service...")
+            subprocess.run(["sudo", "systemctl", "restart", "shortparse.service"], check=True)
+        except Exception as e:
+            logger.error(f"Failed to restart service: {e}")
+            
+    threading.Thread(target=trigger_restart, daemon=True).start()
+    
+    return {
+        "status": "success",
+        "message": "API restart command dispatched successfully. Server will be online shortly."
+    }
+
+
+class UpdateEncountersRequest(BaseModel):
+    zone_id: int
+
+
+def ask_gemini_generator(prompt_text: str) -> str:
+    from shortparse.settings import GEMINI_API_KEY
+    if not GEMINI_API_KEY:
+        raise RuntimeError("GEMINI_API_KEY is not configured in settings.")
+        
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [{"text": prompt_text}]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.1,
+            "maxOutputTokens": 8192
+        }
+    }
+    response = requests.post(url, json=payload, headers=headers, timeout=40)
+    response.raise_for_status()
+    result = response.json()
+    candidates = result.get("candidates", [])
+    if candidates:
+        text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+        return text.strip()
+    raise RuntimeError(f"Gemini API returned empty response: {response.text}")
+
+
+@app.post("/admin/actions/update-encounters")
+def admin_update_encounters(
+    request: Request,
+    payload: UpdateEncountersRequest,
+    db: Session = Depends(get_db)
+):
+    username = request.session.get("username")
+    if not username:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    from shortparse.settings import ADMIN_USERNAMES
+    if username.strip().lower() not in ADMIN_USERNAMES:
+        raise HTTPException(status_code=403, detail="Forbidden: Admin access required.")
+        
+    zone_id = payload.zone_id
+    
+    # 1. Fetch Zone and Boss list from WCL
+    wcl_client = WarcraftLogsClient()
+    zone_query = """
+    query($zoneID: Int!) {
+      worldData {
+        zone(id: $zoneID) {
+          name
+          encounters {
+            id
+            name
+          }
+        }
+      }
+    }
+    """
+    try:
+        zone_data = wcl_client.graphql(zone_query, {"zoneID": zone_id})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to query WCL Zone: {e}")
+        
+    zone_info = zone_data.get("worldData", {}).get("zone")
+    if not zone_info:
+        raise HTTPException(status_code=404, detail=f"Zone ID {zone_id} not found in WCL database.")
+        
+    raid_name = zone_info.get("name")
+    encounters = zone_info.get("encounters", []) or []
+    
+    if not encounters:
+        raise HTTPException(status_code=404, detail=f"Raid zone \"{raid_name}\" contains no active boss encounters.")
+        
+    import re
+    def slugify(text: str) -> str:
+        slug = text.strip().lower().replace(" ", "_")
+        return re.sub(r"[^a-z0-9_]", "", slug)
+        
+    raid_slug = slugify(raid_name)
+    
+    # Create raid directory
+    raid_dir = Path(__file__).resolve().parent.parent / "data" / "encounters" / raid_slug
+    raid_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Initialize Blizzard client
+    from shortparse.server.bnet_client import BlizzardClient
+    bnet_client = BlizzardClient()
+    
+    processed_bosses = []
+    skipped_bosses = []
+    
+    # 2. Process each boss
+    for boss in encounters:
+        boss_id = boss["id"]
+        boss_name = boss["name"]
+        boss_slug = slugify(boss_name)
+        
+        # Scrape 2 unique rankings to get elite reports
+        rankings_query = """
+        query($encounterID: Int!, $className: String!, $specName: String!) {
+          worldData {
+            encounter(id: $encounterID) {
+              characterRankings(
+                difficulty: 5,
+                className: $className,
+                specName: $specName
+              )
+            }
+          }
+        }
+        """
+        report_fights = []
+        spec_queries = [
+            ("Priest", "Holy"),
+            ("Paladin", "Holy"),
+            ("Warrior", "Protection")
+        ]
+        for className, specName in spec_queries:
+            try:
+                res = wcl_client.graphql(rankings_query, {
+                    "encounterID": boss_id,
+                    "className": className,
+                    "specName": specName
+                })
+                payload = res.get("worldData", {}).get("encounter", {}).get("characterRankings", {}) or {}
+                rankings = payload.get("rankings", []) or []
+                for r in rankings:
+                    report = r.get("report") or {}
+                    code = report.get("code")
+                    fight_id = report.get("fightID")
+                    if code and fight_id and (code, fight_id) not in report_fights:
+                        report_fights.append((code, fight_id))
+                        if len(report_fights) >= 2:
+                            break
+                if len(report_fights) >= 2:
+                    break
+            except Exception:
+                continue
+                
+        if not report_fights:
+            skipped_bosses.append(f"{boss_name} (No reports found on WCL)")
+            continue
+            
+        # Compile DamageTaken events across reports
+        spell_damage = {}
+        damage_query = """
+        query($reportCode: String!, $fightIDs: [Int]) {
+          reportData {
+            report(code: $reportCode) {
+              masterData {
+                abilities {
+                  gameID
+                  name
+                }
+              }
+              events(
+                fightIDs: $fightIDs
+                dataType: DamageTaken
+                limit: 1000
+              ) {
+                data
+              }
+            }
+          }
+        }
+        """
+        for code, fight_id in report_fights:
+            try:
+                events_res = wcl_client.graphql(damage_query, {
+                    "reportCode": code,
+                    "fightIDs": [fight_id]
+                })
+                report_payload = events_res.get("reportData", {}).get("report") or {}
+                events = report_payload.get("events", {}).get("data", []) or []
+                abilities = report_payload.get("masterData", {}).get("abilities", []) or []
+                ability_map = {a["gameID"]: a["name"] for a in abilities if a.get("gameID") is not None}
+                
+                for ev in events:
+                    spell_id = ev.get("abilityGameID")
+                    if not spell_id:
+                        continue
+                    amount = int(ev.get("amount") or 0)
+                    target_id = ev.get("targetID")
+                    
+                    if spell_id not in spell_damage:
+                        spell_name = ability_map.get(spell_id, f"Spell {spell_id}")
+                        spell_damage[spell_id] = {
+                            "id": spell_id,
+                            "name": spell_name,
+                            "hits": 0,
+                            "damage": 0,
+                            "targets": set()
+                        }
+                    
+                    spell_damage[spell_id]["hits"] += 1
+                    spell_damage[spell_id]["damage"] += amount
+                    if target_id:
+                        spell_damage[spell_id]["targets"].add(target_id)
+            except Exception:
+                continue
+                
+        if not spell_damage:
+            skipped_bosses.append(f"{boss_name} (No damage taken events recorded)")
+            continue
+            
+        # Select top 12 damage spells sorted by hits * total damage
+        sorted_spells = sorted(
+            spell_damage.values(),
+            key=lambda x: -(x["hits"] * x["damage"]),
+        )
+        
+        telemetry_lines = []
+        for sp in sorted_spells[:12]:
+            spell_id = sp["id"]
+            name = sp["name"]
+            hits = sp["hits"]
+            dmg = sp["damage"]
+            targets_count = len(sp["targets"])
+            
+            # Enrich from Blizzard API
+            bnet_info = bnet_client.get_spell_info(spell_id)
+            if bnet_info:
+                bnet_desc = bnet_info.get("description", "")
+                telemetry_lines.append(
+                    f"* Spell ID {spell_id} (Official Name: \"{bnet_info['name']}\")\n"
+                    f"  - Hits: {hits} | Total Damage: {dmg:,} | Players Hit: {targets_count}\n"
+                    f"  - Tooltip: \"{bnet_desc}\""
+                )
+            else:
+                telemetry_lines.append(
+                    f"* Spell ID {spell_id} (Name in log: \"{name}\")\n"
+                    f"  - Hits: {hits} | Total Damage: {dmg:,} | Players Hit: {targets_count}\n"
+                    f"  - Tooltip: NOT FOUND in Blizzard official database (Custom Boss Mechanic)"
+                )
+                
+        telemetry_text = "\n".join(telemetry_lines)
+        
+        # 3. Query Gemini to write the Python Module
+        prompt_text = f"""
+You are an expert World of Warcraft raid analysis developer.
+Your task is to write a highly accurate World of Warcraft encounter mechanic module in Python.
+The module must conform precisely to the following `Mechanic` schema:
+
+class Mechanic(TypedDict, total=False):
+    name: str  # The name of the mechanic (e.g. "Avenger's Shield")
+    severity: Literal["Info", "Minor", "Major", "Critical"]
+    avoidable: bool  # True if players can dodge/mitigate, False otherwise
+    category: str  # Must be one of the MechanicCategory literals listed below
+    failure_type: str  # Must be one of the MechanicFailureType literals listed below
+    counts_as_failure: bool  # True if it counts as a failed mechanic count
+    max_reasonable_hits: int  # Max hits allowed per fight (usually 0 or 1, or 2 for tank buster swaps)
+    score_per_hit: int  # Penalty score per hit (0 to 100)
+    applies_to: list[str]  # e.g., ALL_ROLES, NON_TANK_ROLES, DPS_ONLY, HEALER_ONLY, TANK_ONLY
+    spell_ids: list[int]  # List of WCL spell IDs matching this mechanic
+    note: str  # Clinical description of what the mechanic does
+    recommendation: str  # Actionable advice on how to avoid it
+    wcl_type: str  # Always "damage_taken"
+
+MechanicCategory Literals:
+"ground_effect", "swirl", "traveling_projectile", "beam", "frontal", "rear_cone",
+"forced_movement", "interrupt", "minimum_soak", "soak_participation", "bad_soak",
+"dispel", "spread", "stack", "boss_threat", "boss_range", "tank_buster",
+"tank_positioning", "add_management", "add_priority", "corpse_explosion",
+"bait", "lane_movement", "debuff_damage"
+
+MechanicFailureType Literals:
+"avoidable_damage", "missed_interrupt", "minimum_soak", "zero_participation",
+"bad_soak", "missed_dispel", "bad_dispel", "spread_failure", "stack_failure",
+"boss_range"
+
+WoW Roles available:
+ALL_ROLES = ["tank", "healer", "dps"]
+NON_TANK_ROLES = ["healer", "dps"]
+DPS_ONLY = ["dps"]
+HEALER_ONLY = ["healer"]
+TANK_ONLY = ["tank"]
+
+Here is the combat log telemetry and Blizzard Spell API details collected for boss encounter "{boss_name}" (ID: {boss_id}) in the zone "{raid_name}":
+
+--- Telemetry Data ---
+{telemetry_text}
+
+INSTRUCTIONS:
+1. Examine the spell list. Exclude any standard player utility spells, standard healing spells, potions, enchants, basic attacks (like Melee).
+2. For each genuine boss mechanic, draft a `Mechanic` dict constant.
+3. Classify its category and failure_type carefully based on its name and description (e.g. if the description mentions consecration or standing in fire, use "ground_effect" and "avoidable_damage").
+4. If it's a tank-only mechanic (e.g. tank strike, physical buster), use TANK_ONLY, avoidable=False, counts_as_failure=False, and failure_type="avoidable_damage".
+5. At the bottom of the file, define:
+   ENCOUNTER_ID = {boss_id}
+   ENCOUNTER_NAME = "{boss_name}"
+   And define the AVOIDABLE_DAMAGE mapping:
+   AVOIDABLE_DAMAGE = {{
+       **mechanic_aliases([spell_id], CONSTANT_NAME),
+       ...
+   }}
+6. The Python code must be 100% syntactically valid and import:
+   from shortparse.data.encounters.types import Mechanic
+   from shortparse.data.encounters.constants import (
+       ALL_ROLES, NON_TANK_ROLES, DPS_ONLY, HEALER_ONLY, TANK_ONLY
+   )
+   from shortparse.data.encounters.mechanic_helper import mechanic_aliases
+
+Output ONLY the raw Python code within ```python and ``` block. Do not include any other markdown chat or greetings.
+"""
+        try:
+            gemini_output = ask_gemini_generator(prompt_text)
+            code_match = re.search(r"```python(.*?)```", gemini_output, re.DOTALL)
+            if code_match:
+                code_content = code_match.group(1).strip()
+            else:
+                code_content = gemini_output.strip()
+                
+            boss_file = raid_dir / f"{boss_slug}.py"
+            with open(boss_file, "w", encoding="utf-8") as bf:
+                bf.write(code_content)
+                
+            processed_bosses.append((boss_id, boss_name, boss_slug))
+        except Exception as gemini_err:
+            skipped_bosses.append(f"{boss_name} (Gemini compilation failed: {gemini_err})")
+            continue
+            
+    if not processed_bosses:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate any boss modules. Reasons: {', '.join(skipped_bosses)}"
+        )
+        
+    init_lines = []
+    damage_map_entries = []
+    for boss_id, boss_name, boss_slug in processed_bosses:
+        const_name = boss_slug.upper()
+        init_lines.append(f"from .{boss_slug} import AVOIDABLE_DAMAGE as {const_name}")
+        damage_map_entries.append(f"    {boss_id}: {const_name},")
+        
+    init_lines.append("")
+    init_lines.append("AVUIDABLE_DAMAGE_BY_ENCOUNTER_ID = {")
+    init_lines.extend(damage_map_entries)
+    init_lines.append("}")
+    # Fixed typo AVUIDABLE -> AVOIDABLE
+    init_lines[-2] = "AVOIDABLE_DAMAGE_BY_ENCOUNTER_ID = {"
+    
+    init_file = raid_dir / "__init__.py"
+    with open(init_file, "w", encoding="utf-8") as inf:
+        inf.write("\n".join(init_lines))
+        
+    from shortparse.data.encounters.registry import load_encounter_modules
+    load_encounter_modules()
+    
+    summary_message = f"Successfully generated encounter config for \"{raid_name}\" under data/encounters/{raid_slug}/.\n\n"
+    summary_message += f"Generated Bosses:\n" + "\n".join(f"- {name} (ID: {bid})" for bid, name, _ in processed_bosses)
+    if skipped_bosses:
+        summary_message += f"\n\nSkipped Bosses:\n" + "\n".join(f"- {s}" for s in skipped_bosses)
+        
+    return {
+        "status": "success",
+        "raid_name": raid_name,
+        "bosses": [name for _, name, _ in processed_bosses],
+        "message": summary_message
+    }
+
+
+@app.post("/admin/actions/update-cooldowns")
+def admin_update_cooldowns(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    username = request.session.get("username")
+    if not username:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    from shortparse.settings import ADMIN_USERNAMES
+    if username.strip().lower() not in ADMIN_USERNAMES:
+        raise HTTPException(status_code=403, detail="Forbidden: Admin access required.")
+        
+    import subprocess
+    import shutil
+    
+    tools_dir = Path(__file__).resolve().parent.parent.parent / "ShortParse-Tools" / "SpellAudit"
+    if not tools_dir.exists():
+        tools_dir = Path("/storage/ShortParse-Tools/SpellAudit")
+        
+    if not tools_dir.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="SpellAudit tools folder not found on this server."
+        )
+        
+    try:
+        audit_res = subprocess.run(
+            ["python", "audit.py", "--limit-logs", "3", "--boss-count", "2"],
+            cwd=str(tools_dir),
+            capture_output=True,
+            text=True,
+            timeout=90
+        )
+        
+        results_dir = tools_dir / "results"
+        copied_files = []
+        
+        if results_dir.exists():
+            for class_slug_dir in results_dir.iterdir():
+                if class_slug_dir.is_dir():
+                    for spec_file in class_slug_dir.iterdir():
+                        if spec_file.suffix == ".py":
+                            dest_dir = Path(__file__).resolve().parent.parent / "data" / "cooldowns" / class_slug_dir.name
+                            dest_dir.mkdir(parents=True, exist_ok=True)
+                            
+                            with open(spec_file, "r", encoding="utf-8") as sf:
+                                draft_content = sf.read()
+                                
+                            dest_file = dest_dir / f"{spec_file.stem}_discovered.py"
+                            with open(dest_file, "w", encoding="utf-8") as df:
+                                df.write(draft_content)
+                                
+                            copied_files.append(f"data/cooldowns/{class_slug_dir.name}/{spec_file.name}")
+                            
+        if results_dir.exists():
+            shutil.rmtree(results_dir)
+            
+        summary_message = "Successfully ran Cooldowns discovery audit!\n\n"
+        if copied_files:
+            summary_message += "Discovered and generated new cooldown definition drafts:\n" + "\n".join(f"- {f}" for f in copied_files)
+            summary_message += "\n\nDraft modules are saved under data/cooldowns/<class>/<spec>_discovered.py, ready to be reviewed and merged!"
+        else:
+            summary_message += "No new unmapped player cooldowns were discovered. Your current database is fully up-to-date with top parses!"
+            
+        return {
+            "status": "success",
+            "copied_files": copied_files,
+            "message": summary_message
+        }
+        
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=504, detail="Cooldowns WCL scrape timed out. WCL API might be running slow. Please retry in a moment.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # Mount static files from ShortParse-Web if directory exists
 web_dir = Path(__file__).resolve().parent.parent.parent.parent / "ShortParse-Web"
