@@ -1491,6 +1491,68 @@ def admin_update_cooldowns(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class BannerRequest(BaseModel):
+    message: str
+
+
+@app.get("/banner")
+def get_banner(db: Session = Depends(get_db)):
+    from shortparse.db_models import SystemConfig
+    msg_config = db.query(SystemConfig).filter(SystemConfig.key == "banner_message").first()
+    time_config = db.query(SystemConfig).filter(SystemConfig.key == "banner_updated_at").first()
+    
+    message = msg_config.value if msg_config else None
+    updated_at = time_config.value if time_config else None
+    
+    if message and not message.strip():
+        message = None
+        
+    return {
+        "message": message,
+        "updated_at": updated_at
+    }
+
+
+@app.post("/admin/banner")
+def update_banner(request: Request, payload: BannerRequest, db: Session = Depends(get_db)):
+    username = request.session.get("username")
+    if not username:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    from shortparse.settings import ADMIN_USERNAMES
+    normalized_username = username.strip().lower()
+    if normalized_username not in ADMIN_USERNAMES:
+        raise HTTPException(status_code=403, detail="Forbidden: Admin access required.")
+        
+    from shortparse.db_models import SystemConfig
+    
+    message = payload.message.strip()
+    
+    msg_config = db.query(SystemConfig).filter(SystemConfig.key == "banner_message").first()
+    if not msg_config:
+        msg_config = SystemConfig(key="banner_message", value=message)
+        db.add(msg_config)
+    else:
+        msg_config.value = message
+        
+    now_str = datetime.utcnow().isoformat()
+    time_config = db.query(SystemConfig).filter(SystemConfig.key == "banner_updated_at").first()
+    if not time_config:
+        time_config = SystemConfig(key="banner_updated_at", value=now_str)
+        db.add(time_config)
+    else:
+        time_config.value = now_str
+        
+    db.commit()
+    
+    return {
+        "status": "success",
+        "message": "Banner updated successfully",
+        "banner_message": message if message else None,
+        "banner_updated_at": now_str
+    }
+
+
 # Mount static files from ShortParse-Web if directory exists
 web_dir = Path(__file__).resolve().parent.parent.parent.parent / "ShortParse-Web"
 if not web_dir.exists():
