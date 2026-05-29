@@ -943,6 +943,111 @@ def get_admin_stats(request: Request, db: Session = Depends(get_db)):
     }
 
 
+class GitPullRequest(BaseModel):
+    repo: str  # "web" or "backend"
+
+
+@app.post("/admin/actions/git-pull")
+def admin_git_pull(request: Request, payload: GitPullRequest, db: Session = Depends(get_db)):
+    username = request.session.get("username")
+    if not username:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    from shortparse.settings import ADMIN_USERNAMES
+    if username.strip().lower() not in ADMIN_USERNAMES:
+        raise HTTPException(status_code=403, detail="Forbidden: Admin access required.")
+        
+    import subprocess
+    from pathlib import Path
+    
+    # Determine repository path
+    base_dir = Path(__file__).resolve().parent.parent.parent
+    if payload.repo == "backend":
+        repo_path = base_dir
+    elif payload.repo == "web":
+        repo_path = base_dir.parent / "ShortParse-Web"
+        if not repo_path.exists():
+            possible_web_paths = [
+                Path("/storage/ShortParse-Web"),
+                Path("/app/ShortParse-Web"),
+                base_dir / "ShortParse-Web"
+            ]
+            for p in possible_web_paths:
+                if p.exists():
+                    repo_path = p
+                    break
+    else:
+        raise HTTPException(status_code=400, detail="Invalid repository identifier.")
+        
+    if not repo_path.exists():
+        raise HTTPException(status_code=500, detail=f"Repository directory not found at {repo_path}")
+        
+    try:
+        # 1. Determine local branch
+        branch_res = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=str(repo_path),
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True
+        )
+        branch = branch_res.stdout.strip() or "dev"
+        
+        # 2. Run git pull origin <branch>
+        pull_res = subprocess.run(
+            ["git", "pull", "origin", branch],
+            cwd=str(repo_path),
+            capture_output=True,
+            text=True,
+            timeout=20,
+            check=True
+        )
+        
+        return {
+            "status": "success",
+            "branch": branch,
+            "output": pull_res.stdout.strip()
+        }
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() or e.stdout.strip() or str(e)
+        logger.error(f"Git pull failed in {repo_path}: {error_msg}")
+        raise HTTPException(status_code=500, detail=f"Git pull failed: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error during git pull in {repo_path}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/admin/actions/restart-api")
+def admin_restart_api(request: Request, db: Session = Depends(get_db)):
+    username = request.session.get("username")
+    if not username:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    from shortparse.settings import ADMIN_USERNAMES
+    if username.strip().lower() not in ADMIN_USERNAMES:
+        raise HTTPException(status_code=403, detail="Forbidden: Admin access required.")
+        
+    import subprocess
+    import threading
+    import time
+    
+    def trigger_restart():
+        time.sleep(1)
+        try:
+            logger.info("Executing systemctl restart shortparse.service...")
+            subprocess.run(["sudo", "systemctl", "restart", "shortparse.service"], check=True)
+        except Exception as e:
+            logger.error(f"Failed to restart service: {e}")
+            
+    threading.Thread(target=trigger_restart, daemon=True).start()
+    
+    return {
+        "status": "success",
+        "message": "API restart command dispatched successfully. Server will be online shortly."
+    }
+
+
 # Mount static files from ShortParse-Web if directory exists
 web_dir = Path(__file__).resolve().parent.parent.parent.parent / "ShortParse-Web"
 if not web_dir.exists():
