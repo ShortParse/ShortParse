@@ -967,10 +967,10 @@ def admin_git_pull(request: Request, payload: GitPullRequest, db: Session = Depe
     elif payload.repo == "web":
         repo_path = Path("/var/www/html")
         if not repo_path.exists():
-            raise HTTPException(
-                status_code=500,
-                detail="Frontend repository directory not found at /var/www/html. Please verify permissions."
-            )
+            return {
+                "status": "skipped",
+                "message": "Website repository not found on this VM. This is expected in a multi-VM environment (like Dev) where the frontend is hosted on a separate virtual machine. This action is fully operational on single-system environments (like the Live server)."
+            }
     else:
         raise HTTPException(status_code=400, detail="Invalid repository identifier.")
         
