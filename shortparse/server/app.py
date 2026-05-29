@@ -979,15 +979,22 @@ def admin_git_pull(request: Request, payload: GitPullRequest, db: Session = Depe
                 Path("/app/ShortParse-Web"),
                 base_dir / "ShortParse-Web"
             ]
+            checked_paths = []
             for p in possible_web_paths:
-                if p.exists():
+                exists_status = p.exists()
+                checked_paths.append(f"{p} (exists: {exists_status})")
+                if exists_status:
                     repo_path = p
                     break
+            else:
+                checked_str = ", ".join(checked_paths)
+                logger.error(f"None of the possible web paths were found. Checked: {checked_str}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Frontend repository directory not found. Checked: {checked_str}"
+                )
     else:
         raise HTTPException(status_code=400, detail="Invalid repository identifier.")
-        
-    if not repo_path.exists():
-        raise HTTPException(status_code=500, detail=f"Repository directory not found at {repo_path}")
         
     try:
         # 1. Determine local branch
