@@ -750,6 +750,198 @@ def serve_builder(request: Request):
             
     raise HTTPException(status_code=404, detail="index.html not found")
 
+
+@app.get("/admin", response_class=HTMLResponse)
+def serve_admin(request: Request):
+    possible_paths = [
+        Path(__file__).resolve().parent.parent.parent.parent / "ShortParse-Web" / "index.html",
+        Path(__file__).resolve().parent.parent / "ShortParse-Web" / "index.html",
+        Path("/storage/ShortParse-Web/index.html"),
+        Path("/app/index.html"),
+    ]
+    
+    for path in possible_paths:
+        if path.exists():
+            with open(path, "r", encoding="utf-8") as file:
+                content = file.read()
+            return HTMLResponse(content=content)
+            
+    raise HTTPException(status_code=404, detail="index.html not found")
+
+
+@app.get("/api/admin/stats")
+def get_admin_stats(request: Request, db: Session = Depends(get_db)):
+    username = request.session.get("username")
+    if not username:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    from shortparse.settings import ADMIN_USERNAMES
+    normalized_username = username.strip().lower()
+    if normalized_username not in ADMIN_USERNAMES:
+        raise HTTPException(status_code=403, detail="Forbidden: Admin access required.")
+
+    from shortparse.db_models import Job, User, LinkedAccount
+    from sqlalchemy import func
+
+    # 1. User stats
+    total_users = db.query(User).count()
+    total_reports = db.query(Job).count()
+    
+    # Most active user (excluding anyone in ADMIN_USERNAMES)
+    most_active = (
+        db.query(User.username, func.count(Job.job_id).label("job_count"))
+        .join(Job, User.id == Job.user_id)
+        .group_by(User.id)
+        .all()
+    )
+    # Filter out admin usernames (case-insensitive)
+    most_active_filtered = [
+        item for item in most_active
+        if item[0] and item[0].strip().lower() not in ADMIN_USERNAMES
+    ]
+    if most_active_filtered:
+        most_active_filtered.sort(key=lambda x: x[1], reverse=True)
+        most_active_user = most_active_filtered[0][0]
+        most_active_user_jobs = most_active_filtered[0][1]
+    else:
+        most_active_user = "None"
+        most_active_user_jobs = 0
+
+    # Patreon members count (premium users that are not bypass admins)
+    premium_users = db.query(User).filter(User.is_premium == True).all()
+    patreon_members = sum(
+        1 for u in premium_users
+        if u.username and u.username.strip().lower() not in ADMIN_USERNAMES
+    )
+    
+    # Patreon adoption ratio
+    patreon_adoption_ratio = 0.0
+    if total_users > 0:
+        patreon_adoption_ratio = round((patreon_members / total_users) * 100, 2)
+
+    # 2. Cooldown stats
+    import shortparse.data.cooldowns as cd
+    from shortparse.data.cooldowns import RAID_COOLDOWNS
+    cd_dir = Path(cd.__file__).resolve().parent
+    classes = [d for d in cd_dir.iterdir() if d.is_dir() and not d.name.startswith("__")]
+    total_classes = len(classes)
+    
+    total_specs = 0
+    for d in classes:
+        for f in d.iterdir():
+            if f.suffix == ".py" and not f.name.startswith("__") and f.name != "shared.py":
+                total_specs += 1
+                
+    total_spells = len(RAID_COOLDOWNS)
+
+    # 3. Encounter stats
+    from shortparse.data.encounters.registry import ENCOUNTER_MODULES
+    total_raid_zones = len(ENCOUNTER_MODULES)
+    
+    total_bosses = 0
+    total_mechanics = 0
+    raid_zones_info = []
+    
+    for module in ENCOUNTER_MODULES:
+        boss_map = getattr(module, "AVOIDABLE_DAMAGE_BY_ENCOUNTER_ID", {})
+        boss_count = len(boss_map)
+        total_bosses += boss_count
+        
+        mechanics_in_raid = set()
+        for encounter_id, avoidable_damage in boss_map.items():
+            for spell_id, mechanic in avoidable_damage.items():
+                if isinstance(mechanic, dict) and "name" in mechanic:
+                    mechanics_in_raid.add(mechanic["name"])
+        total_mechanics += len(mechanics_in_raid)
+        
+        mod_name = module.__name__.split(".")[-1]
+        display_name = mod_name.replace("_", " ").title()
+        if mod_name == "march_on_queldanas":
+            display_name = "March on Quel'Danas"
+        elif mod_name == "the_dreamrift":
+            display_name = "The Dreamrift"
+        elif mod_name == "the_voidspire":
+            display_name = "The Voidspire"
+            
+        raid_zones_info.append({
+            "name": display_name,
+            "bosses": boss_count,
+            "mechanics": len(mechanics_in_raid)
+        })
+
+    # 4. Queue / System Activity Stats
+    queued_jobs = db.query(Job).filter(Job.status == "queued").count()
+    running_jobs = db.query(Job).filter(Job.status == "running").count()
+    completed_jobs = db.query(Job).filter(Job.status == "completed").count()
+    failed_jobs = db.query(Job).filter(Job.status == "failed").count()
+    
+    recent_jobs_query = db.query(Job).order_by(Job.created_at.desc()).limit(5).all()
+    recent_jobs = []
+    for job in recent_jobs_query:
+        username_label = "Anonymous"
+        if job.user_id:
+            u = db.query(User).filter(User.id == job.user_id).first()
+            if u:
+                username_label = u.username
+        recent_jobs.append({
+            "job_id": job.job_id,
+            "report_code": job.report_code,
+            "status": job.status,
+            "username": username_label,
+            "created_at": job.created_at.isoformat() if job.created_at else None
+        })
+
+    # 5. System Health Info
+    from shortparse.cache import HAS_REDIS
+    from shortparse.settings import REDIS_HOST, REDIS_PORT, DB_PATH
+    
+    db_size_bytes = 0
+    try:
+        if DB_PATH.exists():
+            db_size_bytes = DB_PATH.stat().st_size
+    except Exception:
+        pass
+        
+    db_size_mb = round(db_size_bytes / (1024 * 1024), 2)
+    
+    redis_status = "Connected" if HAS_REDIS else "Disconnected (Disk Cache Fallback)"
+    redis_info = f"{REDIS_HOST}:{REDIS_PORT}" if HAS_REDIS else "None"
+
+    return {
+        "user_stats": {
+            "total_users": total_users,
+            "total_reports": total_reports,
+            "most_active_user": most_active_user,
+            "most_active_user_jobs": most_active_user_jobs,
+            "patreon_members": patreon_members,
+            "patreon_adoption_ratio": patreon_adoption_ratio
+        },
+        "cooldown_stats": {
+            "total_classes": total_classes,
+            "total_specs": total_specs,
+            "total_spells": total_spells
+        },
+        "encounter_stats": {
+            "total_raid_zones": total_raid_zones,
+            "total_bosses": total_bosses,
+            "total_mechanics": total_mechanics,
+            "raid_zones": raid_zones_info
+        },
+        "queue_stats": {
+            "queued": queued_jobs,
+            "running": running_jobs,
+            "completed": completed_jobs,
+            "failed": failed_jobs,
+            "recent_jobs": recent_jobs
+        },
+        "system_health": {
+            "redis_status": redis_status,
+            "redis_info": redis_info,
+            "db_size_mb": db_size_mb
+        }
+    }
+
+
 # Mount static files from ShortParse-Web if directory exists
 web_dir = Path(__file__).resolve().parent.parent.parent.parent / "ShortParse-Web"
 if not web_dir.exists():

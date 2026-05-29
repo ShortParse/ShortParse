@@ -132,4 +132,11 @@ BYPASS_PREMIUM_USERNAMES = [
     for u in os.getenv("BYPASS_PREMIUM_USERNAMES", "").split(",")
     if u.strip()
 ]
+
+ADMIN_USERNAMES = [
+    u.strip().lower()
+    for u in os.getenv("ADMIN_USERNAMES", "").split(",")
+    if u.strip()
+]
+
 
