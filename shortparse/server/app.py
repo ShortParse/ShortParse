@@ -769,7 +769,7 @@ def serve_admin(request: Request):
     raise HTTPException(status_code=404, detail="index.html not found")
 
 
-@app.get("/api/admin/stats")
+@app.get("/admin/stats")
 def get_admin_stats(request: Request, db: Session = Depends(get_db)):
     username = request.session.get("username")
     if not username:
