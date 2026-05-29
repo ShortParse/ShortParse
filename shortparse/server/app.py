@@ -965,34 +965,12 @@ def admin_git_pull(request: Request, payload: GitPullRequest, db: Session = Depe
     if payload.repo == "backend":
         repo_path = base_dir
     elif payload.repo == "web":
-        # Resolve using same logic as static mounting in FastAPI
-        repo_path = Path(__file__).resolve().parent.parent.parent.parent / "ShortParse-Web"
+        repo_path = Path("/var/www/html")
         if not repo_path.exists():
-            repo_path = Path(__file__).resolve().parent.parent / "ShortParse-Web"
-        
-        # Additional fallbacks (including standard Nginx web directories)
-        if not repo_path.exists():
-            possible_web_paths = [
-                Path("/var/www/html"),
-                Path("/var/www/ShortParse-Web"),
-                Path("/storage/ShortParse-Web"),
-                Path("/app/ShortParse-Web"),
-                base_dir / "ShortParse-Web"
-            ]
-            checked_paths = []
-            for p in possible_web_paths:
-                exists_status = p.exists()
-                checked_paths.append(f"{p} (exists: {exists_status})")
-                if exists_status:
-                    repo_path = p
-                    break
-            else:
-                checked_str = ", ".join(checked_paths)
-                logger.error(f"None of the possible web paths were found. Checked: {checked_str}")
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Frontend repository directory not found. Checked: {checked_str}"
-                )
+            raise HTTPException(
+                status_code=500,
+                detail="Frontend repository directory not found at /var/www/html. Please verify permissions."
+            )
     else:
         raise HTTPException(status_code=400, detail="Invalid repository identifier.")
         
