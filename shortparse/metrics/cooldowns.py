@@ -59,6 +59,9 @@ def preload_expected_cooldowns(
     )
 
     for spell_id, cooldown in expected_cooldowns.items():
+        if cooldown.get("optional"):
+            continue
+
         if not player_can_access_spell(
             spell_id,
             class_name,
@@ -89,6 +92,13 @@ def calculate_efficiency(
             )
 
 
+# Mapping of mutually exclusive cooldown spells: if a player casts key spell ID,
+# we exclude the baseline/alternative value spell IDs from their expected audits.
+MUTUALLY_EXCLUSIVE_COOLDOWNS = {
+    421453: [62618],  # Ultimate Penitence excludes Power Word: Barrier
+}
+
+
 def calculate_cooldowns(
     actor_id: int,
     class_name: str,
@@ -113,6 +123,15 @@ def calculate_cooldowns(
 
         if not spell_id:
             continue
+
+        # Handle mutual exclusivity checks
+        if spell_id in MUTUALLY_EXCLUSIVE_COOLDOWNS:
+            for excluded_id in MUTUALLY_EXCLUSIVE_COOLDOWNS[spell_id]:
+                excluded_cooldown = get_cooldown(excluded_id)
+                if excluded_cooldown:
+                    excluded_name = excluded_cooldown["name"]
+                    if excluded_name in cooldowns_used:
+                        del cooldowns_used[excluded_name]
 
         if not is_raid_cooldown(spell_id):
             continue
