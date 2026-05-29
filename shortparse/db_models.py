@@ -62,3 +62,12 @@ class Job(Base):
 
     # Relationships
     user = relationship("User", back_populates="jobs")
+
+
+class SystemConfig(Base):
+    __tablename__ = "system_configs"
+
+    key = Column(String, primary_key=True)
+    value = Column(String, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
