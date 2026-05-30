@@ -1014,6 +1014,7 @@ def admin_git_pull(request: Request, payload: GitPullRequest, db: Session = Depe
     
     # Determine repository path
     base_dir = Path(__file__).resolve().parent.parent.parent
+    logger.info(f"[DEBUG] Git pull request received for repo={payload.repo}. Base API dir is {base_dir}")
     if payload.repo == "backend":
         repo_path = base_dir
     elif payload.repo == "web":
@@ -1023,12 +1024,17 @@ def admin_git_pull(request: Request, payload: GitPullRequest, db: Session = Depe
             Path("/var/www/ShortParse-Web-Dev"),
             Path("/var/www/shortparse-web"),
         ]
+        logger.info(f"[DEBUG] Checking possible frontend paths: {possible_paths}")
         repo_path = None
         for p in possible_paths:
-            if p.exists() and (p / ".git").exists():
+            exists = p.exists()
+            has_git = (p / ".git").exists() if exists else False
+            logger.info(f"[DEBUG] Path {p}: exists={exists}, has_git={has_git}")
+            if exists and has_git:
                 repo_path = p
                 break
         if not repo_path:
+            logger.warning(f"[DEBUG] Failed to find website repository path in: {possible_paths}")
             return {
                 "status": "skipped",
                 "message": f"Website repository not found or not initialized as a git repository in any standard locations on this VM ({', '.join(str(p) for p in possible_paths)}). This is expected in a multi-VM environment (like Dev) where the frontend is hosted on a separate virtual machine. This action is fully operational on single-system environments (like the Live server)."
