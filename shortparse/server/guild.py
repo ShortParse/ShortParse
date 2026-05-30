@@ -163,10 +163,22 @@ def aggregate_guild_history(jobs: list[Job], exclude_list: list[str] | None = No
                     if not player_name or (exclude_list and player_name in exclude_list):
                         continue
 
+                    # Get fine-tuned metrics from player_metrics
+                    metrics_row = player_metrics.get(player_name, {})
+                    identity = metrics_row.get("identity", {})
+                    performance = metrics_row.get("performance", {})
+                    activity = metrics_row.get("activity", {})
+                    consumables = metrics_row.get("consumables", {})
+
+                    p_spec = identity.get("spec") or row.get("spec") or metrics_row.get("spec") or "Unknown"
+                    p_role = identity.get("role") or row.get("role") or metrics_row.get("role") or "Unknown"
+                    p_class = identity.get("class") or row.get("class") or metrics_row.get("class") or "Unknown"
+
                     if player_name not in player_agg:
                         player_agg[player_name] = {
-                            "spec": row.get("spec", "Unknown"),
-                            "role": row.get("role", "Unknown"),
+                            "spec": p_spec,
+                            "role": p_role,
+                            "class": p_class,
                             "grades": [],
                             "avoidable_damage": [],
                             "dps": [],
@@ -184,17 +196,20 @@ def aggregate_guild_history(jobs: list[Job], exclude_list: list[str] | None = No
                         }
 
                     p_data = player_agg[player_name]
+                    
+                    # Update spec, role, class if previously "Unknown" and a valid value is found
+                    if p_data["spec"] == "Unknown" and p_spec != "Unknown":
+                        p_data["spec"] = p_spec
+                    if p_data["role"] == "Unknown" and p_role != "Unknown":
+                        p_data["role"] = p_role
+                    if p_data["class"] == "Unknown" and p_class != "Unknown":
+                        p_data["class"] = p_class
+
                     p_data["grades"].append(row.get("grade", "C"))
-                    p_data["specs_played"].add(row.get("spec", "Unknown"))
+                    p_data["specs_played"].add(p_spec)
                     p_data["player_total_fights"] += 1
                     if player_name not in early_deaths:
                         p_data["survived_80_count"] += 1
-
-                    # Get fine-tuned metrics from player_metrics
-                    metrics_row = player_metrics.get(player_name, {})
-                    performance = metrics_row.get("performance", {})
-                    activity = metrics_row.get("activity", {})
-                    consumables = metrics_row.get("consumables", {})
 
                     p_data["avoidable_damage"].append(performance.get("avoidable_damage_taken", 0))
                     p_data["dps"].append(performance.get("dps", 0))
@@ -355,12 +370,17 @@ def aggregate_guild_history(jobs: list[Job], exclude_list: list[str] | None = No
         dmg_penalty = avg_avoidable / 20000.0
         spi = max(10, min(100, int(50 + (perf_factor * 10) - (dmg_penalty * 15))))
 
-        specs_played = list(p_data.get("specs_played", [p_data["spec"]]))
+        specs_played = list(p_data.get("specs_played", set()))
+        if "Unknown" in specs_played and len(specs_played) > 1:
+            specs_played.remove("Unknown")
+        if not specs_played or (len(specs_played) == 1 and specs_played[0] == "Unknown" and p_data["spec"] != "Unknown"):
+            specs_played = [p_data["spec"]]
         is_flex = len(specs_played) > 1
 
         formatted_players[player_name] = {
             "spec": p_data["spec"],
             "role": p_data["role"],
+            "class": p_data.get("class", "Unknown"),
             "fights_count": len(avg_grades),
             "avg_grade": player_avg_grade,
             "avg_avoidable_damage": int(avg_avoidable),
