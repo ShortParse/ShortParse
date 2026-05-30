@@ -70,6 +70,10 @@ def generate_mrt_notes(roster: list[dict], spikes: list[dict]) -> str:
     lines.append("")
     
     for spike in spikes:
+        # Skip spikes that are explicitly marked as non-MRT
+        if spike.get("mrt") is False:
+            continue
+
         seconds = spike.get("seconds") or 0
         spell_name = spike.get("spell_name") or "Raid Damage Spike"
         

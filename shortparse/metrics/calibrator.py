@@ -40,6 +40,7 @@ def calculate_defensive_calibrator(
     # 3. Track Raid Damage Taken Per Second (DTPS)
     raid_dtps = [0] * duration_idx
     boss_spells_at_second = {}  # second -> {spell_name -> amount}
+    boss_spell_ids_at_second = {}  # second -> {spell_id -> amount}
 
     for event in events:
         if event.get("type") != "damage":
@@ -81,6 +82,11 @@ def calculate_defensive_calibrator(
             
             boss_spells_at_second[elapsed][spell_name] = boss_spells_at_second[elapsed].get(spell_name, 0) + total_hit
 
+            if elapsed not in boss_spell_ids_at_second:
+                boss_spell_ids_at_second[elapsed] = {}
+            if spell_id is not None:
+                boss_spell_ids_at_second[elapsed][spell_id] = boss_spell_ids_at_second[elapsed].get(spell_id, 0) + total_hit
+
     # 4. Track All Major Defensive Casts
     defensive_casts = []
     for event in events:
@@ -112,6 +118,10 @@ def calculate_defensive_calibrator(
         })
 
     # 5. Scan for Major Damage Spikes (Local Peaks)
+    from shortparse.data.encounters.registry import get_avoidable_damage
+    encounter_id = fight.get("encounterID") or fight.get("encounter_id")
+    avoidable_damage_registry = get_avoidable_damage(encounter_id) if encounter_id else {}
+
     spikes = []
     avg_dtps = sum(raid_dtps) / max(1.0, duration_s)
     
@@ -143,6 +153,24 @@ def calculate_defensive_calibrator(
                     if spells:
                         major_spell = max(spells, key=spells.get)
 
+                    # Find the boss spell ID that caused the most damage
+                    spike_spells_ids = {}
+                    for sec in (t - 1, t):
+                        if sec in boss_spell_ids_at_second:
+                            for s_id, val in boss_spell_ids_at_second[sec].items():
+                                spike_spells_ids[s_id] = spike_spells_ids.get(s_id, 0) + val
+                    
+                    major_spell_id = None
+                    if spike_spells_ids:
+                        major_spell_id = max(spike_spells_ids, key=spike_spells_ids.get)
+
+                    # Resolve whether this spell should show up on MRT
+                    is_mrt = True
+                    if avoidable_damage_registry and major_spell_id:
+                        mechanic = avoidable_damage_registry.get(major_spell_id)
+                        if mechanic:
+                            is_mrt = mechanic.get("mrt", True)
+
                     # Check if any raid defensive was active during this rolling 2-second window
                     active_cds = []
                     for cast in defensive_casts:
@@ -158,6 +186,7 @@ def calculate_defensive_calibrator(
                         "spell_name": major_spell,
                         "active_cooldowns": active_cds,
                         "covered": len(active_cds) > 0,
+                        "mrt": is_mrt,
                     })
                     last_spike_seconds = t
 

@@ -1365,6 +1365,7 @@ class Mechanic(TypedDict, total=False):
     note: str  # Clinical description of what the mechanic does
     recommendation: str  # Actionable advice on how to avoid it
     wcl_type: str  # Always "damage_taken"
+    mrt: bool  # True if this mechanic should be plotted/assigned in Cooldown Notes, False otherwise
 
 MechanicCategory Literals:
 "ground_effect", "swirl", "traveling_projectile", "beam", "frontal", "rear_cone",

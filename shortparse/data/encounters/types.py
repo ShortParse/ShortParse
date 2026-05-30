@@ -104,3 +104,4 @@ class Mechanic(TypedDict, total=False):
 
     spell_ids: list[int]
     minimum_soakers: int
+    mrt: bool
