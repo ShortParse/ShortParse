@@ -1017,11 +1017,21 @@ def admin_git_pull(request: Request, payload: GitPullRequest, db: Session = Depe
     if payload.repo == "backend":
         repo_path = base_dir
     elif payload.repo == "web":
-        repo_path = Path("/var/www/html")
-        if not repo_path.exists() or not (repo_path / ".git").exists():
+        possible_paths = [
+            Path("/var/www/ShortParse-Web"),
+            Path("/var/www/html"),
+            Path("/var/www/ShortParse-Web-Dev"),
+            Path("/var/www/shortparse-web"),
+        ]
+        repo_path = None
+        for p in possible_paths:
+            if p.exists() and (p / ".git").exists():
+                repo_path = p
+                break
+        if not repo_path:
             return {
                 "status": "skipped",
-                "message": "Website repository not found or not initialized as a git repository on this VM. This is expected in a multi-VM environment (like Dev) where the frontend is hosted on a separate virtual machine. This action is fully operational on single-system environments (like the Live server)."
+                "message": f"Website repository not found or not initialized as a git repository in any standard locations on this VM ({', '.join(str(p) for p in possible_paths)}). This is expected in a multi-VM environment (like Dev) where the frontend is hosted on a separate virtual machine. This action is fully operational on single-system environments (like the Live server)."
             }
     else:
         raise HTTPException(status_code=400, detail="Invalid repository identifier.")
