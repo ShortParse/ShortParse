@@ -13,8 +13,11 @@ from shortparse.data.encounters.mechanic_helper import (
 )
 
 
+from .zone_id import ZONE_ID
+
 ENCOUNTER_ID = 53159
 ENCOUNTER_NAME = "Rotmire"
+
 
 
 BURSTING_DOOM_SHROOM: Mechanic = {
@@ -30,6 +33,7 @@ BURSTING_DOOM_SHROOM: Mechanic = {
     "note": "Player took damage from Bursting Doom Shroom. Extremely high damage one-shot mechanic.",
     "recommendation": "Avoid standing in Bursting Doom Shroom impact circles.",
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 PUTRID_FIST: Mechanic = {
@@ -45,6 +49,7 @@ PUTRID_FIST: Mechanic = {
     "note": "Player took damage from Putrid Fist. Heavy avoidable physical slam.",
     "recommendation": "Step out of the frontal slam trajectory.",
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 POISON_BURST: Mechanic = {
@@ -60,6 +65,7 @@ POISON_BURST: Mechanic = {
     "note": "Player took damage from Poison Burst impact.",
     "recommendation": "Dodge the incoming poison swirl zones.",
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 AWAKEN_FUNGI: Mechanic = {
@@ -75,6 +81,7 @@ AWAKEN_FUNGI: Mechanic = {
     "note": "Player took damage from Awaken Fungi spawn impacts.",
     "recommendation": "Step away from growing mushrooms before they spawn.",
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 FUNGAL_BLOOM: Mechanic = {
@@ -90,6 +97,7 @@ FUNGAL_BLOOM: Mechanic = {
     "note": "Player took damage from Fungal Bloom explosion.",
     "recommendation": "Step out of the expanding bloom ring.",
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 BURSTING_SHROOM: Mechanic = {
@@ -105,6 +113,7 @@ BURSTING_SHROOM: Mechanic = {
     "note": "Player took damage from a Bursting Shroom explosion.",
     "recommendation": "Dodge the exploding shroom impact zones.",
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 FESTERING_VINES: Mechanic = {
@@ -120,6 +129,7 @@ FESTERING_VINES: Mechanic = {
     "note": "Player stood in Festering Vines ground patch.",
     "recommendation": "Dodge the growing festering vine patches on the ground.",
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 WRITHING_VINES: Mechanic = {
@@ -135,6 +145,7 @@ WRITHING_VINES: Mechanic = {
     "note": "Player stood in Writhing Vines ground patch.",
     "recommendation": "Avoid walking into the writhing vine regions.",
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 ROTTEN_BOLT: Mechanic = {
@@ -150,6 +161,7 @@ ROTTEN_BOLT: Mechanic = {
     "note": "Player hit by avoidable Rotten Bolt projectile.",
     "recommendation": "Dodge the flying Rotten Bolt projectiles.",
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 BURSTING_PUSTULES: Mechanic = {
@@ -165,6 +177,7 @@ BURSTING_PUSTULES: Mechanic = {
     "note": "Player hit by a bursting pustule impact zone.",
     "recommendation": "Avoid standing in the bursting pustule impact swirls.",
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 ROTTING_PUSTULES: Mechanic = {
@@ -180,6 +193,7 @@ ROTTING_PUSTULES: Mechanic = {
     "note": "Player stood in Rotting Pustules pool.",
     "recommendation": "Move out of the rotting green pools immediately.",
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 BLIGHTSHOT: Mechanic = {
@@ -195,6 +209,7 @@ BLIGHTSHOT: Mechanic = {
     "note": "Player took damage from Blightshot projectile.",
     "recommendation": "Dodge incoming Blightshot missiles.",
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 SPOREFALL: Mechanic = {
@@ -210,6 +225,7 @@ SPOREFALL: Mechanic = {
     "note": "Player took damage from falling spore impact.",
     "recommendation": "Step away from target locations of falling spores.",
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 

@@ -13,6 +13,8 @@ from shortparse.data.encounters.mechanic_helper import (
 )
 
 
+from .zone_id import ZONE_ID
+
 ENCOUNTER_ID = 3182
 ENCOUNTER_NAME = "Belo'ren, Child of Al'ar"
 
@@ -38,6 +40,7 @@ LIGHT_DIVE: Mechanic = {
         "Soak Light Dive with Light players and place puddles at room edges."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 VOID_DIVE: Mechanic = {
@@ -58,6 +61,7 @@ VOID_DIVE: Mechanic = {
         "Soak Void Dive with Void players and place puddles at room edges."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 LIGHT_ERUPTION: Mechanic = {
@@ -78,6 +82,7 @@ LIGHT_ERUPTION: Mechanic = {
         "Assigned Light players must interrupt immediately."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 VOID_ERUPTION: Mechanic = {
@@ -98,6 +103,7 @@ VOID_ERUPTION: Mechanic = {
         "Assigned Void players must interrupt immediately."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 LIGHT_QUILL: Mechanic = {
@@ -118,6 +124,7 @@ LIGHT_QUILL: Mechanic = {
         "Light players should intercept Light Quills safely."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 VOID_QUILL: Mechanic = {
@@ -138,6 +145,7 @@ VOID_QUILL: Mechanic = {
         "Void players should intercept Void Quills safely."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 VOIDLIGHT_RUPTURE: Mechanic = {
@@ -158,6 +166,7 @@ VOIDLIGHT_RUPTURE: Mechanic = {
         "Only soak echoes matching your assigned color."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 LIGHT_PATCH: Mechanic = {
@@ -178,6 +187,7 @@ LIGHT_PATCH: Mechanic = {
         "Avoid standing in Light Patch."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 VOID_PATCH: Mechanic = {
@@ -198,6 +208,7 @@ VOID_PATCH: Mechanic = {
         "Avoid standing in Void Patch."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 GUARDIANS_EDICT: Mechanic = {
@@ -218,6 +229,7 @@ GUARDIANS_EDICT: Mechanic = {
         "Tanks must correctly soak matching color frontal cones."
     ),
     "wcl_type": "damage_taken",
+    "mrt": False,
 }
 
 REBIRTH: Mechanic = {
@@ -238,6 +250,7 @@ REBIRTH: Mechanic = {
         "Kill eggs immediately after embers die."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 DEATH_DROP: Mechanic = {
@@ -258,6 +271,194 @@ DEATH_DROP: Mechanic = {
         "Move away from center before Death Drop lands."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+BURNING_HEART: Mechanic = {
+    "name": "Burning Heart",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 75,
+    "applies_to": ALL_ROLES,
+    "spell_ids": [1264650],
+    "note": "Player stood in Burning Heart ground effect or failed debuff mechanics.",
+    "recommendation": "Move out of the Burning Heart effect immediately.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+VOIDLIGHT_CONVERGENCE: Mechanic = {
+    "name": "Voidlight Convergence",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 70,
+    "applies_to": ALL_ROLES,
+    "spell_ids": [1241932],
+    "note": "Player hit by Voidlight Convergence beam or projectile.",
+    "recommendation": "Dodge the incoming Voidlight Convergence beams.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+LIGHT_FLAMES: Mechanic = {
+    "name": "Light Flames",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 2,
+    "score_per_hit": 75,
+    "applies_to": ALL_ROLES,
+    "spell_ids": [1242803],
+    "note": "Player stood in Light Flames ground patch.",
+    "recommendation": "Quickly step out of Light Flames pools.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+VOID_FLAMES: Mechanic = {
+    "name": "Void Flames",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 2,
+    "score_per_hit": 75,
+    "applies_to": ALL_ROLES,
+    "spell_ids": [1242815],
+    "note": "Player stood in Void Flames ground patch.",
+    "recommendation": "Quickly step out of Void Flames pools.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+LIGHT_ECHO: Mechanic = {
+    "name": "Light Echo",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 70,
+    "applies_to": ALL_ROLES,
+    "spell_ids": [1242991],
+    "note": "Player was hit by a Light Echo explosion.",
+    "recommendation": "Dodge the exploding Light Echo circles.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+VOID_ECHO: Mechanic = {
+    "name": "Void Echo",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 70,
+    "applies_to": ALL_ROLES,
+    "spell_ids": [1242996],
+    "note": "Player was hit by a Void Echo explosion.",
+    "recommendation": "Dodge the exploding Void Echo circles.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+LIGHT_EDICT: Mechanic = {
+    "name": "Light Edict",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "spell_ids": [1241646, 1265781],
+    "note": "Player failed to manage Light Edict circle or ran into another player's Edict.",
+    "recommendation": "Move away from other players when afflicted with Light Edict.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+VOID_EDICT: Mechanic = {
+    "name": "Void Edict",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "spell_ids": [1241676, 1265793],
+    "note": "Player failed to manage Void Edict circle or ran into another player's Edict.",
+    "recommendation": "Move away from other players when afflicted with Void Edict.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+ASHEN_BENEDICTION: Mechanic = {
+    "name": "Ashen Benediction",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 75,
+    "applies_to": ALL_ROLES,
+    "spell_ids": [1262573],
+    "note": "Player took avoidable damage from Ashen Benediction.",
+    "recommendation": "Dodge the Ashen Benediction projectiles and ground effects.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+LIGHT_BURN: Mechanic = {
+    "name": "Light Burn",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 2,
+    "score_per_hit": 70,
+    "applies_to": ALL_ROLES,
+    "spell_ids": [1244348],
+    "note": "Player suffered from Light Burn due to standing in avoidable Light hazards.",
+    "recommendation": "Avoid taking avoidable Light damage to prevent Light Burn.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+VOID_BURN: Mechanic = {
+    "name": "Void Burn",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 2,
+    "score_per_hit": 70,
+    "applies_to": ALL_ROLES,
+    "spell_ids": [1266404],
+    "note": "Player suffered from Void Burn due to standing in avoidable Void hazards.",
+    "recommendation": "Avoid taking avoidable Void damage to prevent Void Burn.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 
@@ -274,4 +475,15 @@ AVOIDABLE_DAMAGE = {
     **mechanic_aliases([1260826], GUARDIANS_EDICT),
     **mechanic_aliases([1263412], REBIRTH),
     **mechanic_aliases([1241333], DEATH_DROP),
+    **mechanic_aliases([1264650], BURNING_HEART),
+    **mechanic_aliases([1241932], VOIDLIGHT_CONVERGENCE),
+    **mechanic_aliases([1242803], LIGHT_FLAMES),
+    **mechanic_aliases([1242815], VOID_FLAMES),
+    **mechanic_aliases([1242991], LIGHT_ECHO),
+    **mechanic_aliases([1242996], VOID_ECHO),
+    **mechanic_aliases([1241646, 1265781], LIGHT_EDICT),
+    **mechanic_aliases([1241676, 1265793], VOID_EDICT),
+    **mechanic_aliases([1262573], ASHEN_BENEDICTION),
+    **mechanic_aliases([1244348], LIGHT_BURN),
+    **mechanic_aliases([1266404], VOID_BURN),
 }
