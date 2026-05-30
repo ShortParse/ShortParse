@@ -90,9 +90,52 @@ def is_cache_fresh(path: Path, ttl_hours: int) -> bool:
     return datetime.now(timezone.utc) < expires_at
 
 
+def is_cache_fresh_seconds(path: Path, ttl_seconds: int) -> bool:
+    if not path.exists():
+        return False
+
+    modified_time = datetime.fromtimestamp(
+        path.stat().st_mtime,
+        tz=timezone.utc,
+    )
+
+    expires_at = modified_time + timedelta(seconds=ttl_seconds)
+
+    return datetime.now(timezone.utc) < expires_at
+
+
 def get_cached_report_fights(report_code: str) -> dict | None:
     path = get_report_cache_dir(report_code) / "report_fights.json"
-    return load_json(path)
+    if not path.exists():
+        return None
+
+    data = load_json(path)
+    if not data:
+        return None
+
+    # If the report is completely empty (no fights yet), do not use cached result
+    fights = data.get("fights") or []
+    if not fights:
+        return None
+
+    # Recency check: if the last fight ended within 6 hours, it is a live/recent log.
+    # Otherwise, it's an archived log and we can cache it for 24 hours (86400 seconds).
+    is_recent = False
+    try:
+        max_end = max(f.get("endTime", 0) for f in fights)
+        if max_end > 0:
+            last_fight_time = datetime.fromtimestamp(max_end / 1000, tz=timezone.utc)
+            if datetime.now(timezone.utc) - last_fight_time < timedelta(hours=6):
+                is_recent = True
+    except Exception:
+        is_recent = True
+
+    ttl = 60 if is_recent else 86400
+
+    if not is_cache_fresh_seconds(path, ttl):
+        return None
+
+    return data
 
 
 def save_cached_report_fights(report_code: str, data: dict) -> None:

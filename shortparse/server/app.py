@@ -312,6 +312,51 @@ def get_job_summary(job_id: str) -> dict:
             detail="Job not found",
         )
 
+    # Real-Time Autopilot: Self-heal empty synced logs when boss content starts
+    if job.get("status") == "completed" and job.get("result_path"):
+        result_path = Path(job["result_path"])
+        if result_path.exists():
+            try:
+                with open(result_path, "r", encoding="utf-8") as file:
+                    result_data = json.load(file)
+                
+                # If there are no boss analyses, check if fights have been logged on Warcraft Logs
+                if not result_data.get("analyses"):
+                    report_code = job.get("report_code")
+                    if report_code:
+                        client = WarcraftLogsClient()
+                        report = client.get_report_fights(report_code)
+                        from shortparse.selector import select_best_boss_encounters
+                        selected = select_best_boss_encounters(report.get("fights", []))
+                        
+                        if selected:
+                            logger.info("Autopilot: New fights detected for empty report %s. Resetting job %s.", report_code, job_id)
+                            
+                            # Delete the empty result file
+                            try:
+                                result_path.unlink()
+                            except Exception:
+                                pass
+                                
+                            # Reset job in database to queued state
+                            from shortparse.jobs.models import utc_now_iso
+                            now = utc_now_iso()
+                            job["status"] = "queued"
+                            job["result_path"] = None
+                            job["progress"] = 0
+                            job["current_step"] = "Queued"
+                            job["logs"] = [{
+                                "time": now,
+                                "level": "info",
+                                "message": "New fights detected! Re-starting analysis job..."
+                            }]
+                            job = save_job(job)
+                            
+                            # Re-enqueue the job
+                            JOB_QUEUE.put((2, time.time(), job))
+            except Exception as e:
+                logger.error("Autopilot fight checking failed for job %s: %s", job_id, e)
+
     return {
         "job_id": job["job_id"],
         "status": job["status"],

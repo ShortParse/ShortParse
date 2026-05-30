@@ -226,9 +226,11 @@ def aggregate_pull_analyses(
 
         # Extract base identity
         base_pm = player_pulls[0]
-        p_class = base_pm.get("class", "Unknown")
-        p_spec = base_pm.get("spec", "Unknown")
-        p_role = base_pm.get("role", "Unknown")
+        p_class = base_pm.get("identity", {}).get("class") or base_pm.get("class") or "Unknown"
+        p_spec = base_pm.get("identity", {}).get("spec") or base_pm.get("spec") or "Unknown"
+        p_role = base_pm.get("identity", {}).get("role") or base_pm.get("role") or "Unknown"
+        p_actor_id = base_pm.get("identity", {}).get("actor_id") or base_pm.get("actor_id")
+        p_item_level = base_pm.get("identity", {}).get("item_level") or base_pm.get("item_level")
 
         # Sum or average fields
         dps_list = [p.get("performance", {}).get("dps", 0) for p in player_pulls]
@@ -256,6 +258,14 @@ def aggregate_pull_analyses(
         avg_switch_time = sum(switch_time_list) / len(switch_time_list) if switch_time_list else 0.0
 
         aggregated_player_metrics[player_name] = {
+            "identity": {
+                "name": player_name,
+                "actor_id": p_actor_id,
+                "class": p_class,
+                "spec": p_spec,
+                "role": p_role,
+                "item_level": p_item_level,
+            },
             "class": p_class,
             "spec": p_spec,
             "role": p_role,
