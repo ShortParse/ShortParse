@@ -13,6 +13,8 @@ from shortparse.data.encounters.mechanic_helper import (
 )
 
 
+from .zone_id import ZONE_ID
+
 ENCOUNTER_ID = 3179
 ENCOUNTER_NAME = "Fallen-King Salhadaar"
 
@@ -33,6 +35,7 @@ VOID_INFUSION: Mechanic = {
         "Focus fire one orb, and then the remaining orb."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 SHADOW_FRACTURE: Mechanic = {
@@ -52,6 +55,7 @@ SHADOW_FRACTURE: Mechanic = {
         "Stop the adds from casting with an interrupt."
     ),
     "wcl_type": "cast events",
+    "mrt": True,
 }
 
 UMBRAL_BEAMS: Mechanic = {
@@ -71,6 +75,7 @@ UMBRAL_BEAMS: Mechanic = {
         "Avoid touching the laser beams."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 DESPOTIC_COMMAND: Mechanic = {
@@ -90,6 +95,7 @@ DESPOTIC_COMMAND: Mechanic = {
         "Spread out and do not be in another players circle."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 TWILIGHT_SPIKES: Mechanic = {
@@ -109,6 +115,7 @@ TWILIGHT_SPIKES: Mechanic = {
         "Check positioning and avoid spikes."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 TORTURUS_EXTRACT: Mechanic = {
@@ -128,6 +135,7 @@ TORTURUS_EXTRACT: Mechanic = {
         "Review movement pathing and avoid the impact zones."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 DESTABILIZING_STRIKES: Mechanic = {
@@ -147,6 +155,7 @@ DESTABILIZING_STRIKES: Mechanic = {
         "Avoid taking threat from the boss."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 VOID_CRUSH: Mechanic = {
@@ -166,6 +175,7 @@ VOID_CRUSH: Mechanic = {
         "Avoid getting pulled into the orbs."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 QUINTESSENCE: Mechanic = {
@@ -185,6 +195,87 @@ QUINTESSENCE: Mechanic = {
         "Review movement pathing and avoid the impact zones."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+TWISTING_OBSCURITY: Mechanic = {
+    "name": "Twisting Obscurity",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Avoid standing in the Twisting Obscurity zones on the ground.",
+    "recommendation": "Step away from Twisting Obscurity pools.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+DARK_RADIATION: Mechanic = {
+    "name": "Dark Radiation",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Raid takes high damage when Dark Radiation bursts.",
+    "recommendation": "Move out of Dark Radiation impact areas.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+ENTROPIC_UNRAVELING: Mechanic = {
+    "name": "Entropic Unraveling",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Entropic Unraveling pools deal ticking damage.",
+    "recommendation": "Step out of Entropic Unraveling zones immediately.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+VOID_EXPOSURE: Mechanic = {
+    "name": "Void Exposure",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Players marked by Void Exposure take ticking void damage.",
+    "recommendation": "Step out of active Void Exposure zones.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+SHATTERING_TWILIGHT: Mechanic = {
+    "name": "Shattering Twilight",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Avoid standing in the Shattering Twilight blast zone.",
+    "recommendation": "Step away from Shattering Twilight circles.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 AVOIDABLE_DAMAGE = {
@@ -197,4 +288,9 @@ AVOIDABLE_DAMAGE = {
     **mechanic_aliases([1284963], DESTABILIZING_STRIKES),
     **mechanic_aliases([1239667], VOID_CRUSH),
     **mechanic_aliases([1246094], QUINTESSENCE),
+    **mechanic_aliases([1250686], TWISTING_OBSCURITY),
+    **mechanic_aliases([1285504], DARK_RADIATION),
+    **mechanic_aliases([1254018], ENTROPIC_UNRAVELING),
+    **mechanic_aliases([1250828], VOID_EXPOSURE),
+    **mechanic_aliases([1262989, 1250803], SHATTERING_TWILIGHT),
 }

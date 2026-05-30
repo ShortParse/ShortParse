@@ -12,6 +12,8 @@ from shortparse.data.encounters.mechanic_helper import (
     mechanic_aliases,
 )
 
+from .zone_id import ZONE_ID
+
 
 ENCOUNTER_ID = 3176
 ENCOUNTER_NAME = "Imperator Averzian"
@@ -35,6 +37,7 @@ VOID_RUPTURE: Mechanic = {
         "Move out of the impact swirl before detonation."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 
@@ -55,6 +58,7 @@ VOID_FALL: Mechanic = {
         "Move out of the impact swirl before detonation."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 
@@ -73,6 +77,7 @@ OBLIVIONS_WRATH: Mechanic = {
     ),
     "recommendation": "Review movement pathing and avoid missiles.",
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 
@@ -89,6 +94,7 @@ SHADOWS_ADVANCE: Mechanic = {
     "note": "A purple void zone spawns adds after exploding.",
     "recommendation": "Do not be in or near the void zones when they first appear.",
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 
@@ -105,6 +111,7 @@ SHADOW_PHALANX: Mechanic = {
     "note": "The boss orders his army to march down a lane. Avoid touching these adds.",
     "recommendation": "Review movement pathing and avoid adds.",
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 BLACK_MIASMA: Mechanic = {
@@ -120,6 +127,7 @@ BLACK_MIASMA: Mechanic = {
     "note": "Multiple players are afflicted with Black Miasma.",
     "recommendation": "Decurse these players.",
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 DARK_BARRAGE: Mechanic = {
@@ -139,6 +147,7 @@ DARK_BARRAGE: Mechanic = {
         "Move out of the impact swirl before detonation."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 GNASHING_VOID: Mechanic = {
@@ -158,6 +167,55 @@ GNASHING_VOID: Mechanic = {
         "Eliminate the adds faster."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+DARK_UPHEAVAL: Mechanic = {
+    "name": "Dark Upheaval",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Raid-wide shadow eruption from the void energy release.",
+    "recommendation": "Dodge the dark upheavals on the ground.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+UMBRAL_COLLAPSE: Mechanic = {
+    "name": "Umbral Collapse",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Umbral Collapse pools explode dealing severe avoidable damage.",
+    "recommendation": "Avoid standing in the Umbral Collapse zones.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+LINGERING_DARKNESS: Mechanic = {
+    "name": "Lingering Darkness",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "ground_effect",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Avoid standing in the lingering void pools on the platform.",
+    "recommendation": "Step out of lingering void pools immediately.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 AVOIDABLE_DAMAGE = {

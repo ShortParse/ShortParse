@@ -12,6 +12,8 @@ from shortparse.data.encounters.mechanic_helper import (
     mechanic_aliases,
 )
 
+from .zone_id import ZONE_ID
+
 
 ENCOUNTER_ID = 3181
 ENCOUNTER_NAME = "Crown of the Cosmos"
@@ -38,6 +40,7 @@ GRASP_OF_EMPTINESS: Mechanic = {
         "Aim the beams away from the raid and avoid standing in their path."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 BURSTING_EMPTINESS: Mechanic = {
@@ -58,6 +61,7 @@ BURSTING_EMPTINESS: Mechanic = {
         "Move out of the beam path before Bursting Emptiness detonates."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 VOID_EXPULSION: Mechanic = {
@@ -78,6 +82,7 @@ VOID_EXPULSION: Mechanic = {
         "Move out of the impact swirl before detonation and bait puddles safely."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 VOID_REMNANTS: Mechanic = {
@@ -98,6 +103,7 @@ VOID_REMNANTS: Mechanic = {
         "Do not stand in Void Remnants puddles."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 INTERRUPTING_TREMOR: Mechanic = {
@@ -118,6 +124,7 @@ INTERRUPTING_TREMOR: Mechanic = {
         "Move out of range before Interrupting Tremor finishes casting."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 RAVENOUS_ABYSS: Mechanic = {
@@ -138,6 +145,7 @@ RAVENOUS_ABYSS: Mechanic = {
         "Move away from the Sentinel before Ravenous Abyss finishes casting."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 SILVERSTRIKE_BARRAGE: Mechanic = {
@@ -158,6 +166,7 @@ SILVERSTRIKE_BARRAGE: Mechanic = {
         "Move into safe lanes between incoming arrows."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 ORBITING_MATTER: Mechanic = {
@@ -178,6 +187,7 @@ ORBITING_MATTER: Mechanic = {
         "Avoid colliding with Orbiting Matter or getting pulled into it."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 SINGULARITY_ERUPTION: Mechanic = {
@@ -198,6 +208,7 @@ SINGULARITY_ERUPTION: Mechanic = {
         "Move out of Singularity Eruption impact swirls."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 VOLATILE_FISSURE: Mechanic = {
@@ -218,6 +229,7 @@ VOLATILE_FISSURE: Mechanic = {
         "Avoid crossing platform fissures unless necessary."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 DEVOURING_COSMOS: Mechanic = {
@@ -238,6 +250,7 @@ DEVOURING_COSMOS: Mechanic = {
         "Collect a feather and move safely to the next platform."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 DARK_HAND: Mechanic = {
@@ -258,6 +271,7 @@ DARK_HAND: Mechanic = {
         "Use defensive cooldowns and prepare for knockback positioning."
     ),
     "wcl_type": "damage_taken",
+    "mrt": False,
 }
 
 RIFT_SLASH: Mechanic = {
@@ -278,6 +292,168 @@ RIFT_SLASH: Mechanic = {
         "Tank swap appropriately to manage Rift Slash stacks."
     ),
     "wcl_type": "damage_taken",
+    "mrt": False,
+}
+
+# Add unmapped mechanics
+ECHOING_DARKNESS: Mechanic = {
+    "name": "Echoing Darkness",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Echoing Darkness deals ticking shadow damage in active areas.",
+    "recommendation": "Step out of Echoing Darkness zones immediately.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+VOIDSTALKER_STING: Mechanic = {
+    "name": "Voidstalker Sting",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Avoid getting hit by Voidstalker Sting projectiles.",
+    "recommendation": "Dodge traveling Voidstalker Sting missiles.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+SIMULACRUM_BACKLASH: Mechanic = {
+    "name": "Simulacrum Backlash",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Devastating shadow damage when the Simulacrum shatters.",
+    "recommendation": "Move away from the Simulacrum before it shatters.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+COSMIC_BARRIER: Mechanic = {
+    "name": "Cosmic Barrier",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Cosmic Barrier deal ticking shadow damage to players inside.",
+    "recommendation": "Avoid standing inside active Cosmic Barrier fields.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+STELLAR_EMISSION: Mechanic = {
+    "name": "Stellar Emission",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Stellar Emission launches ticking shadow flares.",
+    "recommendation": "Avoid stellar flares on the ground.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+COSMIC_RADIATION: Mechanic = {
+    "name": "Cosmic Radiation",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Avoid getting hit by cosmic radiation swirls.",
+    "recommendation": "Step out of Cosmic Radiation impact zones.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+VOID_BARRAGE: Mechanic = {
+    "name": "Void Barrage",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Continuous shadow missiles fired at players.",
+    "recommendation": "Dodge incoming void barrage projectiles.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+SILVERSTRIKE_RICOCHET: Mechanic = {
+    "name": "Silverstrike Ricochet",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Silverstrike arrows ricochet between nearby targets.",
+    "recommendation": "Spread out to avoid ricochets.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+SILVERSTRIKE_ARROW: Mechanic = {
+    "name": "Silverstrike Arrow",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Fired arrow deal high piercing damage.",
+    "recommendation": "Step away from arrow paths.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+GRAVITY_COLLAPSE: Mechanic = {
+    "name": "Gravity Collapse",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Gravity collapse deals severe damage and knocks down players.",
+    "recommendation": "Step out of Gravity Collapse zones.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 AVOIDABLE_DAMAGE = {
@@ -294,4 +470,14 @@ AVOIDABLE_DAMAGE = {
     **mechanic_aliases([1238882], DEVOURING_COSMOS),
     **mechanic_aliases([1233787, 1233789], DARK_HAND),
     **mechanic_aliases([1246461], RIFT_SLASH),
+    **mechanic_aliases([1281707], ECHOING_DARKNESS),
+    **mechanic_aliases([1237040], VOIDSTALKER_STING),
+    **mechanic_aliases([1260019], SIMULACRUM_BACKLASH),
+    **mechanic_aliases([1261289], COSMIC_BARRIER),
+    **mechanic_aliases([1234570], STELLAR_EMISSION),
+    **mechanic_aliases([1260771], COSMIC_RADIATION),
+    **mechanic_aliases([1260000], VOID_BARRAGE),
+    **mechanic_aliases([1259869], SILVERSTRIKE_RICOCHET),
+    **mechanic_aliases([1233649], SILVERSTRIKE_ARROW),
+    **mechanic_aliases([1239095], GRAVITY_COLLAPSE),
 }

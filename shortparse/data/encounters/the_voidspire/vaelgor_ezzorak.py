@@ -13,6 +13,8 @@ from shortparse.data.encounters.mechanic_helper import (
 )
 
 
+from .zone_id import ZONE_ID
+
 ENCOUNTER_ID = 3178
 ENCOUNTER_NAME = "Vaelgor & Ezzorak"
 
@@ -33,6 +35,7 @@ TAIL_LASH: Mechanic = {
         "Review movement pathing and avoid standing behind Vaelgor."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 IMPALE: Mechanic = {
@@ -52,6 +55,7 @@ IMPALE: Mechanic = {
         "Review movement pathing and avoid standing behind Ezzorak."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 VAELWING: Mechanic = {
@@ -71,6 +75,7 @@ VAELWING: Mechanic = {
         "Avoid taking threat from the tank."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 RAKFANG: Mechanic = {
@@ -90,6 +95,136 @@ RAKFANG: Mechanic = {
         "Avoid taking threat from the tank."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+# Add unmapped mechanics
+MIDNIGHT_MANIFESTATION: Mechanic = {
+    "name": "Midnight Manifestation",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Avoid standing in the Midnight Manifestation impact zones.",
+    "recommendation": "Step away from Midnight Manifestation impact areas.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+NULLZONE_IMPLOSION: Mechanic = {
+    "name": "Nullzone Implosion",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Raid takes heavy damage when Nullzones implode.",
+    "recommendation": "Move out of Nullzone Implosion zones.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+VOID_HOWL: Mechanic = {
+    "name": "Void Howl",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Boss lets out a void howl dealing avoidable raid-wide damage.",
+    "recommendation": "Use defensive cooldowns or avoid the void howl.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+NULLSNAP: Mechanic = {
+    "name": "Nullsnap",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Avoid getting hit by Nullsnap snap tethers.",
+    "recommendation": "React quickly to snap tethers.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+VOIDBOLT: Mechanic = {
+    "name": "Voidbolt",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Avoid getting hit by Voidbolts fired by adds.",
+    "recommendation": "Dodge traveling Voidbolts.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+GLOOMTOUCHED: Mechanic = {
+    "name": "Gloomtouched",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Gloomtouched explosions deal severe avoidable damage.",
+    "recommendation": "Step out of Gloomtouched detonation circles.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+NULLZONE: Mechanic = {
+    "name": "Nullzone",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Nullzone pools deal ticking shadow damage.",
+    "recommendation": "Do not stand inside active Nullzones.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+SHADOWMARK: Mechanic = {
+    "name": "Shadowmark",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Players marked by Shadowmark take avoidable detonation damage.",
+    "recommendation": "Step out of the Shadowmark group.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 NULLSCATTER: Mechanic = {
@@ -109,6 +244,7 @@ NULLSCATTER: Mechanic = {
         "Move out of the impact swirl before detonation."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 MIDNIGHT_FLAMES: Mechanic = {
@@ -128,6 +264,7 @@ MIDNIGHT_FLAMES: Mechanic = {
         "Review movement pathing and stay in the safe-zone bubble."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 GLOOMFIELD: Mechanic = {
@@ -147,6 +284,7 @@ GLOOMFIELD: Mechanic = {
         "Review movement pathing and avoid the impact zones."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 GLOOM: Mechanic = {
@@ -170,6 +308,7 @@ GLOOM: Mechanic = {
         "because additional soakers take damage without reducing the zone further."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 DREAD_BREATH: Mechanic = {
@@ -191,6 +330,7 @@ DREAD_BREATH: Mechanic = {
         "players should move away from the targeted player and avoid the frontal."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 NULLBEAM: Mechanic = {
@@ -210,19 +350,26 @@ NULLBEAM: Mechanic = {
         "Non-tanks should avoid standing in the Nullbeam frontal."
     ),
     "wcl_type": "damage_taken",
+    "mrt": False,
 }
-
-
 
 AVOIDABLE_DAMAGE = {
     **mechanic_aliases([1264467], TAIL_LASH),
     **mechanic_aliases([1265152], IMPALE),
-    **mechanic_aliases([1265139], VAELWING),
+    **mechanic_aliases([1265139, 1280434, 1265143], VAELWING),
     **mechanic_aliases([1245652, 1245647], RAKFANG),
     **mechanic_aliases([1266570], NULLSCATTER),
-    **mechanic_aliases([1249748], MIDNIGHT_FLAMES),
+    **mechanic_aliases([1249748, 1250071], MIDNIGHT_FLAMES),
     **mechanic_aliases([1245421], GLOOMFIELD),
     **mechanic_aliases([1245500], GLOOM),
-    **mechanic_aliases([1244225], DREAD_BREATH),
-    **mechanic_aliases([1283856], NULLBEAM),
+    **mechanic_aliases([1244225, 1255979], DREAD_BREATH),
+    **mechanic_aliases([1283856, 1262688], NULLBEAM),
+    **mechanic_aliases([1259275], MIDNIGHT_MANIFESTATION),
+    **mechanic_aliases([1285954, 1252157], NULLZONE_IMPLOSION),
+    **mechanic_aliases([1245302], VOID_HOWL),
+    **mechanic_aliases([1244413], NULLSNAP),
+    **mechanic_aliases([1245175], VOIDBOLT),
+    **mechanic_aliases([1283712, 1283711], GLOOMTOUCHED),
+    **mechanic_aliases([1244672], NULLZONE),
+    **mechanic_aliases([1270513, 1270516], SHADOWMARK),
 }

@@ -13,6 +13,8 @@ from shortparse.data.encounters.mechanic_helper import (
 )
 
 
+from .zone_id import ZONE_ID
+
 ENCOUNTER_ID = 3180
 ENCOUNTER_NAME = "Lightblinded Vanguard"
 
@@ -38,6 +40,7 @@ AVENGERS_SHIELD: Mechanic = {
         "Spread out and avoid standing inside another player's Avenger's Shield circle."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 EXECUTION_SENTENCE: Mechanic = {
@@ -59,6 +62,7 @@ EXECUTION_SENTENCE: Mechanic = {
         "Help soak one Execution Sentence circle and avoid overlapping multiple circles."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 DIVINE_STORM: Mechanic = {
@@ -79,6 +83,7 @@ DIVINE_STORM: Mechanic = {
         "Move away from Lightblood during Divine Storm."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 DIVINE_HAMMER: Mechanic = {
@@ -99,6 +104,7 @@ DIVINE_HAMMER: Mechanic = {
         "Move between the rotating hammers and avoid their path."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 DIVINE_TOLL: Mechanic = {
@@ -119,6 +125,7 @@ DIVINE_TOLL: Mechanic = {
         "Dodge incoming Divine Toll shields."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 DIVINE_CONSECRATION: Mechanic = {
@@ -139,6 +146,7 @@ DIVINE_CONSECRATION: Mechanic = {
         "Move out of Divine Consecration immediately."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 TRAMPLED: Mechanic = {
@@ -159,6 +167,7 @@ TRAMPLED: Mechanic = {
         "Move out of the Elekk charge path."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 BLINDING_LIGHT: Mechanic = {
@@ -179,6 +188,7 @@ BLINDING_LIGHT: Mechanic = {
         "Interrupt or avoid facing Senn during Blinding Light."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 JUDGMENT: Mechanic = {
@@ -199,6 +209,7 @@ JUDGMENT: Mechanic = {
         "Tank swap immediately after Judgment."
     ),
     "wcl_type": "damage_taken",
+    "mrt": False,
 }
 
 FINAL_VERDICT: Mechanic = {
@@ -219,6 +230,7 @@ FINAL_VERDICT: Mechanic = {
         "Use defensives and ensure proper tank swaps."
     ),
     "wcl_type": "damage_taken",
+    "mrt": False,
 }
 
 SHIELD_OF_THE_RIGHTEOUS: Mechanic = {
@@ -239,6 +251,7 @@ SHIELD_OF_THE_RIGHTEOUS: Mechanic = {
         "Use defensives and ensure proper tank swaps."
     ),
     "wcl_type": "damage_taken",
+    "mrt": False,
 }
 
 EXORCISM: Mechanic = {
@@ -259,12 +272,61 @@ EXORCISM: Mechanic = {
         "Use defensives for Exorcism."
     ),
     "wcl_type": "damage_taken",
+    "mrt": False,
+}
+
+LIGHT_INFUSION: Mechanic = {
+    "name": "Light Infusion",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Avoid standing in the Light Infusion zone on the ground.",
+    "recommendation": "Step away from Light Infusion pools.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+SEARING_RADIANCE: Mechanic = {
+    "name": "Searing Radiance",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Searing Radiance deal ticking shadow damage in active zones.",
+    "recommendation": "Step out of Searing Radiance immediately.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+SACRED_TOLL: Mechanic = {
+    "name": "Sacred Toll",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Avoid getting hit by the Sacred Toll impact wave.",
+    "recommendation": "Step away from Sacred Toll detonation circle.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 AVOIDABLE_DAMAGE = {
     **mechanic_aliases([1246502], AVENGERS_SHIELD),
     **mechanic_aliases([1249024], EXECUTION_SENTENCE),
-    **mechanic_aliases([1246765], DIVINE_STORM),
+    **mechanic_aliases([1246765, 1272310], DIVINE_STORM),
     **mechanic_aliases([1249047], DIVINE_HAMMER),
     **mechanic_aliases([1248652], DIVINE_TOLL),
     **mechanic_aliases([1276982], DIVINE_CONSECRATION),
@@ -274,4 +336,7 @@ AVOIDABLE_DAMAGE = {
     **mechanic_aliases([1251812], FINAL_VERDICT),
     **mechanic_aliases([1251859], SHIELD_OF_THE_RIGHTEOUS),
     **mechanic_aliases([1246745], EXORCISM),
+    **mechanic_aliases([1258661], LIGHT_INFUSION),
+    **mechanic_aliases([1255739], SEARING_RADIANCE),
+    **mechanic_aliases([1246749], SACRED_TOLL),
 }

@@ -13,6 +13,8 @@ from shortparse.data.encounters.mechanic_helper import (
 )
 
 
+from .zone_id import ZONE_ID
+
 ENCOUNTER_ID = 3306
 ENCOUNTER_NAME = "Chimaerus the Undreamt God"
 
@@ -38,6 +40,7 @@ ALNDUST_UPHEAVAL: Mechanic = {
         "Soak with your assigned group and avoid soaking consecutive sets."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 DISSONANCE: Mechanic = {
@@ -58,6 +61,7 @@ DISSONANCE: Mechanic = {
         "Stay grouped with your realm team and separated from the opposite realm."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 RIFT_MADNESS: Mechanic = {
@@ -78,6 +82,7 @@ RIFT_MADNESS: Mechanic = {
         "Assigned players should quickly swap realms with afflicted targets."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 FEARSOME_CRY: Mechanic = {
@@ -98,6 +103,7 @@ FEARSOME_CRY: Mechanic = {
         "Interrupt Fearsome Cry immediately."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 ESSENCE_BOLT: Mechanic = {
@@ -118,6 +124,7 @@ ESSENCE_BOLT: Mechanic = {
         "Interrupt Essence Bolt when possible."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 CANNIBALIZED_ESSENCE: Mechanic = {
@@ -130,7 +137,7 @@ CANNIBALIZED_ESSENCE: Mechanic = {
     "max_reasonable_hits": 0,
     "score_per_hit": 100,
     "applies_to": ALL_ROLES,
-    "spell_ids": [1280655],
+    "spell_ids": [1280655, 1273112],
     "note": (
         "Chimaerus consumed remaining Manifestations."
     ),
@@ -138,6 +145,7 @@ CANNIBALIZED_ESSENCE: Mechanic = {
         "Kill or control all Manifestations before Consume or Ravenous Dive."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 CORRUPTED_DEVASTATION: Mechanic = {
@@ -158,6 +166,7 @@ CORRUPTED_DEVASTATION: Mechanic = {
         "Move out of the beam path immediately."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 RENDING_TEAR: Mechanic = {
@@ -178,6 +187,7 @@ RENDING_TEAR: Mechanic = {
         "Stay out of the frontal cone."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
 ALNDUST_ESSENCE: Mechanic = {
@@ -198,8 +208,105 @@ ALNDUST_ESSENCE: Mechanic = {
         "Move out of Alndust Essence puddles."
     ),
     "wcl_type": "damage_taken",
+    "mrt": True,
 }
 
+# Add unmapped mechanics
+CAUSTIC_PHLEGM: Mechanic = {
+    "name": "Caustic Phlegm",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Avoid standing in Caustic Phlegm impact zones.",
+    "recommendation": "Step out of Caustic Phlegm immediately.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+RIFT_EMERGENCE: Mechanic = {
+    "name": "Rift Emergence",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Avoid standing inside the Rift Emergence zone.",
+    "recommendation": "Step out of the Rift Emergence zone immediately.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+CONSUMING_MIASMA: Mechanic = {
+    "name": "Consuming Miasma",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Ticking shadow damage from Consuming Miasma.",
+    "recommendation": "Step out of Consuming Miasma zones.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+LINGERING_MIASMA: Mechanic = {
+    "name": "Lingering Miasma",
+    "severity": "Critical",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 80,
+    "applies_to": ALL_ROLES,
+    "note": "Avoid standing inside lingering miasmic void fields.",
+    "recommendation": "Step out of Lingering Miasma immediately.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+DISCORDANT_ROAR: Mechanic = {
+    "name": "Discordant Roar",
+    "severity": "Major",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 50,
+    "applies_to": ALL_ROLES,
+    "note": "Avoid taking avoidable shadow damage from the Discordant Roar.",
+    "recommendation": "Move out of range of Discordant Roar.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
+
+COLOSSAL_STRIKES: Mechanic = {
+    "name": "Colossal Strikes",
+    "severity": "Major",
+    "avoidable": True,
+    "category": "avoidable_damage",
+    "failure_type": "avoidable_damage",
+    "counts_as_failure": True,
+    "max_reasonable_hits": 1,
+    "score_per_hit": 50,
+    "applies_to": ALL_ROLES,
+    "note": "Raid takes avoidable slam damage from Colossal Strikes.",
+    "recommendation": "Move out of Colossal Strikes impact area.",
+    "wcl_type": "damage_taken",
+    "mrt": True,
+}
 
 AVOIDABLE_DAMAGE = {
     **mechanic_aliases([1262305, 1246827], ALNDUST_UPHEAVAL),
@@ -207,8 +314,14 @@ AVOIDABLE_DAMAGE = {
     **mechanic_aliases([1275637, 1264782], RIFT_MADNESS),
     **mechanic_aliases([1265940, 1249017], FEARSOME_CRY),
     **mechanic_aliases([1261997], ESSENCE_BOLT),
-    **mechanic_aliases([1280655], CANNIBALIZED_ESSENCE),
+    **mechanic_aliases([1280655, 1273112], CANNIBALIZED_ESSENCE),
     **mechanic_aliases([1245486], CORRUPTED_DEVASTATION),
     **mechanic_aliases([1272726], RENDING_TEAR),
     **mechanic_aliases([1245919], ALNDUST_ESSENCE),
+    **mechanic_aliases([1246653], CAUSTIC_PHLEGM),
+    **mechanic_aliases([1258610], RIFT_EMERGENCE),
+    **mechanic_aliases([1257087], CONSUMING_MIASMA),
+    **mechanic_aliases([1258192], LINGERING_MIASMA),
+    **mechanic_aliases([1249207], DISCORDANT_ROAR),
+    **mechanic_aliases([1262059, 1262053], COLOSSAL_STRIKES),
 }
