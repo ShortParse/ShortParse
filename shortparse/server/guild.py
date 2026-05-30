@@ -405,7 +405,13 @@ def aggregate_guild_history(jobs: list[Job], exclude_list: list[str] | None = No
     
     if reports_data:
         latest_report = reports_data[0] # Fights are ordered by created_at desc
-        latest_roster = latest_report.get("roster", [])
+        latest_roster = latest_report.get("roster")
+        if not latest_roster:
+            analyses = latest_report.get("analyses", [])
+            if analyses:
+                latest_roster = analyses[0].get("roster", [])
+            else:
+                latest_roster = []
         
         # Check roster specs for synergy buffs
         has_warrior = any(p.get("class") == "Warrior" for p in latest_roster)
