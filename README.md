@@ -15,6 +15,13 @@ By simply pasting a Warcraft Logs report URL, ShortParse dissects combat events,
 * **Cooldown Efficiency & Timeline Tracker**: Visualizes how effectively players used major cooldowns and when avoidable damage hits occurred.
 * **Benchmark Comparisons**: Compares player values (DPS/HPS) against the top 1%, 5%, and 10% of matching character rankings worldwide.
 * **Discord Integration**: One-click sharing of high-fidelity embeds of raid summaries directly to your guild's Discord channels.
+* **Dynamic Public Announcement Banner**: Global homepage notification banners displaying dynamically configured announcements with layout style and lifecycle controls managed by administrators.
+
+### For Administrators (The AI Autopilot Control Console)
+* **WCL Zone-Based AI Encounter Compiler**: Type a WCL Zone ID (e.g. `46`) and click **Update Encounters**. The backend automatically queries zone metadata, scrapes top parses, extracts `DamageTaken` events to aggregate spell telemetry, resolves spell names/tooltips/icons through the Battle.net REST API, and guides the **Gemini AI model** with strict format rules to output complete, production-ready boss modules (`boss.py`) and dynamically updates `__init__.py` files in `shortparse/data/encounters/`.
+* **Dynamic Player Cooldowns Auditor**: Click **Update Cooldowns** to programmatically trigger our `SpellAudit` discovery engine, scanning elite rankings to isolate unmapped class cast events, estimate exact timings via cast gaps telemetry, and auto-draft class/spec modules saved under `data/cooldowns/<class>/<spec>_discovered.py`.
+* **Dynamic Encounters Module Discovery**: Traverses raid directories automatically on lookup and registers encounters at server runtime. Eliminates hardcoded module maps and allows AI-generated zones to register instantly.
+* **System Health & Queue Dashboard**: Real-time admin views of registered users, Patreon members adoption statistics, Redis query cache connected benchmarks, SQLite file footprint in MB, and active job queue process state indicators.
 
 ### For Developers & Contributors
 * **Visual Encounter Config Builder**: Discreetly hosted at `/builder` (e.g. `https://www.shortparse.com/builder`), this tool lets contributors visually map out raid boss mechanics and Warcraft Logs spell IDs. Includes:
