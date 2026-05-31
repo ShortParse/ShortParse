@@ -142,19 +142,20 @@ def startup_check() -> None:
         else:
             logger.info("Redis cache backend not running. Falling back to disk cache.")
 
-    # Dynamic SQLite migration to ensure users table has gemini_api_key and excluded_ledger_players columns
+    # Dynamic schema checks using cross-database inspection
     from shortparse.database import engine
-    from sqlalchemy import text
+    from sqlalchemy import inspect, text
     try:
-        with engine.begin() as conn:
-            result = conn.execute(text("PRAGMA table_info(users)")).fetchall()
-            columns = [row[1] for row in result]
-            if "gemini_api_key" not in columns:
-                conn.execute(text("ALTER TABLE users ADD COLUMN gemini_api_key VARCHAR"))
-                logger.info("Migrated users table to include gemini_api_key column.")
-            if "excluded_ledger_players" not in columns:
-                conn.execute(text("ALTER TABLE users ADD COLUMN excluded_ledger_players TEXT"))
-                logger.info("Migrated users table to include excluded_ledger_players column.")
+        inspector = inspect(engine)
+        if inspector.has_table("users"):
+            columns = [col["name"] for col in inspector.get_columns("users")]
+            with engine.begin() as conn:
+                if "gemini_api_key" not in columns:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN gemini_api_key VARCHAR"))
+                    logger.info("Migrated users table to include gemini_api_key column.")
+                if "excluded_ledger_players" not in columns:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN excluded_ledger_players TEXT"))
+                    logger.info("Migrated users table to include excluded_ledger_players column.")
     except Exception as e:
         logger.warning("Auto-migration of users table failed: %s", e)
 
