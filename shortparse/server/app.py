@@ -121,6 +121,10 @@ class JobRequest(BaseModel):
 
 @app.on_event("startup")
 def startup_check() -> None:
+    # Initialize the database first, handling transient startup lag and self-healing schema checks
+    from shortparse.jobs.store import init_db
+    init_db()
+
     if has_warcraftlogs_credentials():
         logger.info("Warcraft Logs credentials detected")
     else:

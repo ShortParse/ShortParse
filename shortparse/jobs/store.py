@@ -3,18 +3,49 @@ from sqlalchemy import inspect, text
 from shortparse.database import SessionLocal, engine
 from shortparse.db_models import Base, Job
 
-# Automatically create all SQLite tables on first store initialization
-Base.metadata.create_all(bind=engine)
+import logging
 
-# Database self-healing: automatically add discord_webhook_url or discord_auto_post if missing
-inspector = inspect(engine)
-columns = [col['name'] for col in inspector.get_columns('users')]
-if 'discord_webhook_url' not in columns:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE users ADD COLUMN discord_webhook_url VARCHAR"))
-if 'discord_auto_post' not in columns:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE users ADD COLUMN discord_auto_post BOOLEAN DEFAULT 0"))
+# Set up logger
+logger = logging.getLogger("shortparse.jobs.store")
+
+def init_db() -> None:
+    """Initialize the database schema, apply table self-healing, and retry on transient connection failures."""
+    import time
+    from sqlalchemy.exc import OperationalError
+
+    max_retries = 10
+    retry_delay = 2
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            # Automatically create all tables defined on Base if missing
+            Base.metadata.create_all(bind=engine)
+
+            # Database self-healing: automatically add discord_webhook_url or discord_auto_post if missing
+            inspector = inspect(engine)
+            if inspector.has_table("users"):
+                columns = [col['name'] for col in inspector.get_columns('users')]
+                if 'discord_webhook_url' not in columns:
+                    with engine.begin() as conn:
+                        conn.execute(text("ALTER TABLE users ADD COLUMN discord_webhook_url VARCHAR"))
+                    logger.info("Migrated users table to include discord_webhook_url column.")
+                if 'discord_auto_post' not in columns:
+                    with engine.begin() as conn:
+                        conn.execute(text("ALTER TABLE users ADD COLUMN discord_auto_post BOOLEAN DEFAULT 0"))
+                    logger.info("Migrated users table to include discord_auto_post column.")
+            
+            logger.info("Database successfully connected and initialized.")
+            return
+        except (OperationalError, Exception) as e:
+            if attempt == max_retries:
+                logger.error("Failed to connect to database after %d attempts: %s", max_retries, e)
+                raise
+            logger.warning(
+                "Database connection attempt %d/%d failed: %s. Retrying in %d seconds...",
+                attempt, max_retries, e, retry_delay
+            )
+            time.sleep(retry_delay)
+
 
 
 def db_job_to_dict(db_job: Job | None) -> dict | None:
