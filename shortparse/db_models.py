@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, JSON
 from sqlalchemy.orm import relationship
 from shortparse.database import Base
+from shortparse.security.db_types import EncryptedString
 
 def generate_uuid() -> str:
     return str(uuid.uuid4())
@@ -15,9 +16,9 @@ class User(Base):
     email = Column(String, nullable=True)
     is_premium = Column(Boolean, default=False)
     premium_tier = Column(String, nullable=True)
-    discord_webhook_url = Column(String, nullable=True)
+    discord_webhook_url = Column(EncryptedString, nullable=True)
     discord_auto_post = Column(Boolean, default=False)
-    gemini_api_key = Column(String, nullable=True)
+    gemini_api_key = Column(EncryptedString, nullable=True)
     excluded_ledger_players = Column(JSON, default=list, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -34,8 +35,8 @@ class LinkedAccount(Base):
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     provider = Column(String, nullable=False)  # "warcraftlogs", "patreon", etc.
     provider_user_id = Column(String, nullable=False)
-    access_token = Column(String, nullable=False)
-    refresh_token = Column(String, nullable=True)
+    access_token = Column(EncryptedString, nullable=False)
+    refresh_token = Column(EncryptedString, nullable=True)
     expires_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

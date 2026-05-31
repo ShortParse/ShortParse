@@ -5,9 +5,10 @@ fastapi
 uvicorn
 pydantic
 orjson
-python-dotenv
 redis
 sqlalchemy
 alembic
 httpx
 itsdangerous
+cryptography
+psycopg2-binary

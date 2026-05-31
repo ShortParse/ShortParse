@@ -125,6 +125,9 @@ def has_warcraftlogs_credentials() -> bool:
         and WCL_CLIENT_SECRET
     )
 
+DATABASE_URL = os.getenv("DATABASE_URL", "")
+DB_ENCRYPTION_KEY = os.getenv("DB_ENCRYPTION_KEY", "")
+
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 BYPASS_PREMIUM_USERNAMES = [
