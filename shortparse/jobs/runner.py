@@ -211,7 +211,8 @@ def run_analysis_job(
                         current_step=f"Analyzing {boss_name}",
                     )
 
-                    fight_data, events = fight_resources[fight["id"]]
+                    # Pop the resources so that Python's garbage collector can reclaim memory immediately after this fight is processed
+                    fight_data, events = fight_resources.pop(fight["id"])
 
                     append_job_log(
                         job_id,
