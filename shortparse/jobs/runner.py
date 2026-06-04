@@ -156,7 +156,8 @@ def run_analysis_job(
 
         fight_resources = {}
         if all_fights_flat:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(all_fights_flat), 10)) as executor:
+            # Limit concurrent WCL API calls to 3 to prevent rate limit (HTTP 429) errors
+            with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(all_fights_flat), 3)) as executor:
                 futures = [executor.submit(fetch_fight_resources, f) for f in all_fights_flat]
                 for future in concurrent.futures.as_completed(futures):
                     fid, f_data, evts = future.result()
