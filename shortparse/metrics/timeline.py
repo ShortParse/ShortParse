@@ -139,19 +139,7 @@ def build_timeline(
 
         source_id = event.get("sourceID")
         target_id = event.get("targetID")
-
-        source_name = get_actor_name(
-            source_id,
-            actor_lookup,
-        )
-
-        target_name = get_actor_name(
-            target_id,
-            actor_lookup,
-        )
-
         spell_id = event.get("abilityGameID")
-        spell_name = get_ability_name(event)
 
         #
         # Tracked cooldown casts
@@ -166,6 +154,8 @@ def build_timeline(
 
             if cooldown:
                 cooldown_name = cooldown["name"]
+                source_name = get_actor_name(source_id, actor_lookup)
+                target_name = get_actor_name(target_id, actor_lookup)
 
                 timeline.append(
                     {
@@ -203,10 +193,14 @@ def build_timeline(
             ):
                 continue
                 
+            source_name = get_actor_name(source_id, actor_lookup)
+            target_name = get_actor_name(target_id, actor_lookup)
             dead_player = target_name or source_name
 
             if not dead_player:
                 continue
+
+            spell_name = get_ability_name(event)
 
             timeline.append(
                 {
@@ -240,6 +234,8 @@ def build_timeline(
                 continue
 
             mechanic_name = mechanic["name"]
+            source_name = get_actor_name(source_id, actor_lookup)
+            target_name = get_actor_name(target_id, actor_lookup)
 
             amount = int(event.get("amount") or 0)
 

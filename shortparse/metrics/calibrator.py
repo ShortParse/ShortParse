@@ -76,6 +76,10 @@ def calculate_defensive_calibrator(
                     spell_name = ability
                 else:
                     spell_name = event.get("abilityName") or event.get("name") or "Unknown Boss Attack"
+                
+                # Cache resolved name to bypass fallback lookups on subsequent hits
+                if spell_id is not None:
+                    ability_lookup[spell_id] = spell_name
 
             if elapsed not in boss_spells_at_second:
                 boss_spells_at_second[elapsed] = {}
@@ -214,7 +218,7 @@ def calculate_defensive_calibrator(
                 existing_names = {c["spell_name"] + c["player"] for c in active_cds_at_overlap}
                 for c in healer_cds_active:
                     if (c["spell_name"] + c["player"]) not in existing_names:
-                        active_cds_at_overlap.append(cast)
+                        active_cds_at_overlap.append(c)
         else:
             if overlap_sec_start is not None:
                 duration = t - overlap_sec_start

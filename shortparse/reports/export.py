@@ -1,4 +1,4 @@
-import json
+import orjson
 from pathlib import Path
 
 from shortparse.reports.serializers import serialize_analysis
@@ -22,12 +22,13 @@ def save_analysis_json(
 
     serialized = serialize_analysis(analysis)
 
-    with open(path, "w", encoding="utf-8") as file:
-        json.dump(
-            serialized,
-            file,
-            indent=2,
-            ensure_ascii=False,
-        )
+    # Use high-performance orjson with 2 spaces indent and support for non-string dictionary keys
+    data = orjson.dumps(
+        serialized,
+        option=orjson.OPT_INDENT_2 | orjson.OPT_NON_STR_KEYS,
+    )
+
+    with open(path, "wb") as file:
+        file.write(data)
 
     return path
