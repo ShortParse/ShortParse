@@ -13,6 +13,7 @@ RAID_BOSSES = {
     "The Dreamrift": {
         "Chimaerus",
         "Chimaerus the Undreamt God",
+        "Chimaerus, the Undreamt God",
     },
     "March on Quel'Danas": {
         "Belo'ren, Child of Al'ar",
