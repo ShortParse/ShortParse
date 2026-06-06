@@ -29,6 +29,7 @@ COPY --from=builder /usr/local /usr/local
 # Copy application source directories
 COPY shortparse /app/shortparse
 COPY main.py /app/main.py
+COPY purge_reports.py /app/purge_reports.py
 
 # Create non-root system user and group
 RUN groupadd -r appgroup && useradd -r -g appgroup -u 10001 appuser
