@@ -1027,6 +1027,7 @@ def admin_git_pull(request: Request, payload: GitPullRequest, db: Session = Depe
             Path("/var/www/html"),
             Path("/var/www/ShortParse-Web-Dev"),
             Path("/var/www/shortparse-web"),
+            Path("/srv/shortparse/web_files"),
         ]
         repo_path = None
         for p in possible_paths:

@@ -356,8 +356,6 @@ def aggregate_guild_history(jobs: list[Job], exclude_list: list[str] | None = No
         avg_switch_time = sum(p_data["priority_switch_times"]) / len(p_data["priority_switch_times"]) if p_data["priority_switch_times"] else 1.5
         avg_switch_dmg = sum(p_data["priority_switch_dmg"]) / len(p_data["priority_switch_dmg"]) if p_data["priority_switch_dmg"] else 0
 
-        # Gold Repair Debt: 100g per 1M avoidable damage
-        gold_debt = int(sum(p_data["avoidable_damage"]) / 10000)
 
         # Calculate URS (Uptime Reliability Score) - % of fights they survived past 80% mark
         urs = 100
@@ -391,7 +389,6 @@ def aggregate_guild_history(jobs: list[Job], exclude_list: list[str] | None = No
             "panic_healthstone_pct": panic_pct,
             "avg_priority_switch_time_sec": round(avg_switch_time, 2),
             "avg_priority_switch_dmg": int(avg_switch_dmg),
-            "gold_debt": gold_debt,
             "urs": urs,
             "spi": spi,
             "specs_played": specs_played,
