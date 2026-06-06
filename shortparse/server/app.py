@@ -1107,6 +1107,78 @@ def admin_restart_api(request: Request, db: Session = Depends(get_db)):
     }
 
 
+@app.post("/admin/actions/purge-reports")
+def admin_purge_reports(request: Request, db: Session = Depends(get_db)):
+    username = request.session.get("username")
+    if not username:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    from shortparse.settings import ADMIN_USERNAMES
+    if username.strip().lower() not in ADMIN_USERNAMES:
+        raise HTTPException(status_code=403, detail="Forbidden: Admin access required.")
+        
+    import shutil
+    from shortparse.settings import REPORTS_DIR
+    from shortparse.cache import REPORT_CACHE_ROOT
+    
+    # 1. Delete all jobs from database
+    deleted_jobs_count = 0
+    try:
+        from shortparse.db_models import Job
+        deleted_jobs_count = db.query(Job).delete()
+        db.commit()
+        logger.info(f"Deleted {deleted_jobs_count} job records from the database.")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to delete jobs from database: {e}")
+        raise HTTPException(status_code=500, detail=f"Database purge failed: {e}")
+        
+    # 2. Delete reports files from disk
+    reports_deleted_count = 0
+    if REPORTS_DIR.exists():
+        for item in REPORTS_DIR.iterdir():
+            try:
+                if item.is_dir():
+                    shutil.rmtree(item)
+                else:
+                    item.unlink()
+                reports_deleted_count += 1
+            except Exception as e:
+                logger.error(f"Failed to delete report item {item}: {e}")
+                
+    # 3. Delete cached report fights/events/players from cache/reports
+    cache_deleted_count = 0
+    if REPORT_CACHE_ROOT.exists():
+        for item in REPORT_CACHE_ROOT.iterdir():
+            try:
+                if item.is_dir():
+                    shutil.rmtree(item)
+                else:
+                    item.unlink()
+                cache_deleted_count += 1
+            except Exception as e:
+                logger.error(f"Failed to delete cache item {item}: {e}")
+
+    # Also clear redis cache keys if redis is active
+    from shortparse.cache import HAS_REDIS, redis_client
+    redis_keys_deleted = 0
+    if HAS_REDIS and redis_client:
+        try:
+            keys = redis_client.keys("shortparse:*")
+            if keys:
+                redis_client.delete(*keys)
+                redis_keys_deleted = len(keys)
+                logger.info(f"Cleared {redis_keys_deleted} keys from Redis cache.")
+        except Exception as e:
+            logger.error(f"Failed to clear Redis keys: {e}")
+            
+    return {
+        "status": "success",
+        "message": f"Successfully purged all reports and cache. Deleted {deleted_jobs_count} database jobs, {reports_deleted_count} report folders, {cache_deleted_count} cache directories, and cleared {redis_keys_deleted} Redis keys."
+    }
+
+
+
 class UpdateEncountersRequest(BaseModel):
     zone_id: int
 
