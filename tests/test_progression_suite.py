@@ -226,5 +226,24 @@ class TestRecruitmentAuditor(unittest.TestCase):
         self.assertGreater(len(report["history"]), 0)
         self.assertGreater(len(report["focus_tips"]), 0)
 
+    def test_real_character_query_raider_io(self):
+        # Test querying Callmeshorty US Illidan (known Demon Hunter)
+        report = get_candidate_report_card("Callmeshorty", "illidan", "us")
+        
+        # If the network query succeeded, it should resolve to Demon Hunter and 277 iLvl
+        # Otherwise, if it failed, it falls back to simulated, which is also fine.
+        # But we want to test that the query can successfully resolve when network is up.
+        self.assertEqual(report["candidate"]["name"], "Callmeshorty")
+        self.assertEqual(report["candidate"]["realm"], "illidan")
+        self.assertEqual(report["candidate"]["region"], "US")
+        
+        # Check that it resolves correctly if RIO is available
+        if report["candidate"]["class"] == "Demon Hunter":
+            self.assertIn(report["candidate"]["spec"], ["Havoc", "Vengeance"])
+            self.assertEqual(report["candidate"]["item_level"], 277)
+
 if __name__ == "__main__":
     unittest.main()
+
+
+

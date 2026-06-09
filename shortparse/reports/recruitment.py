@@ -13,12 +13,17 @@ def get_candidate_report_card(character_name: str, realm: str, region: str) -> d
     import random
     random.seed(hash(character_name.lower()) + 42)
     
-    classes = ["Mage", "Warlock", "Paladin", "Priest", "Rogue", "Warrior", "Hunter", "Shaman", "Druid", "Death Knight"]
+    classes = [
+        "Mage", "Warlock", "Paladin", "Priest", "Rogue", 
+        "Warrior", "Hunter", "Shaman", "Druid", "Death Knight",
+        "Demon Hunter", "Monk", "Evoker"
+    ]
     specs = {
         "Mage": "Frost", "Warlock": "Destruction", "Paladin": "Retribution",
         "Priest": "Shadow", "Rogue": "Assassination", "Warrior": "Arms",
         "Hunter": "Beast Mastery", "Shaman": "Enhancement", "Druid": "Balance",
-        "Death Knight": "Frost"
+        "Death Knight": "Frost", "Demon Hunter": "Havoc", "Monk": "Windwalker",
+        "Evoker": "Devastation"
     }
     
     chosen_class = random.choice(classes)
@@ -27,9 +32,18 @@ def get_candidate_report_card(character_name: str, realm: str, region: str) -> d
     
     # Attempt to query public Raider.io API for real character metadata
     import requests
-    url = f"https://raider.io/api/v1/characters/profile?region={region}&realm={realm}&name={character_name}&fields=gear"
+    import logging
+    logger = logging.getLogger("shortparse.recruitment")
+    
+    # Normalize realm name to slug format (e.g., "Area 52" -> "area-52", "Zul'jin" -> "zuljin")
+    realm_slug = realm.strip().lower().replace(" ", "-").replace("'", "").replace("`", "")
+    url = f"https://raider.io/api/v1/characters/profile?region={region.lower()}&realm={realm_slug}&name={character_name.strip()}&fields=gear"
+    
     try:
-        response = requests.get(url, timeout=5)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        response = requests.get(url, headers=headers, timeout=5)
         if response.status_code == 200:
             data = response.json()
             chosen_class = data.get("class", chosen_class)
@@ -37,8 +51,10 @@ def get_candidate_report_card(character_name: str, realm: str, region: str) -> d
             gear = data.get("gear", {})
             if "item_level_equipped" in gear:
                 item_level = int(gear["item_level_equipped"])
-    except Exception:
-        pass
+        else:
+            logger.warning(f"Raider.io API query returned {response.status_code} for {character_name.strip()} on {realm_slug} ({region.lower()})")
+    except Exception as e:
+        logger.error(f"Raider.io API query exception for {character_name.strip()} on {realm_slug} ({region.lower()}): {e}")
 
     
     # Generate random logs history (last 10 boss pulls)
