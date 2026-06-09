@@ -119,6 +119,17 @@ class JobRequest(BaseModel):
     report_url: str
 
 
+class BenchBuilderRequest(BaseModel):
+    encounter_id: int
+    player_names: list[str]
+
+
+class RecruitmentAuditRequest(BaseModel):
+    character_name: str
+    realm: str
+    region: str
+
+
 @app.on_event("startup")
 def startup_check() -> None:
     # Initialize the database first, handling transient startup lag and self-healing schema checks
@@ -689,6 +700,106 @@ import sys
 import importlib
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+
+@app.get("/api/guild/slump-tracker")
+def slump_tracker(request: Request, db: Session = Depends(get_db)):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    from shortparse.settings import BYPASS_PREMIUM_USERNAMES
+    is_bypass = user.username.strip().lower() in BYPASS_PREMIUM_USERNAMES if user.username else False
+    if not user.is_premium and not is_bypass:
+        raise HTTPException(
+            status_code=403,
+            detail="The Skill Decay & Slump Tracker is a Premium feature. Support us on Patreon to unlock!",
+        )
+        
+    from shortparse.reports.tracker import get_slump_tracker_analytics
+    return get_slump_tracker_analytics()
+
+@app.post("/api/guild/bench-builder")
+def bench_builder(
+    request: Request,
+    payload: BenchBuilderRequest,
+    db: Session = Depends(get_db)
+):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    from shortparse.settings import BYPASS_PREMIUM_USERNAMES
+    is_bypass = user.username.strip().lower() in BYPASS_PREMIUM_USERNAMES if user.username else False
+    if not user.is_premium and not is_bypass:
+        raise HTTPException(
+            status_code=403,
+            detail="The AI Roster Bench Builder is a Premium feature. Support us on Patreon to unlock!",
+        )
+        
+    from shortparse.reports.bench_builder import build_roster_composition
+    return build_roster_composition(payload.encounter_id, payload.player_names)
+
+@app.post("/api/recruitment/audit")
+def recruitment_audit(
+    request: Request,
+    payload: RecruitmentAuditRequest,
+    db: Session = Depends(get_db)
+):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    from shortparse.settings import BYPASS_PREMIUM_USERNAMES
+    is_bypass = user.username.strip().lower() in BYPASS_PREMIUM_USERNAMES if user.username else False
+    if not user.is_premium and not is_bypass:
+        raise HTTPException(
+            status_code=403,
+            detail="The Recruitment Candidate Auditor is a Premium feature. Support us on Patreon to unlock!",
+        )
+        
+    from shortparse.reports.recruitment import run_recruitment_audit
+    job_id = run_recruitment_audit(payload.character_name, payload.realm, payload.region)
+    return {"status": "success", "job_id": job_id}
+
+@app.get("/api/recruitment/audit/{audit_id}")
+def get_recruitment_audit(
+    audit_id: str,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+        
+    from shortparse.settings import BYPASS_PREMIUM_USERNAMES
+    is_bypass = user.username.strip().lower() in BYPASS_PREMIUM_USERNAMES if user.username else False
+    if not user.is_premium and not is_bypass:
+        raise HTTPException(
+            status_code=403,
+            detail="The Recruitment Candidate Auditor is a Premium feature. Support us on Patreon to unlock!",
+        )
+        
+    from shortparse.reports.recruitment import get_recruitment_job
+    job = get_recruitment_job(audit_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Audit job not found")
+    return job
 
 @app.get("/encounters")
 @app.get("/api/encounters")

@@ -10,6 +10,7 @@ from shortparse.reports.scorecard import build_scorecard
 
 from shortparse.reports.coach.summary import build_raid_coach_summary
 from shortparse.metrics.calibrator import calculate_defensive_calibrator
+from shortparse.metrics.prep import calculate_prep_audit
 
 def build_fight_analysis(
     report_code: str,
@@ -110,7 +111,17 @@ def build_fight_analysis(
         fight_data=fight_data,
     )
 
+    progress("auditing consumable & gear preparation...")
+
+    prep_audit = calculate_prep_audit(
+        roster=roster,
+        events=events,
+        fight_start_time=fight["startTime"],
+        player_details=fight_data.get("playerDetails", {}),
+    )
+
     progress("fight analysis complete.")
+
 
     return {
         "report": {
@@ -139,6 +150,7 @@ def build_fight_analysis(
         "scorecard": scorecard,
         "raid_coach": raid_coach,
         "defensive_calibrator": defensive_calibrator,
+        "prep_audit": prep_audit,
     }
 
 
@@ -403,6 +415,46 @@ def aggregate_pull_analyses(
     raid_coach = best_analysis.get("raid_coach", {})
     defensive_calibrator = best_analysis.get("defensive_calibrator", {})
 
+    # Merge prep audits
+    prep_audit_by_player = {}
+    for a in pull_analyses:
+        for p in a.get("prep_audit", []):
+            p_name = p.get("player_name")
+            if not p_name:
+                continue
+            if p_name not in prep_audit_by_player:
+                prep_audit_by_player[p_name] = {
+                    "player_name": p_name,
+                    "has_flask_hits": [],
+                    "has_food_hits": [],
+                    "has_rune_hits": [],
+                    "missing_enchants": p.get("missing_enchants", []),
+                    "missing_gems": p.get("missing_gems", 0),
+                    "total_sockets": p.get("total_sockets", 0),
+                    "estimated_output_loss_percent": [],
+                    "preparation_score": []
+                }
+            prep_audit_by_player[p_name]["has_flask_hits"].append(1 if p.get("has_flask") else 0)
+            prep_audit_by_player[p_name]["has_food_hits"].append(1 if p.get("has_food") else 0)
+            prep_audit_by_player[p_name]["has_rune_hits"].append(1 if p.get("has_rune") else 0)
+            prep_audit_by_player[p_name]["estimated_output_loss_percent"].append(p.get("estimated_output_loss_percent", 0.0))
+            prep_audit_by_player[p_name]["preparation_score"].append(p.get("preparation_score", 100))
+
+    prep_audit = []
+    for p_name, data in prep_audit_by_player.items():
+        n = len(data["has_flask_hits"])
+        prep_audit.append({
+            "player_name": p_name,
+            "has_flask": (sum(data["has_flask_hits"]) / n) >= 0.5,
+            "has_food": (sum(data["has_food_hits"]) / n) >= 0.5,
+            "has_rune": (sum(data["has_rune_hits"]) / n) >= 0.5,
+            "missing_enchants": data["missing_enchants"],
+            "missing_gems": data["missing_gems"],
+            "total_sockets": data["total_sockets"],
+            "estimated_output_loss_percent": round(sum(data["estimated_output_loss_percent"]) / n, 2),
+            "preparation_score": int(sum(data["preparation_score"]) / n),
+        })
+
     # Save pulls_details
     pulls_details = []
     for idx, a in enumerate(pull_analyses, start=1):
@@ -426,5 +478,7 @@ def aggregate_pull_analyses(
         "scorecard": scorecard,
         "raid_coach": raid_coach,
         "defensive_calibrator": defensive_calibrator,
+        "prep_audit": prep_audit,
         "pulls_details": pulls_details,
-    }
+    }
+
