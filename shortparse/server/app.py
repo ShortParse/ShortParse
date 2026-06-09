@@ -701,7 +701,7 @@ import importlib
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-@app.get("/api/guild/slump-tracker")
+@app.get("/guild/slump-tracker")
 def slump_tracker(request: Request, db: Session = Depends(get_db)):
     user_id = request.session.get("user_id")
     if not user_id:
@@ -722,7 +722,7 @@ def slump_tracker(request: Request, db: Session = Depends(get_db)):
     from shortparse.reports.tracker import get_slump_tracker_analytics
     return get_slump_tracker_analytics()
 
-@app.post("/api/guild/bench-builder")
+@app.post("/guild/bench-builder")
 def bench_builder(
     request: Request,
     payload: BenchBuilderRequest,
@@ -747,7 +747,7 @@ def bench_builder(
     from shortparse.reports.bench_builder import build_roster_composition
     return build_roster_composition(payload.encounter_id, payload.player_names)
 
-@app.post("/api/recruitment/audit")
+@app.post("/recruitment/audit")
 def recruitment_audit(
     request: Request,
     payload: RecruitmentAuditRequest,
@@ -773,7 +773,7 @@ def recruitment_audit(
     job_id = run_recruitment_audit(payload.character_name, payload.realm, payload.region)
     return {"status": "success", "job_id": job_id}
 
-@app.get("/api/recruitment/audit/{audit_id}")
+@app.get("/recruitment/audit/{audit_id}")
 def get_recruitment_audit(
     audit_id: str,
     request: Request,
