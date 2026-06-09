@@ -9,7 +9,7 @@ def get_candidate_report_card(character_name: str, realm: str, region: str) -> d
     Simulates or pulls candidate performance metrics from Warcraft Logs
     to output a serialized CandidateReportCard.
     """
-    # Generate realistic metrics based on the candidate's name to be deterministic
+    # Default fallback metrics using deterministic random seed
     import random
     random.seed(hash(character_name.lower()) + 42)
     
@@ -23,6 +23,23 @@ def get_candidate_report_card(character_name: str, realm: str, region: str) -> d
     
     chosen_class = random.choice(classes)
     chosen_spec = specs[chosen_class]
+    item_level = random.randint(620, 630)
+    
+    # Attempt to query public Raider.io API for real character metadata
+    import requests
+    url = f"https://raider.io/api/v1/characters/profile?region={region}&realm={realm}&name={character_name}&fields=gear"
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            chosen_class = data.get("class", chosen_class)
+            chosen_spec = data.get("active_spec_name", chosen_spec)
+            gear = data.get("gear", {})
+            if "item_level_equipped" in gear:
+                item_level = int(gear["item_level_equipped"])
+    except Exception:
+        pass
+
     
     # Generate random logs history (last 10 boss pulls)
     bosses = [
@@ -95,7 +112,7 @@ def get_candidate_report_card(character_name: str, realm: str, region: str) -> d
             "region": region.upper(),
             "class": chosen_class,
             "spec": chosen_spec,
-            "item_level": random.randint(620, 630)
+            "item_level": item_level
         },
         "overall_grade": overall_grade,
         "average_dps": int(sum(h["dps"] for h in history) / len(history)),
