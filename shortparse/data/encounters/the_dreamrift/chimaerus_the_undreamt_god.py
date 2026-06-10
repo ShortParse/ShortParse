@@ -211,39 +211,6 @@ ALNDUST_ESSENCE: Mechanic = {
     "mrt": True,
 }
 
-# Add unmapped mechanics
-CAUSTIC_PHLEGM: Mechanic = {
-    "name": "Caustic Phlegm",
-    "severity": "Critical",
-    "avoidable": True,
-    "category": "avoidable_damage",
-    "failure_type": "avoidable_damage",
-    "counts_as_failure": True,
-    "max_reasonable_hits": 1,
-    "score_per_hit": 80,
-    "applies_to": ALL_ROLES,
-    "note": "Avoid standing in Caustic Phlegm impact zones.",
-    "recommendation": "Step out of Caustic Phlegm immediately.",
-    "wcl_type": "damage_taken",
-    "mrt": True,
-}
-
-RIFT_EMERGENCE: Mechanic = {
-    "name": "Rift Emergence",
-    "severity": "Critical",
-    "avoidable": True,
-    "category": "avoidable_damage",
-    "failure_type": "avoidable_damage",
-    "counts_as_failure": True,
-    "max_reasonable_hits": 1,
-    "score_per_hit": 80,
-    "applies_to": ALL_ROLES,
-    "note": "Avoid standing inside the Rift Emergence zone.",
-    "recommendation": "Step out of the Rift Emergence zone immediately.",
-    "wcl_type": "damage_taken",
-    "mrt": True,
-}
-
 CONSUMING_MIASMA: Mechanic = {
     "name": "Consuming Miasma",
     "severity": "Critical",
@@ -318,8 +285,6 @@ AVOIDABLE_DAMAGE = {
     **mechanic_aliases([1245486], CORRUPTED_DEVASTATION),
     **mechanic_aliases([1272726], RENDING_TEAR),
     **mechanic_aliases([1245919], ALNDUST_ESSENCE),
-    **mechanic_aliases([1246653], CAUSTIC_PHLEGM),
-    **mechanic_aliases([1258610], RIFT_EMERGENCE),
     **mechanic_aliases([1257087], CONSUMING_MIASMA),
     **mechanic_aliases([1258192], LINGERING_MIASMA),
     **mechanic_aliases([1249207], DISCORDANT_ROAR),
