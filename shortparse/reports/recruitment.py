@@ -131,104 +131,110 @@ def get_candidate_report_card(character_name: str, realm: str, region: str) -> d
     raid_progression = "0/9 N"
     badges = []
     
-    if not is_mock:
-        # Attempt to query public Raider.io API for real character metadata
-        import requests
-        import logging
-        logger = logging.getLogger("shortparse.recruitment")
-        
-        realm_slug = realm.strip().lower().replace(" ", "-").replace("'", "").replace("`", "")
-        url = f"https://raider.io/api/v1/characters/profile?region={region.lower()}&realm={realm_slug}&name={character_name.strip()}&fields=gear,mythic_plus_scores_by_season:current,raid_progression"
-        
-        try:
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            }
-            response = requests.get(url, headers=headers, timeout=5)
-            if response.status_code == 200:
-                data = response.json()
-                chosen_class = data.get("class", chosen_class)
-                chosen_spec = data.get("active_spec_name", chosen_spec)
-                gear = data.get("gear", {})
-                if "item_level_equipped" in gear:
-                    item_level = int(gear["item_level_equipped"])
-                
-                # Parse Mythic+ score
-                mplus_seasons = data.get("mythic_plus_scores_by_season", [])
-                if mplus_seasons:
-                    scores_obj = mplus_seasons[0].get("scores", {})
-                    mythic_plus_score = scores_obj.get("all", 0.0)
-                
-                # Parse raid progression & badges
-                raid_prog_data = data.get("raid_progression", {})
-                tiers = []
-                has_ce = False
-                has_aotc = False
-                
-                for tier_key, tier_data in raid_prog_data.items():
-                    total_bosses = tier_data.get("total_bosses", 0)
-                    if total_bosses < 2:
-                        continue
-                        
-                    mb = tier_data.get("mythic_bosses_killed", 0)
-                    hb = tier_data.get("heroic_bosses_killed", 0)
-                    nb = tier_data.get("normal_bosses_killed", 0)
+    # Attempt to query public Raider.io API for real character metadata
+    import requests
+    import logging
+    logger = logging.getLogger("shortparse.recruitment")
+    
+    realm_slug = realm.strip().lower().replace(" ", "-").replace("'", "").replace("`", "")
+    url = f"https://raider.io/api/v1/characters/profile?region={region.lower()}&realm={realm_slug}&name={character_name.strip()}&fields=gear,mythic_plus_scores_by_season:current,raid_progression"
+    
+    rio_success = False
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        response = requests.get(url, headers=headers, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            chosen_class = data.get("class", chosen_class)
+            chosen_spec = data.get("active_spec_name", chosen_spec)
+            gear = data.get("gear", {})
+            if "item_level_equipped" in gear:
+                item_level = int(gear["item_level_equipped"])
+            
+            # Parse Mythic+ score
+            mplus_seasons = data.get("mythic_plus_scores_by_season", [])
+            if mplus_seasons:
+                scores_obj = mplus_seasons[0].get("scores", {})
+                mythic_plus_score = scores_obj.get("all", 0.0)
+            
+            # Parse raid progression & badges
+            raid_prog_data = data.get("raid_progression", {})
+            tiers = []
+            has_ce = False
+            has_aotc = False
+            
+            for tier_key, tier_data in raid_prog_data.items():
+                total_bosses = tier_data.get("total_bosses", 0)
+                if total_bosses < 2:
+                    continue
                     
-                    if mb == total_bosses:
-                        has_ce = True
-                    if hb == total_bosses:
-                        has_aotc = True
-                        
-                    tiers.append({
-                        "key": tier_key,
-                        "expansion_id": tier_data.get("expansion_id", 0),
-                        "total_bosses": total_bosses,
-                        "mb": mb,
-                        "hb": hb,
-                        "nb": nb
-                    })
-                    
-                tiers.sort(key=lambda t: (t["expansion_id"], t["total_bosses"]), reverse=True)
+                mb = tier_data.get("mythic_bosses_killed", 0)
+                hb = tier_data.get("heroic_bosses_killed", 0)
+                nb = tier_data.get("normal_bosses_killed", 0)
                 
-                if tiers:
-                    current = tiers[0]
-                    tb = current["total_bosses"]
-                    if current["mb"] > 0:
-                        raid_progression = f"{current['mb']}/{tb}M"
-                    elif current["hb"] > 0:
-                        raid_progression = f"{current['hb']}/{tb}H"
-                    elif current["nb"] > 0:
-                        raid_progression = f"{current['nb']}/{tb}N"
-                    else:
-                        raid_progression = f"0/{tb}N"
-                        
-                if has_ce:
-                    badges.append("CE")
-                if has_aotc:
-                    badges.append("AOTC")
-            else:
-                logger.warning(f"Raider.io API query returned {response.status_code} for {character_name.strip()} on {realm_slug} ({region.lower()})")
-        except Exception as e:
-            logger.error(f"Raider.io API query exception for {character_name.strip()} on {realm_slug} ({region.lower()}): {e}")
-    else:
+                if mb == total_bosses:
+                    has_ce = True
+                if hb == total_bosses:
+                    has_aotc = True
+                    
+                tiers.append({
+                    "key": tier_key,
+                    "expansion_id": tier_data.get("expansion_id", 0),
+                    "total_bosses": total_bosses,
+                    "mb": mb,
+                    "hb": hb,
+                    "nb": nb
+                })
+                
+            tiers.sort(key=lambda t: (t["expansion_id"], t["total_bosses"]), reverse=True)
+            
+            if tiers:
+                current = tiers[0]
+                tb = current["total_bosses"]
+                if current["mb"] > 0:
+                    raid_progression = f"{current['mb']}/{tb}M"
+                elif current["hb"] > 0:
+                    raid_progression = f"{current['hb']}/{tb}H"
+                elif current["nb"] > 0:
+                    raid_progression = f"{current['nb']}/{tb}N"
+                else:
+                    raid_progression = f"0/{tb}N"
+                    
+            if has_ce:
+                badges.append("CE")
+            if has_aotc:
+                badges.append("AOTC")
+            rio_success = True
+        else:
+            logger.warning(f"Raider.io API query returned {response.status_code} for {character_name.strip()} on {realm_slug} ({region.lower()})")
+    except Exception as e:
+        logger.error(f"Raider.io API query exception for {character_name.strip()} on {realm_slug} ({region.lower()}): {e}")
+
+    # Override for mock profiles
+    if is_mock:
         if name_lower == "callmeshorty":
-            chosen_class = "Paladin"
-            chosen_spec = "Retribution"
-            item_level = 622
+            if not rio_success:
+                chosen_class = "Demon Hunter"
+                chosen_spec = "Vengeance"
+                item_level = 620
             mythic_plus_score = 2150.5
             raid_progression = "9/9H"
             badges = ["AOTC"]
         elif name_lower == "carriednoob":
-            chosen_class = "Mage"
-            chosen_spec = "Frost"
-            item_level = 630
+            if not rio_success:
+                chosen_class = "Mage"
+                chosen_spec = "Frost"
+                item_level = 630
             mythic_plus_score = 820.0
             raid_progression = "9/9M"
             badges = ["CE", "AOTC"]
         else: # altpro
-            chosen_class = "Priest"
-            chosen_spec = "Shadow"
-            item_level = 626
+            if not rio_success:
+                chosen_class = "Priest"
+                chosen_spec = "Shadow"
+                item_level = 626
             mythic_plus_score = 2850.0
             raid_progression = "3/9M"
             badges = ["CE"]
